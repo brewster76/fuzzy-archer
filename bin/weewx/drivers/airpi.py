@@ -1,11 +1,7 @@
 #
-#    Copyright (c) 2012 Tom Keffer <tkeffer@gmail.com>
+# Copyright (c) 2013 Nick Dajda <nick.dajda@gmail.com>
 #
-#    See the file LICENSE.txt for your full rights.
-#
-#    $Revision: 1124 $
-#    $Author: tkeffer $
-#    $Date: 2013-03-27 13:00:35 -0700 (Wed, 27 Mar 2013) $
+# Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
 """AirPi driver for the weewx weather system"""
 
@@ -23,27 +19,22 @@ import weeutil.weeutil
 import weewx.abstractstation
 import weewx.wxformulas
 
-def loader(config_dict, engine):
-
-    # This loader uses a bit of a hack to have the simulator resume at a later
-    # time. It's not bad, but I'm not enthusiastic about having special
-    # knowledge about the database in a driver, albeit just the loader.
-           
+def loader(config_dict, engine):         
     station = AirPi(**config_dict['AirPi'])
 
     return station
            
 class AirPi(weewx.abstractstation.AbstractStation):
-    """Station simulator"""
+    """AirPi weather station...
+
+       This is currently a simulator which also pulls NO2 data for Oxford off the DEFRA website"""
     
     def __init__(self, **stn_dict):
         """Initialize the simulator
         
         NAMED ARGUMENTS:
         
-        loop_interval: The time (in seconds) between emitting LOOP packets. [Optional. Default is 2.5]
-        
-        """
+        loop_interval: The time (in seconds) between emitting LOOP packets. [Optional. Default is 2.5]"""
 
         # Keep track of when the Oxford pollution website was last polled 
         self.NO2Level = None
@@ -190,7 +181,6 @@ class Observation(object):
         phase = 2.0 * math.pi * (time_ts - self.start - self.phase_lag) / self.period
         return self.magnitude * math.cos(phase) + self.average
         
-
 
 
 # convert ADC values 

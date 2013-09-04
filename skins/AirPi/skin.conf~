@@ -391,10 +391,8 @@
                 aggregate_type = avg
                 aggregate_interval = 1800
 
-        [[[dayradiation]]]
+        [[[dayradiationUV]]]
             [[[[radiation]]]]
-
-        [[[dayUV]]]
             [[[[UV]]]]
 
         [[[dayCO]]]

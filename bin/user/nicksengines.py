@@ -3,16 +3,10 @@
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
-# Version 1.8
-# 22 July 2013
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
 Tested on weewx release 2.3.3.
-
-Health warning: Currently saves images to "/home/weewx/public_html/" rather than find this out 
-                properly from Weewx helper functions. If you need to you'll have to overwrite
-                this where you see it in the code below.
 
 Directions for use:
 
@@ -30,6 +24,9 @@ Directions for use:
 [GaugeGenerator]
     image_width = 180
     image_height = 180
+
+    # Save gauges in the default web directory
+    GAUGE_ROOT = public_html/
 
     [[Temperature]]
     minvalue = -20
@@ -85,13 +82,11 @@ import weewx.archive
 
 class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     """Class for creating nice gauge graphics."""
-    
-    whereToSaveIt = "/home/weewx/public_html/"
-    
+       
     def run(self):
         t1 = time.time()
 
-        syslog.syslog(syslog.LOG_INFO, """reportengine: Gauge generator code run (yippee!)""")
+        syslog.syslog(syslog.LOG_INFO, "reportengine: Gauge generator code run (yippee!)")
 
         self.gauges =  [{'field': "outTemp", 	 'name': "Temperature"},
 			            {'field': "barometer", 	 'name': "Pressure"}, 
@@ -102,11 +97,13 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
 	    # Load up config info from skin.conf file
         self.gauge_dict = self.skin_dict['GaugeGenerator']
-      
         self.formatter = weewx.units.Formatter.fromSkinDict(self.skin_dict)
         self.converter = weewx.units.Converter.fromSkinDict(self.skin_dict)
-
+     
+        self.whereToSaveIt = os.path.join(self.config_dict['WEEWX_ROOT'], self.gauge_dict.get('GAUGE_ROOT'))
+ 
         archivedb = self._getArchive(self.skin_dict['archive_database'])
+
         rec = self.getRecord(archivedb, archivedb.lastGoodStamp())
 
         if rec is not None:
@@ -122,11 +119,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                             if gaugeinfo['field'] == 'barometer': self.drawGauge(rec[gaugeinfo['field']].mbar.raw, gaugeinfo['name'])
                             if gaugeinfo['field'] == 'windSpeed': self.drawGauge(rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
                             if gaugeinfo['field'] == 'windGust': self.drawGauge(rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
-
-                            # rec['outHumidity'].percent.raw doesn't work
-                            if gaugeinfo['field'] == 'outHumidity': 
-                                syslog.syslog(syslog.LOG_INFO, "reportengine: outHumidity.. = %.2f" % float(str(rec[gaugeinfo['field']]).strip('%')))
-                                self.drawGauge(float(str(rec[gaugeinfo['field']]).strip('%')), gaugeinfo['name'])
+                            if gaugeinfo['field'] == 'outHumidity': self.drawGauge(float(str(rec[gaugeinfo['field']]).strip('%')), gaugeinfo['name'])
                             
                             if gaugeinfo['field'] == 'windDir' :self.drawFunkyWindGauge(gaugeinfo['name'])
                             
