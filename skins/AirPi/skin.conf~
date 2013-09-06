@@ -541,6 +541,7 @@
 [GaugeGenerator]
     image_width = 180
     image_height = 180
+    GAUGE_ROOT = public_html/
 
     [[Temperature]]
     minvalue = -20

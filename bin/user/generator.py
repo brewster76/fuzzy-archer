@@ -26,12 +26,15 @@ or $seven_day.rain.sum for the total rainfall in the last seven days.
 import datetime
 import time
 import syslog
+from operator import itemgetter, attrgetter
+
 import weewx.archive
 
 from weewx.filegenerator import FileGenerator
 from weewx.stats import TimeSpanStats
 from weeutil.weeutil import TimeSpan
 from weeutil.weeutil import genMonthSpans
+from weewx.units import conversionDict
 
 class MyFileGenerator(FileGenerator):                            
   
@@ -70,27 +73,120 @@ class MyFileGenerator(FileGenerator):
 
         #
         # High, low and average temperatures for every month
-        #       
-        for row in archivedb.genSql("SELECT strftime('%m', datetime(dateTime, 'unixepoch')) as Month, strftime('%Y', datetime(dateTime, 'unixepoch')) as Year, MAX(outTemp), MIN(outTemp), AVG(outTemp) FROM archive GROUP BY Year, Month ORDER BY Month, Year"):
-            record = {'max': row[2] , 'min': row[3], 'avg': row[4]}
-        #    
-        # Need to structure these records by year and month for lookup using cheetah template
         #
-            print record
+        self.bgColours = [(-50, -10, "#2E64FE"), 
+                         (-10, 0, "#81BEF7"),
+                         (0, 10, "#81F79F"),
+                         (10, 20, "#58FA58"),
+                         (20, 30, "#F3F781"),
+                         (30, 60, "#F78181")]
+
+        recordListRaw = []
+
+        for row in archivedb.genSql("SELECT strftime('%Y', datetime(dateTime, 'unixepoch')) as Year, strftime('%m', datetime(dateTime, 'unixepoch')) as Month, MIN(outTemp), MAX(outTemp), AVG(outTemp) FROM archive GROUP BY Year, Month"):
+#            record = {'year': int(row[1]), 'month': int(row[0]), 'max': row[2], 'min': row[3], 'avg': row[4]}
+            record = (int(row[0]), int(row[1]), row[2], row[3], row[4])
+            recordListRaw.append(record)
+        
+        recordListSorted = sorted(recordListRaw, key=itemgetter(0, 1))
+
+        year = month = None
+        html_min = html_max = """<table class="table table-hover">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Jan</th>
+            <th>Feb</th>
+            <th>Mar</th>
+            <th>Apr</th>
+            <th>May</th>
+            <th>Jun</th>
+            <th>Jul</th>
+            <th>Aug</th>
+            <th>Sep</th>
+            <th>Oct</th>
+            <th>Nov</th>
+            <th>Dec</th>
+        </tr>
+    </thead>
+    <tbody>
+"""
+
+        for record in recordListSorted:
+            if record[0] != year:              
+                if year is not None: 
+                    # End of a year... Pad out and move onto the next one
+                    for i in range(12 - month):
+                        htmlLine_min += (' ' * 12) + "<td>-</td>\n"
+                        htmlLine_max += (' ' * 12) + "<td>-</td>\n"
+
+                    htmlLine_min += (' ' * 8) + "</tr>\n"
+                    htmlLine_max += (' ' * 8) + "</tr>\n"
+
+                    html_min += htmlLine_min
+                    html_max += htmlLine_max
+
+                year = record[0]
+
+                # Start a new line
+                htmlLine_min = (' ' * 8) + "<tr>\n"
+                htmlLine_min += (' ' * 12) + "<td>%d</td>\n" % year
+
+                htmlLine_max = (' ' * 8) + "<tr>\n"
+                htmlLine_max += (' ' * 12) + "<td>%d</td>\n" % year
+
+                month = 0
+            
+            # Any padding needed?
+            for i in range(record[1] - month - 1):
+                # Empty cell
+                htmlLine_min += (' ' * 12) + "<td>-</td>\n"
+                htmlLine_max += (' ' * 12) + "<td>-</td>\n"
+
+            month = record[1]
+
+            htmlLine_min += (' ' * 12) + self.colorCell(conversionDict['degree_F']['degree_C'](record[2]))
+            htmlLine_max += (' ' * 12) + self.colorCell(conversionDict['degree_F']['degree_C'](record[3]))
 
 
+        # Any padding required?
+        for i in range(12 - month):
+            htmlLine_min += (' ' * 12) + "<td>-</td>\n"
+            htmlLine_max += (' ' * 12) + "<td>-</td>\n"
 
+        htmlLine_min += (' ' * 8) + "</tr>\n"
+        htmlLine_min += (' ' * 4) + "</tbody>\n"
+        htmlLine_min += "</table>\n"
 
+        htmlLine_max += (' ' * 8) + "</tr>\n"
+        htmlLine_max += (' ' * 4) + "</tbody>\n"
+        htmlLine_max += "</table>\n"
 
+        html_min += htmlLine_min
+        html_max += htmlLine_max
         
         # Get the superclass's search list:     
         search_list = FileGenerator.getToDateSearchList(self, archivedb, statsdb, valid_timespan) 
 
         # Now tack on my two additions as a small dictionary with keys 'alltime' and 'seven_day':
-        search_list += [ {'alltime'   : all_stats,
-                          'seven_day' : seven_day_stats} ]               
-        
+        search_list += [ {'alltime'        : all_stats,
+                          'seven_day'      : seven_day_stats,
+                          'min_temp_table' : html_min,
+                          'max_temp_table' : html_max} ]               
+
         return search_list
+
+    def colorCell(self, temperature):
+        cellText = "<td"
+
+        for c in self.bgColours:
+            if (temperature >= c[0]) and (temperature <= c[1]):
+                cellText += " bgcolor = \"%s\"" % c[2]
+
+        cellText += "> %.1f </td>" % temperature
+
+        return cellText
+
 
 #
 # What is this...?
