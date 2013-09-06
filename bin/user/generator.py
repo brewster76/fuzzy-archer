@@ -83,15 +83,14 @@ class MyFileGenerator(FileGenerator):
 
         recordListRaw = []
 
-        for row in archivedb.genSql("SELECT strftime('%Y', datetime(dateTime, 'unixepoch')) as Year, strftime('%m', datetime(dateTime, 'unixepoch')) as Month, MIN(outTemp), MAX(outTemp), AVG(outTemp) FROM archive GROUP BY Year, Month"):
-#            record = {'year': int(row[1]), 'month': int(row[0]), 'max': row[2], 'min': row[3], 'avg': row[4]}
-            record = (int(row[0]), int(row[1]), row[2], row[3], row[4])
+        for row in statsdb.genSql("SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MIN(min), MAX(max) FROM outTemp GROUP BY Year, Month"):
+            record = (int(row[0]), int(row[1]), row[2], row[3])
             recordListRaw.append(record)
         
         recordListSorted = sorted(recordListRaw, key=itemgetter(0, 1))
 
         year = month = None
-        html_min = html_max = """<table class="table table-hover">
+        html_min = html_max = """<table class="table">
     <thead>
         <tr>
             <th></th>
