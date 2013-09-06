@@ -37,7 +37,7 @@ from weeutil.weeutil import genMonthSpans
 from weewx.units import conversionDict
 
 class MyFileGenerator(FileGenerator):                            
-  
+
     def getToDateSearchList(self, archivedb, statsdb, valid_timespan): 
         """Returns a search list with two additions. Overrides the
         default "getToDateSearchList" method.
@@ -74,23 +74,74 @@ class MyFileGenerator(FileGenerator):
         #
         # High, low and average temperatures for every month
         #
-        self.bgColours = [(-50, -10, "#2E64FE"), 
-                         (-10, 0, "#81BEF7"),
-                         (0, 10, "#81F79F"),
-                         (10, 20, "#58FA58"),
-                         (20, 30, "#F3F781"),
-                         (30, 60, "#F78181")]
+        self.bgColours = {'temperature': [(-50, -10,  "#2E64FE"), 
+                                          (-10, 0,    "#81BEF7"),
+                                          (0, 10,     "#81F79F"),
+                                          (10, 20,    "#58FA58"),
+                                          (20, 30,    "#F3F781"),
+                                          (30, 60,    "#F78181")], 
+                          'rain':        [(0, 25,     "#E0F8E0"),
+                                          (25, 50,    "#A9F5A9"),
+                                          (50, 75,   "#58FA58"),
+                                          (75, 100,  "#2EFE2E"),
+                                          (100 ,150,  "#01DF01"),
+                                          (150, 1000, "#01DF01")] }
+
+        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MIN(min) FROM outTemp GROUP BY Year, Month"
+        html_min = self.statsHTMLTable(sqlQuery, 'temperature', statsdb)
+
+        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MAX(max) FROM outTemp GROUP BY Year, Month"
+        html_max = self.statsHTMLTable(sqlQuery, 'temperature', statsdb)
+
+        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, SUM(sum) FROM rain GROUP BY Year, Month"
+        html_rain = self.statsHTMLTable(sqlQuery, 'rain', statsdb)
+
+        # Get the superclass's search list:     
+        search_list = FileGenerator.getToDateSearchList(self, archivedb, statsdb, valid_timespan) 
+
+        # Now tack on my two additions as a small dictionary with keys 'alltime' and 'seven_day':
+        search_list += [ {'alltime'        : all_stats,
+                          'seven_day'      : seven_day_stats,
+                          'min_temp_table' : html_min,
+                          'max_temp_table' : html_max,
+                          'rain_table'     : html_rain} ]
+
+        return search_list
+
+    def colorCell(self, value, units):
+        cellText = "<td"
+
+        # Temperature needs converting from F to C
+        if 'temperature' == units:
+            value = conversionDict['degree_F']['degree_C'](value)
+        elif 'rain' == units:
+            value = conversionDict['inch']['mm'](value)
+
+        for c in self.bgColours[units]:
+            if (value >= c[0]) and (value <= c[1]):
+                cellText += " bgcolor = \"%s\"" % c[2]
+
+        if 'temperature' == units:
+            cellText += "> %.1f </td>" % value
+        else:
+            cellText += "> %.2f </td>" % value
+
+        return cellText
+
+
+    def statsHTMLTable(self, sqlQuery, units, statsdb):
 
         recordListRaw = []
 
-        for row in statsdb.genSql("SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MIN(min), MAX(max) FROM outTemp GROUP BY Year, Month"):
-            record = (int(row[0]), int(row[1]), row[2], row[3])
+        for row in statsdb.genSql(sqlQuery):
+            record = (int(row[0]), int(row[1]), row[2])
             recordListRaw.append(record)
         
         recordListSorted = sorted(recordListRaw, key=itemgetter(0, 1))
 
         year = month = None
-        html_min = html_max = """<table class="table">
+        htmlText = """<table class="table">
+
     <thead>
         <tr>
             <th></th>
@@ -116,76 +167,38 @@ class MyFileGenerator(FileGenerator):
                 if year is not None: 
                     # End of a year... Pad out and move onto the next one
                     for i in range(12 - month):
-                        htmlLine_min += (' ' * 12) + "<td>-</td>\n"
-                        htmlLine_max += (' ' * 12) + "<td>-</td>\n"
+                        htmlLine += (' ' * 12) + "<td>-</td>\n"
 
-                    htmlLine_min += (' ' * 8) + "</tr>\n"
-                    htmlLine_max += (' ' * 8) + "</tr>\n"
-
-                    html_min += htmlLine_min
-                    html_max += htmlLine_max
+                    htmlLine += (' ' * 8) + "</tr>\n"
+                    htmlText += htmlLine
 
                 year = record[0]
 
                 # Start a new line
-                htmlLine_min = (' ' * 8) + "<tr>\n"
-                htmlLine_min += (' ' * 12) + "<td>%d</td>\n" % year
-
-                htmlLine_max = (' ' * 8) + "<tr>\n"
-                htmlLine_max += (' ' * 12) + "<td>%d</td>\n" % year
+                htmlLine = (' ' * 8) + "<tr>\n"
+                htmlLine += (' ' * 12) + "<td>%d</td>\n" % year
 
                 month = 0
             
             # Any padding needed?
             for i in range(record[1] - month - 1):
                 # Empty cell
-                htmlLine_min += (' ' * 12) + "<td>-</td>\n"
-                htmlLine_max += (' ' * 12) + "<td>-</td>\n"
+                htmlLine += (' ' * 12) + "<td>-</td>\n"
 
             month = record[1]
-
-            htmlLine_min += (' ' * 12) + self.colorCell(conversionDict['degree_F']['degree_C'](record[2]))
-            htmlLine_max += (' ' * 12) + self.colorCell(conversionDict['degree_F']['degree_C'](record[3]))
-
+            htmlLine += (' ' * 12) + self.colorCell(record[2], units)
 
         # Any padding required?
         for i in range(12 - month):
-            htmlLine_min += (' ' * 12) + "<td>-</td>\n"
-            htmlLine_max += (' ' * 12) + "<td>-</td>\n"
+            htmlLine += (' ' * 12) + "<td>-</td>\n"
 
-        htmlLine_min += (' ' * 8) + "</tr>\n"
-        htmlLine_min += (' ' * 4) + "</tbody>\n"
-        htmlLine_min += "</table>\n"
+        htmlLine += (' ' * 8) + "</tr>\n"
+        htmlLine += (' ' * 4) + "</tbody>\n"
+        htmlLine += "</table>\n"
 
-        htmlLine_max += (' ' * 8) + "</tr>\n"
-        htmlLine_max += (' ' * 4) + "</tbody>\n"
-        htmlLine_max += "</table>\n"
+        htmlText += htmlLine
 
-        html_min += htmlLine_min
-        html_max += htmlLine_max
-        
-        # Get the superclass's search list:     
-        search_list = FileGenerator.getToDateSearchList(self, archivedb, statsdb, valid_timespan) 
-
-        # Now tack on my two additions as a small dictionary with keys 'alltime' and 'seven_day':
-        search_list += [ {'alltime'        : all_stats,
-                          'seven_day'      : seven_day_stats,
-                          'min_temp_table' : html_min,
-                          'max_temp_table' : html_max} ]               
-
-        return search_list
-
-    def colorCell(self, temperature):
-        cellText = "<td"
-
-        for c in self.bgColours:
-            if (temperature >= c[0]) and (temperature <= c[1]):
-                cellText += " bgcolor = \"%s\"" % c[2]
-
-        cellText += "> %.1f </td>" % temperature
-
-        return cellText
-
+        return htmlText
 
 #
 # What is this...?
