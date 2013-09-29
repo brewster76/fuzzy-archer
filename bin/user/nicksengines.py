@@ -119,12 +119,21 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                             if gaugeinfo['field'] == 'barometer': self.drawGauge(rec[gaugeinfo['field']].mbar.raw, gaugeinfo['name'])
                             if gaugeinfo['field'] == 'windSpeed': self.drawGauge(rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
                             if gaugeinfo['field'] == 'windGust': self.drawGauge(rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
-                            if gaugeinfo['field'] == 'outHumidity': self.drawGauge(float(str(rec[gaugeinfo['field']]).strip('%')), gaugeinfo['name'])
+
+                            if gaugeinfo['field'] == 'outHumidity': 
+                                # Can we make a string out of this?
+                                try:
+                                    humidity = float(str(rec[gaugeinfo['field']]).strip('%'))
+                                except:
+                                    syslog.syslog(syslog.LOG_INFO, "reportengine: outHumidity value not usable '%s'" % rec[gaugeinfo['field']])
+                                else:
+                                    syslog.syslog(syslog.LOG_INFO, "reportengine: Humidity = %f" % humidity)
+                                    self.drawGauge(humidity, gaugeinfo['name'])
                             
                             if gaugeinfo['field'] == 'windDir' :self.drawFunkyWindGauge(gaugeinfo['name'])
                             
         t2= time.time()
-        syslog.syslog(syslog.LOG_INFO, """reportengine: Time taken %.2f seconds""" % (t2 - t1))
+        syslog.syslog(syslog.LOG_INFO, "reportengine: Time taken %.2f seconds." % (t2 - t1))
 
 
     def drawFunkyWindGauge(self, gaugeName):
@@ -134,7 +143,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         imageHeight = self.gauge_dict.as_int('image_height')
         imageOrigin = (imageWidth / 2, imageHeight / 2)
         
-        syslog.syslog(syslog.LOG_INFO, """reportengine: Generating %s gauge, (%d x %d)""" % (gaugeName, imageWidth, imageHeight))
+        syslog.syslog(syslog.LOG_INFO, "reportengine: Generating %s gauge, (%d x %d)" % (gaugeName, imageWidth, imageHeight))
 
         labelFontSize = self.gauge_dict[gaugeName].as_int('labelfontsize')
 
@@ -143,7 +152,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                                     archivedb.lastGoodStamp(), 300, 'avg')
     
         for rec in data_value:
-            syslog.syslog(syslog.LOG_INFO, """reportengine: %s""" % rec)
+            syslog.syslog(syslog.LOG_INFO, "eportengine: %s"% rec)
        
         # Number of bins to count wind history into
         numBins = 16
@@ -171,7 +180,10 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             # TypeError: float() argument must be a string or a number
             if row[0] is not None:
                 windDir = float(row[0])
-                buckets[int(windDir * numBins / 360)] += 1
+                if (windDir < 0) or (windDir > 360):
+                    syslog.syslog(syslog.LOG_INFO, "drawFunkyWindGauge: %f should be in the range 0-360 degrees", windDir)
+                else:
+                    buckets[int(windDir * numBins / 360)] += 1
 
             if windSpeedNow is None:                
                 windSpeedNow = float(row[1])
@@ -250,7 +262,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         draw.ellipse(((imageOrigin[0] - radius, imageOrigin[1] - radius),
                      (imageOrigin[0] + radius, imageOrigin[1] + radius)), outline = (0, 0, 0))
 
-        # Digital value for Naftron
+        # Digital value text
         degreeSign= u'\N{DEGREE SIGN}'
         digitalText = "%d" % windDirNow + degreeSign
         stringSize = bigSansFont.getsize(digitalText)
@@ -259,13 +271,22 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         del draw 
 
-#        image_root = os.path.join(self.config_dict['WEEWX_ROOT'], self.gauge_dict('gauge_path'))      
-#        img_file = os.path.join(image_root, '%sGauge.png' % gaugeName)
-#        im.save(img_file, "PNG")
         im.save(self.whereToSaveIt + gaugeName + "Gauge.png", "PNG")
 
     def histogram(self, gaugeName, fieldName):
-        # TODO - lookup fieldName from gaugelist
+        #
+        # Currently this function only works for temperature and converts it into Celcius
+        #
+
+        # TODO:
+        #      1) lookup fieldName from gaugelist
+        #      2) Deal with non Metric units a lot better
+
+        # Metric or imperial units
+        isUS = False
+        if "US" == self.config_dict['StdConvert']['target_unit']:
+            syslog.syslog(syslog.LOG_DEBUG, "reportengine: US units detected")
+            isUS = True
 
         minValue = self.gauge_dict[gaugeName].as_float('minvalue')
         maxValue = self.gauge_dict[gaugeName].as_float('maxvalue')
@@ -283,12 +304,23 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         roof = 0
         
         for row in archive.genSql("SELECT " + fieldName + " FROM archive ORDER BY dateTime DESC LIMIT %d" % numPoints):
-            histValue = float(row[0])
+            if row[0] is not None:            
+                histValue = float(row[0])
 
-            bucketNum = int((histValue - minValue) / bucketSpan)
-            buckets[bucketNum] += 1.0
-            
-            if buckets[bucketNum] > roof: roof = buckets[bucketNum]
+                # Convert archive units from F into C?
+                if isUS is True:
+                    histValue = (histValue - 32) * 5 / 9
+
+                if histValue > maxValue:
+                    syslog.syslog(syslog.LOG_DEBUG, "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxValue))
+                elif histValue < minValue:
+                    syslog.syslog(syslog.LOG_DEBUG, "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minValue))
+                else:
+                    bucketNum = int((histValue - minValue) / bucketSpan)
+                    buckets[bucketNum] += 1.0
+                    
+                    if buckets[bucketNum] > roof: 
+                        roof = buckets[bucketNum]
 
         buckets = [i / roof for i in buckets]
  
@@ -401,8 +433,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             draw.line((leftPoint, midPoint), fill = (3, 29, 219))
             draw.line((rightPoint, midPoint), fill = (3, 29, 219))
 
-    
-        # Digital value for Naftron
+        # Digital value text
         stringSize = bigSansFont.getsize(digitalText) 
         draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1] + radius * 0.4 - stringSize[1] / 2), digitalText,
                   font = bigSansFont, fill = (3, 29, 219))
