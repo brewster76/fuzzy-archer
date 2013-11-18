@@ -5,7 +5,8 @@
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
-Tested on weewx release 2.4.0
+Tested on weewx release 2.5.0
+Tested with sqlite, may not work with other databases.
 
 Directions for use:
 
@@ -76,16 +77,17 @@ import math
 import Image, ImageDraw, ImageFont
 import os.path
 
-import weewx.reportengine
 import weewx.archive
-from weewx.units import Formatter, Converter, dictFromStd, ValueDict
+import weewx.reportengine
+import weeplot.utilities
+
+from weewx.units import ValueTupleDict, Converter
 
 class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     """Class for creating nice gauge graphics."""
 
     def __init__(self, config_dict, skin_dict, gen_ts, first_run, stn_info):
         super(GaugeGenerator, self).__init__(config_dict, skin_dict, gen_ts, first_run, stn_info)
-        self.formatter = Formatter.fromSkinDict(self.skin_dict)
         self.gauges = [{'field': "outTemp", 'name': "Temperature"},
                        {'field': "barometer", 'name': "Pressure"},
                        {'field': "windSpeed", 'name': "WindSpeed"},
@@ -93,13 +95,43 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                        {'field': "outHumidity", 'name': "Humidity"},
                        {'field': "windDir", 'name': "WindDirection"}]
         self.gauge_dict = self.skin_dict['GaugeGenerator']
-        self.converter = Converter.fromSkinDict(self.skin_dict)
         self.wheretosaveit = os.path.join(self.config_dict['WEEWX_ROOT'], self.gauge_dict.get('GAUGE_ROOT'))
+        self.Converter = Converter(self.skin_dict['Units']['Groups'])
+
+        self.fillColor = weeplot.utilities.tobgr(self.gauge_dict.get('fill_color', '0x999999'))
+        self.fillColorTuple = int2rgb(self.fillColor)
+
+        self.backColor =  weeplot.utilities.tobgr(self.gauge_dict.get('background_color', '0xffffff'))
+        self.backColorTuple = int2rgb(self.backColor)
+
+        self.labelColor = weeplot.utilities.tobgr(self.gauge_dict.get('label_color', '0x000000'))
+        self.dialColor = weeplot.utilities.tobgr(self.gauge_dict.get('dial_color', '0x707070'))
+        self.needleColor = weeplot.utilities.tobgr(self.gauge_dict.get('needle_color', '0xb48242'))
+        self.textColor = weeplot.utilities.tobgr(self.gauge_dict.get('text_color', '0xb48242'))
+
+    def _hexToTuple(self, x):
+        b = (x >> 16) & 0xff
+        g = (x >> 8) & 0xff
+        r = x & 0xff
+        return (r, g, b)
+
+    def _calcColor(self, value, index):
+        diff = self.fillColorTuple[index] - self.backColorTuple[index]
+        newColor = self.backColorTuple[index] + int(diff * value)
+
+        if newColor < 0:
+            newColor = 0
+
+        if newColor > 0xff:
+            newColor = 0xff
+
+        return newColor
 
     def run(self):
         t1 = time.time()
+        gaugesDrawn = 0
 
-        syslog.syslog(syslog.LOG_INFO, "reportengine: Gauge generator code run (yippee!)")
+        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Gauge generator code run (yippee!)")
 
         # Load up config info from skin.conf file
 
@@ -114,33 +146,22 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 # Is it actually a gauge?             
                 for gaugeinfo in self.gauges:
                     if gaugeinfo['name'] == gauge:
-                        if rec.has_key(gaugeinfo['field']):
-                            # TODO: Look up units actually used by quantity and call appropriate lookup function
-                            if gaugeinfo['field'] == 'outTemp': self.drawGauge(rec[gaugeinfo['field']].degree_C.raw,
-                                                                               gaugeinfo['name'])
-                            if gaugeinfo['field'] == 'barometer': self.drawGauge(rec[gaugeinfo['field']].mbar.raw,
-                                                                                 gaugeinfo['name'])
-                            if gaugeinfo['field'] == 'windSpeed': self.drawGauge(
-                                rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
-                            if gaugeinfo['field'] == 'windGust': self.drawGauge(
-                                rec[gaugeinfo['field']].mile_per_hour.raw, gaugeinfo['name'])
+                        c = self.Converter.convert(rec[gaugeinfo['field']])
 
-                            if gaugeinfo['field'] == 'outHumidity':
-                            # Can we make a string out of this?
-                                try:
-                                    humidity = float(str(rec[gaugeinfo['field']]).strip('%'))
-                                except:
-                                    syslog.syslog(syslog.LOG_INFO,
-                                                  "reportengine: outHumidity value not usable '%s'" % rec[
-                                                      gaugeinfo['field']])
-                                else:
-                                    syslog.syslog(syslog.LOG_INFO, "reportengine: Humidity = %f" % humidity)
-                                    self.drawGauge(humidity, gaugeinfo['name'])
+                        if c[0] is not None:
+                            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %f" % (gauge, c[0]))
 
-                            if gaugeinfo['field'] == 'windDir': self.drawwindgauge(gaugeinfo['name'])
+                            if gaugeinfo['field'] == 'windDir':
+                                self.drawwindgauge(gaugeinfo['name'])
+                            else:
+                                self.drawGauge(c[0], gaugeinfo['name'])
 
+                            gaugesDrawn += 1
+                        else:
+                            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Gauge %s has value of type None" % gauge)
+                  
         t2 = time.time()
-        syslog.syslog(syslog.LOG_INFO, "reportengine: Time taken %.2f seconds." % (t2 - t1))
+        syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Created %d gauges in %.2f seconds." % (gaugesDrawn, t2 - t1))
 
 
     def drawwindgauge(self, gaugename):
@@ -150,8 +171,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         imageheight = self.gauge_dict.as_int('image_height')
         imageorigin = (imagewidth / 2, imageheight / 2)
 
-        syslog.syslog(syslog.LOG_INFO,
-                      "reportengine: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
+        syslog.syslog(syslog.LOG_DEBUG,
+                      "GaugeGenerator: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
 
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
 
@@ -162,7 +183,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                                                           archivedb.lastGoodStamp(), 300, 'avg')
 
         for rec in data_value:
-            syslog.syslog(syslog.LOG_INFO, "eportengine: %s" % rec)
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s" % rec)
 
         # Number of bins to count wind history into
         numBins = 16
@@ -198,7 +219,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                     buckets[int(windDir * numBins / 360)] += 1
 
             if windSpeedNow is None:
-                windSpeedNow = float(row[1])
+                if row[1] is not None:
+                    windSpeedNow = float(row[1])
 
             if windDirNow is None:
                 windDirNow = windDir
@@ -225,9 +247,10 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         angle = 0.0
         angleStep = 360.0 / numBins
         for i in range(0, numBins, 1):
+            fillColor = (self._calcColor(buckets[i], 0), self._calcColor(buckets[i], 1), self._calcColor(buckets[i], 2))
+           
             draw.pieslice((int(imageorigin[0] - radius), int(imageorigin[1] - radius), int(imageorigin[0] + radius),
-                           int(imageorigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90),
-                          fill=(255, int(255 * (1 - buckets[i])), 255))
+                           int(imageorigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
             angle += angleStep
 
         # Compass points
@@ -237,26 +260,23 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             angle = i * math.radians(90) + math.radians(180)
 
             # Major tic
-            startPoint = (
-            imageorigin[0] - radius * math.sin(angle) * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
+            startPoint = (imageorigin[0] - radius * math.sin(angle) * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
             endPoint = (imageorigin[0] - radius * math.sin(angle), imageorigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=(0, 0, 0))
+            draw.line((startPoint, endPoint), fill=self.dialColor)
 
             labelText = labels[i]
             stringSize = sansFont.getsize(labelText)
 
-            labelPoint = (
-            imageorigin[0] - radius * math.sin(angle) * 0.80, imageorigin[1] + radius * math.cos(angle) * 0.80)
+            labelPoint = (imageorigin[0] - radius * math.sin(angle) * 0.80, imageorigin[1] + radius * math.cos(angle) * 0.80)
             labelPoint = (labelPoint[0] - stringSize[0] / 2, labelPoint[1] - stringSize[1] / 2)
 
-            draw.text(labelPoint, labelText, font=sansFont, fill=(0, 0, 0))
+            draw.text(labelPoint, labelText, font=sansFont, fill=self.labelColor)
 
             # Minor tic
             angle += math.radians(45)
-            startPoint = (
-            imageorigin[0] - radius * math.sin(angle) * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
+            startPoint = (imageorigin[0] - radius * math.sin(angle) * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
             endPoint = (imageorigin[0] - radius * math.sin(angle), imageorigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=(0, 0, 0))
+            draw.line((startPoint, endPoint), fill=self.dialColor)
 
         # The needle
         angle = math.radians(windDirNow)
@@ -268,21 +288,21 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         midPoint = (imageorigin[0] - radius * math.sin(angle + math.pi) * 0.1,
                     imageorigin[1] + radius * math.cos(angle + math.pi) * 0.1)
 
-        draw.line((leftPoint, endPoint), fill=(3, 29, 219))
-        draw.line((rightPoint, endPoint), fill=(3, 29, 219))
-        draw.line((leftPoint, midPoint), fill=(3, 29, 219))
-        draw.line((rightPoint, midPoint), fill=(3, 29, 219))
+        draw.line((leftPoint, endPoint), fill=self.needleColor)
+        draw.line((rightPoint, endPoint), fill=self.needleColor)
+        draw.line((leftPoint, midPoint), fill=self.needleColor)
+        draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Outline
         draw.ellipse(((imageorigin[0] - radius, imageorigin[1] - radius),
-                      (imageorigin[0] + radius, imageorigin[1] + radius)), outline=(0, 0, 0))
+                      (imageorigin[0] + radius, imageorigin[1] + radius)), outline=self.dialColor)
 
         # Digital value text
         degreeSign = u'\N{DEGREE SIGN}'
         digitalText = "%d" % windDirNow + degreeSign
         stringSize = bigSansFont.getsize(digitalText)
         draw.text((imageorigin[0] - stringSize[0] / 2, imageorigin[1] + radius * 0.4 - stringSize[1] / 2), digitalText,
-                  font=bigSansFont, fill=(3, 29, 219))
+                  font=bigSansFont, fill=self.textColor)
 
         del draw
 
@@ -300,7 +320,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         # Metric or imperial units
         isUS = False
         if "US" == self.config_dict['StdConvert']['target_unit']:
-            syslog.syslog(syslog.LOG_DEBUG, "reportengine: US units detected")
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: US units detected")
             isUS = True
 
         minVal = self.gauge_dict[gaugeName].as_float('minvalue')
@@ -324,7 +344,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
                 # Convert archive units from F into C?
                 if isUS is True:
-                    histValue = (histValue - 32) * 5 / 9
+                    if gaugeName == "Temperature":
+                        histValue = (histValue - 32) * 5 / 9
 
                 if histValue > maxval:
                     syslog.syslog(syslog.LOG_DEBUG,
@@ -352,15 +373,17 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Check gaugeValue is usable
         if gaugeValue is None:
-            syslog.syslog(syslog.LOG_INFO, "reportengine: Generating %s gauge, (%d x %d), value = None" % (
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = None" % (
             gaugeName, imageWidth, imageHeight))
             digitalText = "N/A"
         else:
-            syslog.syslog(syslog.LOG_INFO, "reportengine: Generating %s gauge, (%d x %d), value = %.1f" % (
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %.1f" % (
             gaugeName, imageWidth, imageHeight, gaugeValue))
 
             if gaugeName == "Temperature":
             # Temparature scale
+            #
+            # TODO: Use Weewx utility function to do this
                 degreeSign = u'\N{DEGREE SIGN}'
                 digitalText = "%.1f" % gaugeValue + degreeSign + "C"
             elif gaugeName == "Pressure":
@@ -401,14 +424,15 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 angle = float(minAngle)
                 angleStep = (maxAngle - minAngle) / float(numBins)
                 for i in range(0, numBins, 1):
+                    fillColor = (self._calcColor(buckets[i], 0), self._calcColor(buckets[i], 1), self._calcColor(buckets[i], 2))
+        
                     draw.pieslice(
                         (int(imageOrigin[0] - radius), int(imageOrigin[1] - radius), int(imageOrigin[0] + radius),
-                         int(imageOrigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90),
-                        fill=(255, int(255 * (1 - buckets[i])), 255))
+                         int(imageOrigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
                     angle += angleStep
 
         draw.ellipse(((imageOrigin[0] - radius, imageOrigin[1] - radius),
-                      (imageOrigin[0] + radius, imageOrigin[1] + radius)), outline=(0, 0, 0))
+                      (imageOrigin[0] + radius, imageOrigin[1] + radius)), outline=self.dialColor)
 
         sansFont = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", labelFontSize)
         bigSansFont = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 20)
@@ -417,10 +441,9 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Major tic marks and scale labels
         for angle in frange(math.radians(minAngle), math.radians(maxAngle), int(1 + (maxval - minVal) / majorStep)):
-            startPoint = (
-            imageOrigin[0] - radius * math.sin(angle) * 0.93, imageOrigin[1] + radius * math.cos(angle) * 0.93)
+            startPoint = (imageOrigin[0] - radius * math.sin(angle) * 0.93, imageOrigin[1] + radius * math.cos(angle) * 0.93)
             endPoint = (imageOrigin[0] - radius * math.sin(angle), imageOrigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=(0, 0, 0))
+            draw.line((startPoint, endPoint), fill=self.dialColor)
 
             labelText = str(labelFormat % labelValue)
             stringSize = sansFont.getsize(labelText)
@@ -429,16 +452,15 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             imageOrigin[0] - radius * math.sin(angle) * 0.80, imageOrigin[1] + radius * math.cos(angle) * 0.80)
             labelPoint = (labelPoint[0] - stringSize[0] / 2, labelPoint[1] - stringSize[1] / 2)
 
-            draw.text(labelPoint, labelText, font=sansFont, fill=(0, 0, 0))
+            draw.text(labelPoint, labelText, font=sansFont, fill=self.labelColor)
             #draw.point(labelPoint)
             labelValue += majorStep
 
         # Minor tic marks
         for angle in frange(math.radians(minAngle), math.radians(maxAngle), int(1 + (maxval - minVal) / minorStep)):
-            startPoint = (
-            imageOrigin[0] - radius * math.sin(angle) * 0.97, imageOrigin[1] + radius * math.cos(angle) * 0.97)
+            startPoint = (imageOrigin[0] - radius * math.sin(angle) * 0.97, imageOrigin[1] + radius * math.cos(angle) * 0.97)
             endPoint = (imageOrigin[0] - radius * math.sin(angle), imageOrigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=(0, 0, 0))
+            draw.line((startPoint, endPoint), fill=self.dialColor)
 
         # The needle
         if gaugeValue is not None:
@@ -452,34 +474,36 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             midPoint = (imageOrigin[0] - radius * math.sin(angle + math.pi) * 0.1,
                         imageOrigin[1] + radius * math.cos(angle + math.pi) * 0.1)
 
-            draw.line((leftPoint, endPoint), fill=(3, 29, 219))
-            draw.line((rightPoint, endPoint), fill=(3, 29, 219))
-            draw.line((leftPoint, midPoint), fill=(3, 29, 219))
-            draw.line((rightPoint, midPoint), fill=(3, 29, 219))
+            draw.line((leftPoint, endPoint), fill=self.needleColor)
+            draw.line((rightPoint, endPoint), fill=self.needleColor)
+            draw.line((leftPoint, midPoint), fill=self.needleColor)
+            draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Digital value text
         stringSize = bigSansFont.getsize(digitalText)
         draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1] + radius * 0.4 - stringSize[1] / 2), digitalText,
-                  font=bigSansFont, fill=(3, 29, 219))
+                  font=bigSansFont, fill=self.textColor)
 
         del draw
 
         im.save(self.wheretosaveit + gaugeName + "Gauge.png", "PNG")
 
     def getRecord(self, archivedb, time_ts):
-        """Get an observation record from the archive database, returning
-        it as a ValueDict."""
+        # Return a value tuple dictionary which can be used to get current readings in skin units
 
-        # Get the record...:
         record_dict = archivedb.getRecord(time_ts)
-        # ... convert to a dictionary with ValueTuples as values...
-        record_dict_vt = dictFromStd(record_dict)
-        # ... then wrap it in a ValueDict:
-        record_vd = ValueDict(record_dict_vt, context='current',
-                                          formatter=self.formatter, converter=self.converter)
 
-        return record_vd
+        return ValueTupleDict(record_dict)
 
+
+def int2rgb(x):
+#
+# Stolen from genploy.py Weewx file
+#
+    b = (x >> 16) & 0xff
+    g = (x >> 8) & 0xff
+    r = x & 0xff
+    return r,g,b
 
 def frange(start, stop, n):
     L = [0.0] * n
@@ -488,7 +512,6 @@ def frange(start, stop, n):
     for i in range(n):
         L[i] = nm1inv * (start * (nm1 - i) + stop * i)
     return L
-
 
 def maxvalue(array):
     maxval = 0.0

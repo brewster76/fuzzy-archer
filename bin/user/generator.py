@@ -1,114 +1,124 @@
 #
-#    Copyright (c) 2009, 2010 Tom Keffer <tkeffer@gmail.com>
+# Code for creating html historic data tables in a nice colour scheme.
 #
-#    See the file LICENSE.txt for your full rights.
+# Tested with weewx 2.5.0.
+# 
+# Nick Dajda, based on code from the weewx distribution. Nov 2013.
+
+"""Extends the search list used by the Cheetah generator, based on weewx example
+code.
+
+To use it, modify the option search_list in your skin.conf configuration file,
+adding the name of this extension. For this example, the name of the extension
+is user.generator.MyXSearch. So, when you're done, it will look something
+like this:
+
+[CheetahGenerator]
+    search_list_extensions = user.generator.MyXSearch
+
+1) The alltime tag: 
+
+Allows tags such as $alltime.outTemp.max for the all-time max
+temperature, or $seven_day.rain.sum for the total rainfall in the last
+seven days.
+
+2) Nice colourful tables summarising history data by month and year.
+
+Adding the section below to your skins.conf file will create these new tags:
+   $min_temp_table
+   $max_temp_table
+   $avg_temp_table
+   $rain_table
+
+Written for metric users so temperature is converted to degC, pressure is mbar 
+and rain is mm.
+
 #
-#    $Revision: 730 $
-#    $Author: tkeffer $
-#    $Date: 2012-11-03 10:58:13 -0700 (Sat, 03 Nov 2012) $
+# Settings for Nick's HTML month/year summary table summary generator
 #
+[TableGenerator]
 
-"""Example of how to extend a report generator.
+    # minvalues, maxvalues and colours should contain the same number of elements.
+    # e.g. in the [min_temp] example below, if the minimum temperature measured in 
+    #      a month is between -50 and -10 (degC) then the cell will be shaded
+    #      in html colour code #0029E5.
+    #
+    # sqlquery text below works for sqlite but may not work for other databases.
 
-This generator offers two extra tags:
+    [[min_temp]]
+        minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
+        maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
+        colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2, "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+        sqlquery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MIN(min) FROM outTemp GROUP BY Year, Month"
+        units = temperature
 
-    'alltime': All time statistics. For example, "what is the all time high temperature?"
+    [[max_temp]]
+        minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
+        maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
+        colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2, "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+        sqlquery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MAX(max) FROM outTemp GROUP BY Year, Month"
+        units = temperature
 
-    'seven_day': Statistics for the last seven days. That is, since midnight seven days
-                 ago.
+    [[avg_temp]]
+        minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
+        maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
+        colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2, "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+        sqlquery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, SUM(sum) / SUM(count) FROM outTemp GROUP BY Year, Month"
+        units = temperature
 
-To use it, in the skin's generator_list, replace weewx.filegenerator.FileGenerator
-with examples.mygenerator.MyFileGenerator.
-
-You can then use tags such as $alltime.outTemp.max for the all-time max temperature,
-or $seven_day.rain.sum for the total rainfall in the last seven days.
+    [[rain]]
+        minvalues = 0, 25, 50, 75, 100, 150
+        maxvalues = 25, 50, 75, 100, 150, 1000
+        colours = "#E0F8E0", "#A9F5A9", "#58FA58", "#2EFE2E", "#01DF01", "#01DF01"
+        sqlquery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, SUM(sum) FROM rain GROUP BY Year, Month"
+        units = rain
 """
+
 import datetime
 import time
-import syslog
-from operator import itemgetter, attrgetter
+from operator import itemgetter
 
-import weewx.archive
-
-from weewx.filegenerator import FileGenerator
+from weewx.cheetahgenerator import SearchList
 from weewx.stats import TimeSpanStats
 from weeutil.weeutil import TimeSpan
-from weeutil.weeutil import genMonthSpans
 from weewx.units import conversionDict
 
-class MyFileGenerator(FileGenerator):                            
+class MyXSearch(SearchList):                                           
+    
+    def __init__(self, generator):                                     
+        SearchList.__init__(self, generator)
+        self.table_dict = generator.skin_dict['TableGenerator']
 
-    def getToDateSearchList(self, archivedb, statsdb, valid_timespan): 
-        """Returns a search list with two additions. Overrides the
-        default "getToDateSearchList" method.
+    def get_extension(self, valid_timespan, archivedb, statsdb):       
+        """Returns a search list extension with two additions.
         
         Parameters:
+          valid_timespan: An instance of weeutil.weeutil.TimeSpan. This will
+                          hold the start and stop times of the domain of 
+                          valid times.
+
           archivedb: An instance of weewx.archive.Archive
           
           statsdb:   An instance of weewx.stats.StatsDb
-          
-          valid_timespan: An instance of weeutil.weeutil.TimeSpan. This will
-                          hold the start and stop times of the domain of 
-                          valid times."""
+        """
 
         # First, get a TimeSpanStats object for all time. This one is easy
         # because the object valid_timespan already holds all valid times to be
         # used in the report.
         all_stats = TimeSpanStats(valid_timespan,
                                   statsdb,
-                                  formatter=self.formatter,
-                                  converter=self.converter)         
+                                  formatter=self.generator.formatter,
+                                  converter=self.generator.converter)  
+
+        # Now create a small dictionary with keys 'alltime' and 'seven_day':
+        search_list_extension = {'alltime' : all_stats}             
+
+        for table in self.table_dict:
+            search_list_extension[table + '_table'] = self.statsHTMLTable(table, self.table_dict[table]['sqlquery'], self.table_dict[table]['units'], statsdb)
         
-        # Now get a TimeSpanStats object for the last seven days. This one we
-        # will have to calculate. First, calculate the time at midnight, seven
-        # days ago. The variable week_dt will be an instance of datetime.date.
-        week_dt = datetime.date.fromtimestamp(valid_timespan.stop) - datetime.timedelta(weeks=1)   
-        # Now convert it to unix epoch time:
-        week_ts = time.mktime(week_dt.timetuple())                  
-        # Now form a TimeSpanStats object, using the time span we just calculated:
-        seven_day_stats = TimeSpanStats(TimeSpan(week_ts, valid_timespan.stop),
-                                        statsdb,
-                                        formatter=self.formatter,
-                                        converter=self.converter)  
+        return search_list_extension
 
-        #
-        # High, low and average temperatures for every month
-        #
-        self.bgColours = {'temperature': [(-50, -10,  "#2E64FE"), 
-                                          (-10, 0,    "#81BEF7"),
-                                          (0, 10,     "#81F79F"),
-                                          (10, 20,    "#58FA58"),
-                                          (20, 30,    "#F3F781"),
-                                          (30, 60,    "#F78181")], 
-                          'rain':        [(0, 25,     "#E0F8E0"),
-                                          (25, 50,    "#A9F5A9"),
-                                          (50, 75,   "#58FA58"),
-                                          (75, 100,  "#2EFE2E"),
-                                          (100 ,150,  "#01DF01"),
-                                          (150, 1000, "#01DF01")] }
-
-        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MIN(min) FROM outTemp GROUP BY Year, Month"
-        html_min = self.statsHTMLTable(sqlQuery, 'temperature', statsdb)
-
-        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, MAX(max) FROM outTemp GROUP BY Year, Month"
-        html_max = self.statsHTMLTable(sqlQuery, 'temperature', statsdb)
-
-        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, SUM(sum) FROM rain GROUP BY Year, Month"
-        html_rain = self.statsHTMLTable(sqlQuery, 'rain', statsdb)
-
-        # Get the superclass's search list:     
-        search_list = FileGenerator.getToDateSearchList(self, archivedb, statsdb, valid_timespan) 
-
-        # Now tack on my two additions as a small dictionary with keys 'alltime' and 'seven_day':
-        search_list += [ {'alltime'        : all_stats,
-                          'seven_day'      : seven_day_stats,
-                          'min_temp_table' : html_min,
-                          'max_temp_table' : html_max,
-                          'rain_table'     : html_rain} ]
-
-        return search_list
-
-    def colorCell(self, value, units):
+    def colorCell(self, value, units, bgColours):
         cellText = "<td"
 
         # Temperature needs converting from F to C
@@ -116,9 +126,11 @@ class MyFileGenerator(FileGenerator):
             value = conversionDict['degree_F']['degree_C'](value)
         elif 'rain' == units:
             value = conversionDict['inch']['mm'](value)
+        elif 'pressure' == units:
+            value = conversionDict['inHg']['mbar'](value)
 
-        for c in self.bgColours[units]:
-            if (value >= c[0]) and (value <= c[1]):
+        for c in bgColours:
+            if (value >= int(c[0])) and (value <= int(c[1])):
                 cellText += " bgcolor = \"%s\"" % c[2]
 
         if 'temperature' == units:
@@ -128,15 +140,22 @@ class MyFileGenerator(FileGenerator):
 
         return cellText
 
-
-    def statsHTMLTable(self, sqlQuery, units, statsdb):
+    def statsHTMLTable(self, table, sqlQuery, units, statsdb):
 
         recordListRaw = []
 
-        for row in statsdb.genSql(sqlQuery):
-            record = (int(row[0]), int(row[1]), row[2])
-            recordListRaw.append(record)
-        
+        bgColours = zip(self.table_dict[table]['minvalues'], self.table_dict[table]['maxvalues'], self.table_dict[table]['colours'])
+
+        cursor = statsdb.connection.cursor()
+        try:
+            for row in cursor.execute(sqlQuery):
+                record = (int(row[0]), int(row[1]), row[2])
+                recordListRaw.append(record)
+        finally:
+            cursor.close()
+
+        #for row in statsdb.genSql(sqlQuery):
+
         recordListSorted = sorted(recordListRaw, key=itemgetter(0, 1))
 
         year = month = None
@@ -161,6 +180,7 @@ class MyFileGenerator(FileGenerator):
     </thead>
     <tbody>
 """
+        htmlLine = None
 
         for record in recordListSorted:
             if record[0] != year:              
@@ -186,7 +206,7 @@ class MyFileGenerator(FileGenerator):
                 htmlLine += (' ' * 12) + "<td>-</td>\n"
 
             month = record[1]
-            htmlLine += (' ' * 12) + self.colorCell(record[2], units)
+            htmlLine += (' ' * 12) + self.colorCell(record[2], units, bgColours)
 
         # Any padding required?
         for i in range(12 - month):
@@ -199,23 +219,3 @@ class MyFileGenerator(FileGenerator):
         htmlText += htmlLine
 
         return htmlText
-
-#
-# What is this...?
-#
-    def notNeeded(self):
-        f = open("/tmp/search_list", 'w')
-        f.write ("%s\n" % search_list)
-
-        yearNow = 0
-        monthNow = 0
-
-        for span in genMonthSpans(valid_timespan.start, valid_timespan.stop):          
-            startOfMonth = datetime.datetime.fromtimestamp(span[0])
-
-            if yearNow <> startOfMonth.year:
-                print "New year: ", startOfMonth.year
-                yearNow = startOfMonth.year
-            
-            print startOfMonth.month
-

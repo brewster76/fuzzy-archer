@@ -10,19 +10,15 @@ import math
 import time
 
 # To read NO2 levels from DERFA website
-import urllib
 import urllib2
 import syslog
 
-import weedb
 import weeutil.weeutil
 import weewx.abstractstation
 import weewx.wxformulas
 
-def loader(config_dict, engine):         
-    station = AirPi(**config_dict['AirPi'])
-
-    return station
+def loader(config_dict, engine):
+    return AirPi(**config_dict['AirPi'])
            
 class AirPi(weewx.abstractstation.AbstractStation):
     """AirPi weather station...
@@ -70,7 +66,7 @@ class AirPi(weewx.abstractstation.AbstractStation):
             for obs_type in self.observations:
                 _packet[obs_type] = self.observations[obs_type].value_at(avg_time)
     
-            if (time.time() > self.nextNO2time):
+            if time.time() > self.nextNO2time:
                 # Read another NO2 level
                newNO2Level = readNO2Level()
 
@@ -94,13 +90,13 @@ def readNO2Level():
     """Reads NO2 levels from DERFA website"""
 
     try:
-        aResp = urllib2.urlopen("http://uk-air.defra.gov.uk/latest/currentlevels");
+        aResp = urllib2.urlopen("http://uk-air.defra.gov.uk/latest/currentlevels")
     except:
         syslog.syslog(syslog.LOG_INFO, "readNO2Level - failed at urlopen()")
         return None
 
     try:
-        web_pg = aResp.read();
+        web_pg = aResp.read()
     except:
         syslog.syslog(syslog.LOG_INFO, "readNO2Level - failed at aResp.readn()")
         return None
@@ -184,7 +180,8 @@ class Observation(object):
 
 
 # convert ADC values 
-    def get_light_level(self):
+    @staticmethod
+    def get_light_level():
 #result = self.adc.readADC(self.adcPin) + 1
         result = 72
 
@@ -192,7 +189,8 @@ class Observation(object):
         rs = ((3.3 - vout) / vout) * 5.6
         return abs(rs)
 
-    def get_uv_level(self):
+    @staticmethod
+    def get_uv_level():
 #result = self.adc.readADC(self.adcPin)
         result = 72
 
