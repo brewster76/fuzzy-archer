@@ -1,0 +1,204 @@
+#errorCatcher Echo
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>The weather, in Royston</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Nick" >
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/lightbox.css" rel="stylesheet">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="assets/ico/favicon.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="http://en.wikipedia.org/wiki/Royston,_Hertfordshire">$station.location</a>   
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              Last Updated: $current.dateTime
+            </p>
+            <ul class="nav">
+              <li><a href="index.html">The Weather</a></li>
+              <li><a href="stats.html">Stats</a></li>
+              <li><a href="history.html">History</a></li>
+              <li><a href="news.html">News</a></li>
+              <li class="active"><a href="#">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fixed"> <!--Main page container -->  
+      <div class="row">
+        <div class="span4">
+        
+          <!-- <ul class="nav nav-pills">
+            <li class="active"><a href="#">Now</a></li>
+          </ul> -->          
+          <ul class="thumbnails">
+            <li class="span2">
+              <img src="TemperatureGauge.png" alt="">
+              <h5 align="center">Outside temperature</h5>
+            </li>
+            <li class="span2">
+              <img src="PressureGauge.png" alt="">
+              <h5 align="center">Barometric pressure</h5>
+            </li>
+            <li class="span2">
+              <img src="WindDirectionGauge.png" alt="">
+              <h5 align="center">Wind direction</h5>
+            </li>
+            <li class="span2">
+                <img src="HumidityGauge.png" alt="">
+              <h5 align="center">Outside humidity</h5>
+            </li>
+
+            <li class="span2">
+              <img src="WindSpeedGauge.png" alt="">
+              <h5 align="center">Wind speed</h5>
+            </li>
+            <li class="span2">
+                <img src="WindGustGauge.png" alt="">
+              <h5 align="center">Gust speed</h5>
+            </li>
+          </ul>    
+          
+          <!-- <div class="well"> -->
+            <table class="table table-hover">
+              <tbody>
+	              <tr>
+	                <td>Latitude:</td>
+	                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Longitude:</td>
+	                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Altitude:</td>
+	                <td>$station.altitude</td>
+	              </tr>
+	              <tr>
+	                <td>Station uptime:</td>
+	                <td>$station.uptime</td>
+	              </tr>
+	              <tr>
+	                <td>Server uptime:</td>
+	                <td>$station.os_uptime</td>
+	              </tr>
+	            </tbody>
+            </table>
+
+<!--           </div> -->
+
+          
+        </div><!--/span-->
+        <div class="span8">
+          <h2>How it's done</h2>
+<p>This website summarises weather data logged by a Davis Vantage Pro weather station which is downloaded to a
+<a href="http://www.raspberrypi.org/">Raspberry Pi</a> credit card sized computer. This is an awesome and very cheap piece 
+of hardware and no household should be without one!</p>
+
+<p>Communication between the Pi and the weather station is handled by the very polished and highly customisable <A href="http://weewx.com">Weewx</a>
+software (version $station.version). Weewx downloads a data record from the weatherstation every 5 minutes and stores it in a database on the Pi. 
+It also creates all the graphs and webpages and uploads these to the website every 5 minutes, and also to 
+<a href="http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID=IHERTFOR10">Weather Underground</a>.</p>
+
+<p>This website uses a skin I wrote which uses <a href="http://twitter.github.io/bootstrap/">Bootstrap</a> to deal with most
+of the layout and presentation. The gauges and the history tables are generated by some Python scripts I wrote which hook 
+into the Weewx package.</p>
+
+<p>Code for the gauge generator python script:
+<a href="https://github.com/brewster76/fuzzy-archer/blob/master/bin/user/nicksengines.py">nicksengines.py</a>
+</p>
+
+<p>Code for the history table generator script:
+<a href="https://github.com/brewster76/fuzzy-archer/blob/master/bin/user/generator.py">generator.py</a>
+</p>
+
+<p>Code for the Weewx skin
+<a href="bootstrapskin.tar.gz">bootstrapskin.tar.gz</a> (Unpack this into the top level weewx directory.)
+</p>
+
+<p>Check out this weather station in Spain which also uses these customizations: 
+<a href="http://www.algarra.org/meteo/index.html">www.algarra.org/meteo.</a></p>
+
+#if $varExists('forecast')
+<p>forecast.zambretti = <code>$forecast.zambretti</code></p>
+#end if
+
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Ampelmann 2013</p>
+      </footer>
+
+    </div><!--/.fluid-container-->      
+   
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery-1.7.2.min.js"></script>
+    <script src="assets/js/lightbox.js"></script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44824318-1', 'dajda.net');
+  ga('send', 'pageview');
+</script>
+
+  </body>
+</html>
+<span style="font-size: smaller;"></span>

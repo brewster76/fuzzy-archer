@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>The weather, in Royston</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Nick" >
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/lightbox.css" rel="stylesheet">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="assets/ico/favicon.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="http://en.wikipedia.org/wiki/Royston,_Hertfordshire">$station.location</a>  
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              Last Updated: $current.dateTime
+            </p>
+            <ul class="nav">
+              <li><a href="index.html">The Weather</a></li>
+              <li><a href="stats.html">Stats</a></li>
+              <li><a href="history.html">History</a></li>
+              <li class="active"><a href="#">News</a></li>
+              <li><a href="about.html">About</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fixed"> <!--Main page container -->  
+      <div class="row">
+        <div class="span4">
+        
+          <!-- <ul class="nav nav-pills">
+            <li class="active"><a href="#">Now</a></li>
+          </ul> -->          
+          <ul class="thumbnails">
+            <li class="span2">
+              <img src="TemperatureGauge.png" alt="">
+              <h5 align="center">Outside temperature</h5>
+            </li>
+            <li class="span2">
+              <img src="PressureGauge.png" alt="">
+              <h5 align="center">Barometric pressure</h5>
+            </li>
+            <li class="span2">
+              <img src="WindDirectionGauge.png" alt="">
+              <h5 align="center">Wind direction</h5>
+            </li>
+            <li class="span2">
+                <img src="HumidityGauge.png" alt="">
+              <h5 align="center">Outside humidity</h5>
+            </li>
+
+            <li class="span2">
+              <img src="WindSpeedGauge.png" alt="">
+              <h5 align="center">Wind speed</h5>
+            </li>
+            <li class="span2">
+                <img src="WindGustGauge.png" alt="">
+              <h5 align="center">Gust speed</h5>
+            </li>
+          </ul>    
+          
+          <!-- <div class="well"> -->
+            <table class="table table-hover">
+              <tbody>
+	              <tr>
+	                <td>Latitude:</td>
+	                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Longitude:</td>
+	                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Altitude:</td>
+	                <td>$station.altitude</td>
+	              </tr>
+	              <tr>
+	                <td>Station uptime:</td>
+	                <td>$station.uptime</td>
+	              </tr>
+	              <tr>
+	                <td>Server uptime:</td>
+	                <td>$station.os_uptime</td>
+	              </tr>
+	            </tbody>
+            </table>
+            
+<!--           </div> -->
+
+          
+        </div><!--/span-->
+        <div class="span8">
+
+<!-- 
+---
+--- Note to Richie:
+--- 
+--- To add a new blog entry, insert it below using the format:
+--- 
+--- <h3>Title (leaving a space at the end) <small>Richie, whenever I published this</small></h3>
+--- 
+--- ... Body text goes here. Enclose every paragraph in a set of <p> ... </p> tags.
+----
+-->
+<h3>Toasters don't like Pi's <small>Richie, November 17th, 2013</small></h3>
+<p>My toaster took a dislike to something and blew a fuse - trouble is my Raspberry Pi is on the same circuit and lost power. Anyone know a good UPS for a Pi?</p> 
+
+<h3>We've made the local news <small>Richie, November 3rd, 2013</small></h3>
+<p>The highest windspeed measured by the weather station this year has been cited by the local press. It was 39 mph which hit Royston on October 28th at 7:25 am.</p> 
+
+<p>Check it out on the Royston Crow website:
+<a href="http://www.royston-crow.co.uk/news/storm_st_jude_sees_royston_hit_by_winds_of_39mph_1_2941631">Storm St Jude sees Royston hit by winds of 39mph.</a></p>
+
+<p>And on the Weekly News site:
+<a href="http://www.cambridge-news.co.uk/Royston/St-Jude-storm-update-Travel-chaos-fallen-trees-and-serious-injuries-in-Melbourn-20131030144402.htm">
+St Jude storm update: Travel chaos, fallen trees and serious injuries in Melbourn.</a></p>
+
+<!-- Next blog post -->
+<h3>Weather Underground meet-up <small>Richie, October 15th, 2013</small></h3>
+<p>Yours truly was lucky enough to be invited to the first UK meet-up run by
+<a href="http://www.wunderground.com/">Weather Underground</a> last week.</p>
+<p>Having been bought by <a href="http://uk.weather.com/">The Weather Channel,</a>, 
+they were eager to meet some weather enthusiasts who contribute readings to their website to hear their views. 
+The meeting in London was the first stop in their trip, followed by Germany where they also have a large number of contributors. 
+They spoke of the mobile apps they are developing and the overhaul of their website</p> 
+
+<p>There was great interest from weather station owners in the use of the 
+<a href="http://www.raspberrypi.org/">Raspberry Pi</a> and 
+<a href="www.weewx.com">Weewx</a> to publish weather data.</p>
+
+<p>Check out the goodies they gave us.</p>
+
+<ul class="thumbnails">
+  <li class="span2"><img src="Rich/WUTee-1024.jpg" alt=""></li>
+  <li class="span2"><img src="Rich/WUMug-1024.jpg" alt=""></li>
+  <li class="span2"><img src="Rich/WUBrolly-1024.jpg" alt=""></li>
+</ul>
+
+<!-- End of blog posts -->
+
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Ampelmann 2013</p>
+      </footer>
+
+    </div><!--/.fluid-container-->      
+   
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery-1.7.2.min.js"></script>
+     <script src="assets/js/lightbox.js"></script>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-44824318-1', 'dajda.net');
+  ga('send', 'pageview');
+</script>
+
+  </body>
+</html>
+<span style="font-size: smaller;"></span>
+
