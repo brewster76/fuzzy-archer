@@ -134,7 +134,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Gauge generator code run (yippee!)")
 
         # Load up config info from skin.conf file
-
         archivedb = self._getArchive(self.skin_dict['archive_database'])
 
         rec = self.getRecord(archivedb, archivedb.lastGoodStamp())
@@ -143,6 +142,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
             # Draw a gauge for everything that has a config entry
             for gauge in self.gauge_dict:
+
                 # Is it actually a gauge?             
                 for gaugeinfo in self.gauges:
                     if gaugeinfo['name'] == gauge:
@@ -177,10 +177,9 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
 
         archivedb = self._getArchive(self.skin_dict['archive_database'])
-        (data_time, data_value) = archivedb.getSqlVectors('windDir',
-                                                          archivedb.lastGoodStamp() - self.gauge_dict[gaugename].as_int(
-                                                              'history') * 60,
-                                                          archivedb.lastGoodStamp(), 300, 'avg')
+        (data_time, data_value) = archivedb.getSqlVectors('windDir', 
+            archivedb.lastGoodStamp() - self.gauge_dict[gaugename].as_int('history') * 60,
+            archivedb.lastGoodStamp(), 300, 'avg')
 
         for rec in data_value:
             syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s" % rec)
@@ -196,7 +195,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         #
         buckets = [0.0] * numBins
 
-        # 22 July 2013
         # 
         # Now looks up historic data using weewx helper functions... Thanks Tom! 
         #        
@@ -208,25 +206,33 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         windSpeedNow = None
 
         for row in archive.genSql("SELECT windDir, windSpeed FROM archive ORDER BY dateTime DESC LIMIT %d" % numPoints):
-            # This line is occasionally crashing out with error: 
-            # TypeError: float() argument must be a string or a number
             if row[0] is not None:
-                windDir = float(row[0])
-                if (windDir < 0) or (windDir > 360):
-                    syslog.syslog(syslog.LOG_INFO, "drawFunkyWindGauge: %f should be in the range 0-360 degrees",
-                                  windDir)
+                try:
+                    windDir = float(row[0])
+                except:
+                    syslog.syslog(syslog.LOG_INFO, "drawFunkyWindGauge: Cannot convert wind direction into a float value")
                 else:
-                    buckets[int(windDir * numBins / 360)] += 1
+
+                    if (windDir < 0) or (windDir > 360):
+                        syslog.syslog(syslog.LOG_INFO, "drawFunkyWindGauge: %f should be in the range 0-360 degrees",
+                            windDir)
+                    else:
+                        buckets[int(windDir * numBins / 360)] += 1
+
+                        if windDirNow is None:
+                            windDirNow = windDir
 
             if windSpeedNow is None:
                 if row[1] is not None:
-                    windSpeedNow = float(row[1])
+                    try:
+                        windSpeedNow = float(row[1])
+                    except:
+                        syslog.syslog(syslog.LOG_INFO, "drawFunkyWindGauge; Cannot convert wind speed into a float")
 
-            if windDirNow is None:
-                windDirNow = windDir
-
-        maxval = maxvalue(buckets)
-        buckets = [i / maxval for i in buckets]
+        # If we haven't been able to find a windSpeed then there must be no wind...
+        if windSpeedNow is not None:
+            maxval = maxvalue(buckets)
+            buckets = [i / maxval for i in buckets]
 
         #
         # Draw the gauge
@@ -246,12 +252,15 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         # Background
         angle = 0.0
         angleStep = 360.0 / numBins
-        for i in range(0, numBins, 1):
-            fillColor = (self._calcColor(buckets[i], 0), self._calcColor(buckets[i], 1), self._calcColor(buckets[i], 2))
+
+        # Plot shaded pie slices if there is sufficient data
+        if windSpeedNow is not None:
+            for i in range(0, numBins, 1):
+                fillColor = (self._calcColor(buckets[i], 0), self._calcColor(buckets[i], 1), self._calcColor(buckets[i], 2))
            
-            draw.pieslice((int(imageorigin[0] - radius), int(imageorigin[1] - radius), int(imageorigin[0] + radius),
-                           int(imageorigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
-            angle += angleStep
+                draw.pieslice((int(imageorigin[0] - radius), int(imageorigin[1] - radius), int(imageorigin[0] + radius),
+                               int(imageorigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
+                angle += angleStep
 
         # Compass points
         labels = ['N', 'E', 'S', 'W']
@@ -279,19 +288,20 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             draw.line((startPoint, endPoint), fill=self.dialColor)
 
         # The needle
-        angle = math.radians(windDirNow)
-        endPoint = (imageorigin[0] - radius * math.sin(angle) * 0.7, imageorigin[1] + radius * math.cos(angle) * 0.7)
-        leftPoint = (imageorigin[0] - radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
-                     imageorigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
-        rightPoint = (imageorigin[0] - radius * math.sin(angle + math.pi * 7 / 8) * 0.2,
-                      imageorigin[1] + radius * math.cos(angle + math.pi * 7 / 8) * 0.2)
-        midPoint = (imageorigin[0] - radius * math.sin(angle + math.pi) * 0.1,
-                    imageorigin[1] + radius * math.cos(angle + math.pi) * 0.1)
+        if windSpeedNow is not None:
+            angle = math.radians(windDirNow)
+            endPoint = (imageorigin[0] - radius * math.sin(angle) * 0.7, imageorigin[1] + radius * math.cos(angle) * 0.7)
+            leftPoint = (imageorigin[0] - radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
+                         imageorigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
+            rightPoint = (imageorigin[0] - radius * math.sin(angle + math.pi * 7 / 8) * 0.2,
+                          imageorigin[1] + radius * math.cos(angle + math.pi * 7 / 8) * 0.2)
+            midPoint = (imageorigin[0] - radius * math.sin(angle + math.pi) * 0.1,
+                        imageorigin[1] + radius * math.cos(angle + math.pi) * 0.1)
 
-        draw.line((leftPoint, endPoint), fill=self.needleColor)
-        draw.line((rightPoint, endPoint), fill=self.needleColor)
-        draw.line((leftPoint, midPoint), fill=self.needleColor)
-        draw.line((rightPoint, midPoint), fill=self.needleColor)
+            draw.line((leftPoint, endPoint), fill=self.needleColor)
+            draw.line((rightPoint, endPoint), fill=self.needleColor)
+            draw.line((leftPoint, midPoint), fill=self.needleColor)
+            draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Outline
         draw.ellipse(((imageorigin[0] - radius, imageorigin[1] - radius),
@@ -299,7 +309,12 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Digital value text
         degreeSign = u'\N{DEGREE SIGN}'
-        digitalText = "%d" % windDirNow + degreeSign
+
+        if windSpeedNow is not None:
+            digitalText = "%d" % windDirNow + degreeSign
+        else:
+            digitalText = "No wind"
+
         stringSize = bigSansFont.getsize(digitalText)
         draw.text((imageorigin[0] - stringSize[0] / 2, imageorigin[1] + radius * 0.4 - stringSize[1] / 2), digitalText,
                   font=bigSansFont, fill=self.textColor)
