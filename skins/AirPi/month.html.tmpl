@@ -1,0 +1,215 @@
+#errorCatcher Echo
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>The weather, in Royston</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Nick" >
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/lightbox.css" rel="stylesheet">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="assets/ico/favicon.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="http://en.wikipedia.org/wiki/Royston,_Hertfordshire">$station.location</a>   
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              Last Updated: $current.dateTime
+            </p>
+            <ul class="nav">
+              <li class="active"><a href="#">The Weather</a></li>
+              <li><a href="stats.html">Stats</a></li>
+              <li><a href="about.html">About</a></li>
+              <li><a href="download.html">Download Data</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fixed"> <!--Main page container -->  
+      <div class="row">
+        <div class="span4">
+        
+          <!-- <ul class="nav nav-pills">
+            <li class="active"><a href="#">Now</a></li>
+          </ul> -->          
+          <ul class="thumbnails">
+            <li class="span2">
+              <img src="TemperatureGauge.png" alt="">
+              <h5 align="center">Outside temperature</h5>
+            </li>
+            <li class="span2">
+              <img src="PressureGauge.png" alt="">
+              <h5 align="center">Barometric pressure</h5>
+            </li>
+            <li class="span2">
+              <img src="WindDirectionGauge.png" alt="">
+              <h5 align="center">Wind direction</h5>
+            </li>
+            <li class="span2">
+                <img src="HumidityGauge.png" alt="">
+              <h5 align="center">Outside humidity</h5>
+            </li>
+
+            <li class="span2">
+              <img src="WindSpeedGauge.png" alt="">
+              <h5 align="center">Wind speed</h5>
+            </li>
+            <li class="span2">
+                <img src="WindGustGauge.png" alt="">
+              <h5 align="center">Gust speed</h5>
+            </li>
+          </ul>    
+          
+          <!-- <div class="well"> -->
+            <table class="table table-hover">
+              <tbody>
+	              <tr>
+	                <td>Latitude:</td>
+	                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Longitude:</td>
+	                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Altitude:</td>
+	                <td>$station.altitude</td>
+	              </tr>
+	              <tr>
+	                <td>Station uptime:</td>
+	                <td>$station.uptime</td>
+	              </tr>
+	              <tr>
+	                <td>Server uptime:</td>
+	                <td>$station.os_uptime</td>
+	              </tr>
+	            </tbody>
+            </table>
+
+<!--           </div> -->
+
+          
+        </div><!--/span-->
+        <div class="span8">
+          <ul class="nav nav-pills">
+            <li><a href="index.html">Last 24 hours</a></li>
+            <li><a href="week.html">Last week</a></li>
+            <li class="active"><a href="#">Last month</a></li>
+            <li><a href="year.html">Last year</a></li>
+          </ul>
+
+          <div class="row">
+          
+            <div class="span4">
+              <a href="big_images/monthtempchill.png" rel="lightbox" title="Temperature and Wind Chill">
+                <img src="monthtempchill.png" alt="">
+              </a>
+            </div>
+            
+            <div class="span4">
+              <a href="big_images/monthbarometer.png" rel="lightbox" title="Barometric Pressure"><img src="monthbarometer.png" alt=""></a>              
+            </div>
+            
+          </div><!--/row-->
+	          
+          <br>
+          <div class="row">
+            <div class="span4">
+              <a href="big_images/monthrain.png" rel="lightbox" title="Rainfall"><img src="monthrain.png" alt=""></a>              
+            </div>
+            
+            <div class="span4">
+              <a href="big_images/monthhumidity.png" rel="lightbox" title="Outside Humidity"><img src="monthhumidity.png" alt=""></a>
+            </div>
+            
+          </div><!--/row-->
+          <br>
+          <div class="row">
+            <div class="span4">
+              <a href="big_images/monthwind.png" rel="lightbox" title=""Wind Speed"><img src="monthwind.png" alt=""></a>
+            </div>
+				
+            <div class="span4">
+              <a href="big_images/monthwinddir.png" rel="lightbox" title="Wind Direction"><img src="monthwinddir.png" alt=""></a>     
+            </div>
+	         
+          </div><!--/row-->
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Ampelmann 2013</p>
+      </footer>
+
+    </div><!--/.fluid-container-->      
+   
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery-1.7.2.min.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
+    <script src="assets/js/lightbox.js"></script>
+
+  </body>
+</html>
+<span style="font-size: smaller;"></span>
