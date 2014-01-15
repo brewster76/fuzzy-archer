@@ -24,16 +24,25 @@ Directions for use:
 [GaugeGenerator]
     image_width = 180
     image_height = 180
-
-    # Save gauges in the default web directory
     GAUGE_ROOT = public_html/
+
+    # Colors...
+    #
+    # Format is 0xBBGGRR, so a pinky-purple color (r=FF, g=00, B=99) which would have
+    # an HTML tag of #FF0099 is expressed as 0x9900FF
+    fill_color = 0x4242b4
+    background_color = 0xffffff
+    label_color = 0x000000
+    dial_color = 0x707070
+    needle_color = 0xb48242
+    text_color = 0xb48242
 
     [[Temperature]]
     minvalue = -20
     maxvalue = 40
     majorstep = 10
     minorstep = 1
-    labelfontsize = 15        
+    labelfontsize = 15
     history = 24
     bins = 120
 
@@ -42,7 +51,7 @@ Directions for use:
     maxvalue = 1050
     majorstep = 20
     minorstep = 10
-    labelfontsize = 12      
+    labelfontsize = 12
 
     [[Humidity]]
     minvalue = 0
@@ -67,7 +76,8 @@ Directions for use:
 
     [[WindDirection]]
     labelfontsize = 12
-# Hours of historic data to use for gauge background shading
+
+    # hours of data to use for gauge background shading
     history = 3
 """
 
