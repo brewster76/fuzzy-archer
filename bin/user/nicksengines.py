@@ -76,8 +76,9 @@ Directions for use:
 
     [[WindDirection]]
     labelfontsize = 12
+    invert = False
 
-    # hours of data to use for gauge background shading
+    # hours of data to use for windgauge background shading
     history = 3
 """
 
@@ -185,6 +186,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                       "GaugeGenerator: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
 
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
+        invertGauge = self.gauge_dict[gaugename].get('invert', False)
 
         archivedb = self._getArchive(self.skin_dict['archive_database'])
         (data_time, data_value) = archivedb.getSqlVectors('windDir', 
@@ -299,7 +301,14 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # The needle
         if windSpeedNow is not None:
-            angle = math.radians(windDirNow)
+            if invertGauge:
+                if windDirNow > 180:
+                    angle += math.radians(windDirNow - 180)
+                else:
+                    angle += math.radians(windDirNow + 180)
+            else:
+                angle = math.radians(windDirNow)
+
             endPoint = (imageorigin[0] - radius * math.sin(angle) * 0.7, imageorigin[1] + radius * math.cos(angle) * 0.7)
             leftPoint = (imageorigin[0] - radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
                          imageorigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
