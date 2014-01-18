@@ -191,8 +191,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
         invertGauge = self.gauge_dict[gaugename].get('invert', False)
 
-        print "Invert = %s" % invertGauge
-
         archivedb = self._getArchive(self.skin_dict['archive_database'])
         (data_time, data_value) = archivedb.getSqlVectors('windDir', 
             archivedb.lastGoodStamp() - self.gauge_dict[gaugename].as_int('history') * 60,
@@ -250,12 +248,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         if windSpeedNow is not None:
             maxval = maxvalue(buckets)
             buckets = [i / maxval for i in buckets]
-
-        x = 0
-        for i in buckets:
-            print "%d: %f" % (x, i)
-            x += 1
-
 
         #
         # Draw the gauge
