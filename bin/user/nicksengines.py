@@ -78,11 +78,14 @@ Directions for use:
     labelfontsize = 12
 
     # By default, needle points towards direction of wind source. Use invert to point towards wind destination
-    # Comment out unless required.
-    #invert = yes
+    # Can be True or False
+    invert = False
+
+    # Number of groups that wind direction history is split into
+    bins = 32
 
     # hours of data to use for windgauge background shading
-    history = 3
+    history = 12
 """
 
 import time
@@ -91,6 +94,7 @@ import math
 import Image, ImageDraw, ImageFont
 import os.path
 
+import weeutil.weeutil
 import weewx.archive
 import weewx.reportengine
 import weeplot.utilities
@@ -189,7 +193,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                       "GaugeGenerator: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
 
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
-        invertGauge = self.gauge_dict[gaugename].get('invert', False)
+        invertGauge = weeutil.weeutil.tobool(self.gauge_dict[gaugename].get('invert', False))
 
         archivedb = self._getArchive(self.skin_dict['archive_database'])
         (data_time, data_value) = archivedb.getSqlVectors('windDir', 
@@ -200,7 +204,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s" % rec)
 
         # Number of bins to count wind history into
-        numBins = 16
+        numBins = int(self.gauge_dict[gaugename].get('bins', 16))
 
         # One data point recorded every 5 mins for 'history' number of hours
         numPoints = self.gauge_dict[gaugename].as_int('history') * 60 / 5
