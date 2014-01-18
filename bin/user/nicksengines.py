@@ -76,7 +76,10 @@ Directions for use:
 
     [[WindDirection]]
     labelfontsize = 12
-    invert = False
+
+    # By default, needle points towards direction of wind source. Use invert to point towards wind destination
+    # Comment out unless required.
+    #invert = yes
 
     # hours of data to use for windgauge background shading
     history = 3
@@ -188,6 +191,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
         invertGauge = self.gauge_dict[gaugename].get('invert', False)
 
+        print "Invert = %s" % invertGauge
+
         archivedb = self._getArchive(self.skin_dict['archive_database'])
         (data_time, data_value) = archivedb.getSqlVectors('windDir', 
             archivedb.lastGoodStamp() - self.gauge_dict[gaugename].as_int('history') * 60,
@@ -246,6 +251,12 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             maxval = maxvalue(buckets)
             buckets = [i / maxval for i in buckets]
 
+        x = 0
+        for i in buckets:
+            print "%d: %f" % (x, i)
+            x += 1
+
+
         #
         # Draw the gauge
         #
@@ -261,12 +272,14 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         sansFont = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", labelFontSize)
         bigSansFont = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 20)
 
-        # Background
-        angle = 0.0
-        angleStep = 360.0 / numBins
-
         # Plot shaded pie slices if there is sufficient data
         if windSpeedNow is not None:
+            angleStep = 360.0 / numBins
+            angle = 0.0
+
+            if not invertGauge:
+                angle = 180.0
+
             for i in range(0, numBins, 1):
                 fillColor = (self._calcColor(buckets[i], 0), self._calcColor(buckets[i], 1), self._calcColor(buckets[i], 2))
            
@@ -302,13 +315,11 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         # The needle
         if windSpeedNow is not None:
             if invertGauge:
-                if windDirNow > 180:
-                    angle += math.radians(windDirNow - 180)
-                else:
-                    angle += math.radians(windDirNow + 180)
-            else:
                 angle = math.radians(windDirNow)
+            else:
+                angle = math.radians(windDirNow + 180)
 
+            # As designed orignally, this draws the needle pointing towards wind destination, not source (i.e. inverted)
             endPoint = (imageorigin[0] - radius * math.sin(angle) * 0.7, imageorigin[1] + radius * math.cos(angle) * 0.7)
             leftPoint = (imageorigin[0] - radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
                          imageorigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
