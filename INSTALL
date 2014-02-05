@@ -1,0 +1,76 @@
+How to install
+============
+
+Before we begin...
+ 1) This has been tested on weewx version 2.5.0, on Ubuntu linux 12.04.
+ 2) only sqlite databases currently supported, not mysql.
+ 3) Only metric units currently supported.
+
+Step 1 - Download from github:
+==============================
+
+   git clone git://github.com/brewster76/fuzzy-archer
+
+Move gaugeengine.py and historyengine,py into the bin/user directory.
+Move the Bootstrap and Images directory into the skins directory.
+
+Step 2 - Add the skins to weewx.conf
+====================================
+
+So the [StdReport] section will need to look something like this:
+
+    [StdReport]
+        # This section specifies what reports, using which skins, to generate.
+
+        # Where the skins reside, relative to WEEWX_ROOT:
+        SKIN_ROOT = skins
+
+        # Where the generated reports should go, relative to WEEWX_ROOT:
+        HTML_ROOT = public_html
+
+        [[SmallImages]]
+            # These are the images used on the front page of the website.
+            # Dimensions are set in the Images/skin.conf file
+            #
+            skin = Images
+            HTML_ROOT = public_html/
+
+        [[BigImages]]
+            # These images are used when a small web page image is clicked on.
+            # So the skin.conf image_width and image_height are overridden here.
+            #
+            skin = Images
+            HTML_ROOT = public_html/big_images/
+            [[[ImageGenerator]]]
+                image_width = 800
+                image_height = 500
+
+        [[HTMLPages]]
+            # This generates the webpages themselves.
+            #
+            skin = Bootstrap
+            HTML_ROOT = public_html/
+
+        [[FTP]]
+            skin = Ftp
+
+        [[RSYNC]]
+            skin = Rsync
+
+Step 3 - Add Bootstrap support files to your website
+====================================================
+
+Add these files to weewx/public_html/assets
+
+    assets/css:
+    bootstrap.css  bootstrap.min.css  bootstrap-responsive.css  bootstrap-responsive.min.css  lightbox.css
+
+    assets/img:
+    close.png  glyphicons-halflings.png  glyphicons-halflings-white.png  loading.gif  next.png  prev.png
+
+    assets/js:
+    bootstrap-affix.js   bootstrap-carousel.js  bootstrap.js        bootstrap-popover.js    bootstrap-tooltip.js     jquery-1.7.2.min.js
+    bootstrap-alert.js   bootstrap-collapse.js  bootstrap.min.js    bootstrap-scrollspy.js  bootstrap-transition.js  jquery.js
+    bootstrap-button.js  bootstrap-dropdown.js  bootstrap-modal.js  bootstrap-tab.js        bootstrap-typeahead.js   lightbox.js
+
+You can download these from dajda.net/assets

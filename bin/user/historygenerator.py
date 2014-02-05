@@ -1,7 +1,7 @@
 #
 # Code for creating html historic data tables in a nice colour scheme.
 #
-# Tested with weewx 2.5.0.
+# Tested with weewx 2.5.1.
 # 
 # Nick Dajda, based on code from the weewx distribution. Nov 2013.
 

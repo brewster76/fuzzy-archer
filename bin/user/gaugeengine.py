@@ -5,7 +5,7 @@
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
-Tested on weewx release 2.5.0
+Tested on weewx release 2.5.1
 Tested with sqlite, may not work with other databases.
 
 Directions for use:
@@ -607,7 +607,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     def getRecord(self, archivedb, time_ts):
         # Return a value tuple dictionary which can be used to get current
         # readings in skin units
-
         record_dict = archivedb.getRecord(time_ts)
 
         return ValueTupleDict(record_dict)
