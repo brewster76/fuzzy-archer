@@ -399,9 +399,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         im.save(self.wheretosaveit + gaugename + "Gauge.png", "PNG")
 
     def histogram(self, gaugeName, fieldName, unitType, numBins):
-        #
-        # Currently this function only works for temperature (both C and F)
-        #
         minVal = self.gauge_dict[gaugeName].as_float('minvalue')
         maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
 

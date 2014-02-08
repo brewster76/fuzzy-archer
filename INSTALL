@@ -4,7 +4,6 @@ How to install
 Before we begin...
  1) This has been tested on weewx version 2.5.1, on Ubuntu linux 12.04.
  2) Only sqlite databases currently supported, not mysql.
- 3) Only metric units currently supported.
 
 Step 1 - Download from github:
 ==============================
