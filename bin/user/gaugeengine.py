@@ -11,12 +11,12 @@ Tested with sqlite, may not work with other databases.
 Directions for use:
 
 1) Put this file in the weewx/bin/user directory.
-2) Add user.nicksengines.GaugeGenerator to the list of Generators in skin.conf.
+2) Add user.gaugeengine.GaugeGenerator to the list of Generators in skin.conf.
 3) Add a [GaugeGenerator] section to skin.conf.
    Any gauges contained in this section are created when the report generator
    runs.
-
-4) Here is an example [GaugeGenerator] section:
+4) Guage names must match the Weewx field name, e.g. outTemp or barometer
+5) Here is an example [GaugeGenerator] section:
 
 ###############################################################################
 #
@@ -26,6 +26,7 @@ Directions for use:
     image_width = 180
     image_height = 180
     GAUGE_ROOT = public_html/
+    font_path = /usr/share/fonts/truetype/freefont/FreeSans.ttf
 
     # Colors...
     #
@@ -114,36 +115,26 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     def __init__(self, config_dict, skin_dict, gen_ts, first_run, stn_info):
         super(GaugeGenerator, self).__init__(config_dict, skin_dict, gen_ts,
                                              first_run, stn_info)
-        self.gauges = [{'field': "outTemp",     'name': "Temperature",   'group': "group_temperature"},
-                       {'field': "barometer",   'name': "Pressure",      'group': "group_pressure"},
-                       {'field': "windSpeed",   'name': "WindSpeed",     'group': "group_speed"},
-                       {'field': "windGust",    'name': "WindGust",      'group': "group_speed"},
-                       {'field': "outHumidity", 'name': "Humidity",      'group': "group_percent"},
-                       {'field': "windDir",     'name': "WindDirection", 'group': "group_direction"}]
 
         self.gauge_dict = self.skin_dict['GaugeGenerator']
         self.units_dict = self.skin_dict['Units']
 
         self.wheretosaveit = os.path.join(self.config_dict['WEEWX_ROOT'],
-                                          self.gauge_dict.get('GAUGE_ROOT'))
+                                          self.gauge_dict.get('GAUGE_ROOT', "public_html/"))
         self.Converter = Converter(self.skin_dict['Units']['Groups'])
 
-        self.fillColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('fill_color', '0x999999'))
+        self.fillColor = weeplot.utilities.tobgr(self.gauge_dict.get('fill_color', '0x999999'))
         self.fillColorTuple = int2rgb(self.fillColor)
 
-        self.backColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('background_color', '0xffffff'))
+        self.backColor = weeplot.utilities.tobgr(self.gauge_dict.get('background_color', '0xffffff'))
         self.backColorTuple = int2rgb(self.backColor)
 
-        self.labelColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('label_color', '0x000000'))
-        self.dialColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('dial_color', '0x707070'))
-        self.needleColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('needle_color', '0xb48242'))
-        self.textColor = weeplot.utilities.tobgr(
-            self.gauge_dict.get('text_color', '0xb48242'))
+        self.labelColor = weeplot.utilities.tobgr(self.gauge_dict.get('label_color', '0x000000'))
+        self.dialColor = weeplot.utilities.tobgr(self.gauge_dict.get('dial_color', '0x707070'))
+        self.needleColor = weeplot.utilities.tobgr(self.gauge_dict.get('needle_color', '0xb48242'))
+        self.textColor = weeplot.utilities.tobgr(self.gauge_dict.get('text_color', '0xb48242'))
+
+        self.fontPath = self.gauge_dict.get('font_path', '/usr/share/fonts/truetype/freefont/FreeSans.ttf')
 
     def _hexToTuple(self, x):
         b = (x >> 16) & 0xff
@@ -174,31 +165,32 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         archivedb = self._getArchive(self.skin_dict['archive_database'])
 
         rec = self.getRecord(archivedb, archivedb.lastGoodStamp())
+        record_dict_vtd = weewx.units.ValueTupleDict(rec)
 
-        if rec is not None:
 
-            # Draw a gauge for everything that has a config entry
-            for gauge in self.gauge_dict:
+        for gauge in self.gauge_dict:
+            # Only interested in the section headings within the gauge config file
+            if isinstance(self.gauge_dict[gauge], dict):
 
-                # Is it actually a gauge?
-                for gaugeinfo in self.gauges:
-                    if gaugeinfo['name'] == gauge:
-                        c = self.Converter.convert(rec[gaugeinfo['field']])
+                # Do we have a reading for it?
 
-                        if c[0] is not None:
-                            syslog.syslog(
-                                syslog.LOG_DEBUG, "GaugeGenerator: %s = %f" %
-                                (gauge, c[0]))
+                try:
+                    unitType = self.units_dict['Groups'][record_dict_vtd[gauge][2]]
+                except:
+                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%d'" % gauge)
+                    return
 
-                            if gaugeinfo['field'] == 'windDir':
-                                self.drawwindgauge(gaugeinfo['name'])
-                            else:
-                                self.drawGauge(c[0], gaugeinfo['name'])
+                # Convert it to units in skin.conf file
+                valueTuple = weewx.units.convert(record_dict_vtd[gauge], unitType)
 
-                            gaugesDrawn += 1
-                        else:
-                            syslog.syslog(
-                                syslog.LOG_INFO, "GaugeGenerator: Gauge %s has value of type None" % gauge)
+                syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %f" % (gauge, valueTuple[0]))
+
+                if gauge == 'windDir':
+                    self.drawwindgauge(gauge)
+                else:
+                    self.drawGauge(gauge, valueTuple, unitType)
+
+                gaugesDrawn += 1
 
         t2 = time.time()
         syslog.syslog(
@@ -208,23 +200,23 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     def drawwindgauge(self, gaugename):
         """Wind direction gauge generator with shaded background to indicate historic wind directions"""
 
-        imagewidth = self.gauge_dict.as_int('image_width')
-        imageheight = self.gauge_dict.as_int('image_height')
+        imagewidth = int(self.gauge_dict.get('image_width', 180))
+        imageheight = int(self.gauge_dict.get('image_height', 180))
         imageorigin = (imagewidth / 2, imageheight / 2)
 
         syslog.syslog(syslog.LOG_DEBUG,
                       "GaugeGenerator: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
 
-        labelFontSize = self.gauge_dict[gaugename].as_int('labelfontsize')
-        invertGauge = weeutil.weeutil.tobool(
-            self.gauge_dict[gaugename].get('invert', False))
+        labelFontSize = int(self.gauge_dict[gaugename].get('labelfontsize', 12))
+        digitFontSize = int(self.gauge_dict[gaugename].get('digitfontsize', 20))
+
+        invertGauge = weeutil.weeutil.tobool(self.gauge_dict[gaugename].get('invert', False))
 
         archivedb = self._getArchive(self.skin_dict['archive_database'])
-        (data_time, data_value) = archivedb.getSqlVectors('windDir',
-                                                          archivedb.lastGoodStamp() -
-                                                          self.gauge_dict[gaugename].as_int(
-                                                              'history') * 60,
-                                                          archivedb.lastGoodStamp(), 300, 'avg')
+
+        (data_time, data_value) = archivedb.getSqlVectors('windDir', archivedb.lastGoodStamp() -
+                                                          self.gauge_dict[gaugename].as_int('history') * 60 * 60,
+                                                          archivedb.lastGoodStamp())
 
         for rec in data_value:
             syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s" % rec)
@@ -233,7 +225,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         numBins = int(self.gauge_dict[gaugename].get('bins', 16))
 
         # One data point recorded every 5 mins for 'history' number of hours
-        numPoints = self.gauge_dict[gaugename].as_int('history') * 60 / 5
+        numPoints = int(self.gauge_dict[gaugename].get('history'), 12) * 60 / 5
 
         #
         # Get the wind data
@@ -251,18 +243,22 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         windDirNow = None
         windSpeedNow = None
 
+        #
+        # TODO: Get rid of this SQL stuff and collect the data using weewx helper functions
+        #       (like the histogram function does)
+        #
         for row in archive.genSql("SELECT windDir, windSpeed FROM archive ORDER BY dateTime DESC LIMIT %d" % numPoints):
             if row[0] is not None:
                 try:
                     windDir = float(row[0])
                 except:
                     syslog.syslog(
-                        syslog.LOG_INFO, "drawFunkyWindGauge: Cannot convert wind direction into a float value")
+                        syslog.LOG_INFO, "drawWindGauge: Cannot convert wind direction into a float value")
                 else:
 
                     if (windDir < 0) or (windDir > 360):
                         syslog.syslog(
-                            syslog.LOG_INFO, "drawFunkyWindGauge: %f should be in the range 0-360 degrees",
+                            syslog.LOG_INFO, "drawWindGauge: %f should be in the range 0-360 degrees",
                             windDir)
                     else:
                         buckets[int(windDir * numBins / 360)] += 1
@@ -276,7 +272,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                         windSpeedNow = float(row[1])
                     except:
                         syslog.syslog(
-                            syslog.LOG_INFO, "drawFunkyWindGauge; Cannot convert wind speed into a float")
+                            syslog.LOG_INFO, "drawWindGauge; Cannot convert wind speed into a float")
 
         # If we haven't been able to find a windSpeed then there must be no
         # wind...
@@ -296,10 +292,9 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         else:
             radius = imageheight * 0.45
 
-        sansFont = ImageFont.truetype(
-            "/usr/share/fonts/truetype/freefont/FreeSans.ttf", labelFontSize)
-        bigSansFont = ImageFont.truetype(
-            "/usr/share/fonts/truetype/freefont/FreeSans.ttf", 20)
+        sansFont = ImageFont.truetype(self.fontPath, labelFontSize)
+        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
+        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
 
         # Plot shaded pie slices if there is sufficient data
         if windSpeedNow is not None:
@@ -403,99 +398,77 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         im.save(self.wheretosaveit + gaugename + "Gauge.png", "PNG")
 
-    def histogram(self, gaugeName, fieldName):
+    def histogram(self, gaugeName, fieldName, unitType, numBins):
         #
-        # Currently this function only works for temperature and converts it into Celcius
+        # Currently this function only works for temperature (both C and F)
         #
-
-        # TODO:
-        #      1) lookup fieldName from gaugelist
-        #      2) Deal with non Metric units a lot better
-
-        # Metric or imperial units
-        isUS = False
-        if "US" == self.config_dict['StdConvert']['target_unit']:
-            syslog.syslog(syslog.LOG_DEBUG,
-                          "GaugeGenerator: US units detected")
-            isUS = True
-
         minVal = self.gauge_dict[gaugeName].as_float('minvalue')
         maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
-        numBins = self.gauge_dict[gaugeName].as_int('bins')
 
         buckets = [0.0] * numBins
         bucketSpan = (maxval - minVal) / numBins
-
-        # One data point recorded every 5 mins for 'history' number of hours
-        numPoints = self.gauge_dict[gaugeName].as_int('history') * 60 / 5
-
-        archive_db = self.config_dict['StdArchive']['archive_database']
-        archive = weewx.archive.Archive.open(
-            self.config_dict['Databases'][archive_db])
-
+        numPoints = 0
         roof = 0
 
-        for row in archive.genSql("SELECT " + fieldName + " FROM archive ORDER BY dateTime DESC LIMIT %d" % numPoints):
-            if row[0] is not None:
-                histValue = float(row[0])
+        archivedb = self._getArchive(self.skin_dict['archive_database'])
 
-                # Convert archive units from F into C?
-                if isUS is True:
-                    if gaugeName == "Temperature":
-                        histValue = (histValue - 32) * 5 / 9
+        (data_time, data_value) = archivedb.getSqlVectors(gaugeName, archivedb.lastGoodStamp() -
+                                                          int(self.gauge_dict[gaugeName].get('history', 12)) * 60 * 60,
+                                                          archivedb.lastGoodStamp())
+        for t1 in data_time:
+            for t2 in t1:
+                rec = archivedb.getRecord(t2)
 
-                if histValue > maxval:
-                    syslog.syslog(syslog.LOG_DEBUG,
-                                  "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxval))
-                elif histValue < minVal:
-                    syslog.syslog(syslog.LOG_DEBUG,
-                                  "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
-                else:
-                    bucketNum = int((histValue - minVal) / bucketSpan)
-                    buckets[bucketNum] += 1.0
+                if rec is not None:
 
-                    if buckets[bucketNum] > roof:
-                        roof = buckets[bucketNum]
+                    record_dict_vtd = weewx.units.ValueTupleDict(rec)
+                    valueTuple = weewx.units.convert(record_dict_vtd[gaugeName], unitType)
+
+                    histValue = float(valueTuple[0])
+
+                    if histValue > maxval:
+                        syslog.syslog(syslog.LOG_DEBUG,
+                                      "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxval))
+                    elif histValue < minVal:
+                        syslog.syslog(syslog.LOG_DEBUG,
+                                      "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
+                    else:
+                        bucketNum = int((histValue - minVal) / bucketSpan)
+                        buckets[bucketNum] += 1.0
+                        numPoints += 1
+
+                        if buckets[bucketNum] > roof:
+                            roof = buckets[bucketNum]
 
         buckets = [i / roof for i in buckets]
 
         return buckets
 
-    def drawGauge(self, gaugeValue, gaugeName):
-        imageWidth = self.gauge_dict.as_int('image_width')
-        imageHeight = self.gauge_dict.as_int('image_height')
+    def drawGauge(self, gaugeName, valueTuple, unitType):
+        imageWidth = int(self.gauge_dict.get('image_width', 180))
+        imageHeight = int(self.gauge_dict.get('image_height', 180))
         imageOrigin = (imageWidth / 2, imageHeight / 2)
 
         digitalText = None
 
-        # Check gaugeValue is usable
-        if gaugeValue is None:
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = None" % (
+        # Check gauge value is usable
+        if valueTuple is None:
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), valueTuple = None" % (
                 gaugeName, imageWidth, imageHeight))
             digitalText = "N/A"
         else:
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %.1f" % (
-                gaugeName, imageWidth, imageHeight, gaugeValue))
+            digitalText = self.units_dict['StringFormats'][valueTuple[1]] % valueTuple[0] + \
+                          self.units_dict['Labels'][valueTuple[1]]
 
-            unitType = None
-
-            for gaugeinfo in self.gauges:
-                if gaugeinfo['name'] == gaugeName:
-                    unitType = self.units_dict['Groups'][gaugeinfo['group']]
-
-            print unitType
-            print gaugeValue
-            digitalText = self.units_dict['StringFormats'][unitType] % gaugeValue + \
-                          self.units_dict['Labels'][unitType]
-
-            print digitalText
-            print "====="
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %s" % (
+                gaugeName, imageWidth, imageHeight, digitalText))
 
         minVal = self.gauge_dict[gaugeName].as_float('minvalue')
         maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
-        majorStep = self.gauge_dict[gaugeName].as_float('majorstep')
-        minorStep = self.gauge_dict[gaugeName].as_float('minorstep')
-        labelFontSize = self.gauge_dict[gaugeName].as_int('labelfontsize')
+        majorStep = float(self.gauge_dict[gaugeName].get('majorstep', 10))
+        minorStep = float(self.gauge_dict[gaugeName].get('minorstep', 1))
+        labelFontSize = int(self.gauge_dict[gaugeName].get('labelfontsize', 12))
+        digitFontSize = int(self.gauge_dict[gaugeName].get('digitfontsize', 20))
         labelFormat = "%d"
 
         minAngle = 45  # in degrees
@@ -511,33 +484,31 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             radius = imageHeight * 0.45
 
         # Background
-        if gaugeName == "Temperature":
-            if self.gauge_dict[gaugeName].as_int('history') > 0:
 
-                numBins = self.gauge_dict[gaugeName].as_int('bins')
-                buckets = self.histogram(gaugeName, "outTemp")
+        if int(self.gauge_dict[gaugeName].get('history', 0)) > 0:
 
-                angle = float(minAngle)
-                angleStep = (maxAngle - minAngle) / float(numBins)
-                for i in range(0, numBins, 1):
-                    fillColor = (self._calcColor(buckets[i], 0), self._calcColor(
-                        buckets[i], 1), self._calcColor(buckets[i], 2))
+            numBins = int(self.gauge_dict[gaugeName].get('bins', 100))
+            buckets = self.histogram(gaugeName, gaugeName, unitType, numBins)
 
-                    draw.pieslice(
-                        (int(imageOrigin[
-                            0] - radius), int(
-                            imageOrigin[1] - radius), int(
-                            imageOrigin[0] + radius),
-                         int(imageOrigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
-                    angle += angleStep
+            angle = float(minAngle)
+            angleStep = (maxAngle - minAngle) / float(numBins)
+            for i in range(0, numBins, 1):
+                fillColor = (self._calcColor(buckets[i], 0), self._calcColor(
+                    buckets[i], 1), self._calcColor(buckets[i], 2))
+
+                draw.pieslice(
+                    (int(imageOrigin[
+                        0] - radius), int(
+                        imageOrigin[1] - radius), int(
+                        imageOrigin[0] + radius),
+                     int(imageOrigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
+                angle += angleStep
 
         draw.ellipse(((imageOrigin[0] - radius, imageOrigin[1] - radius),
                       (imageOrigin[0] + radius, imageOrigin[1] + radius)), outline=self.dialColor)
 
-        sansFont = ImageFont.truetype(
-            "/usr/share/fonts/truetype/freefont/FreeSans.ttf", labelFontSize)
-        bigSansFont = ImageFont.truetype(
-            "/usr/share/fonts/truetype/freefont/FreeSans.ttf", 20)
+        sansFont = ImageFont.truetype(self.fontPath, labelFontSize)
+        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
 
         labelValue = minVal
 
@@ -571,8 +542,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             draw.line((startPoint, endPoint), fill=self.dialColor)
 
         # The needle
-        if gaugeValue is not None:
-            angle = math.radians(minAngle + (gaugeValue - minVal)
+        if valueTuple[0] is not None:
+            angle = math.radians(minAngle + (valueTuple[0] - minVal)
                                  * (maxAngle - minAngle) / (maxval - minVal))
             endPoint = (
                 imageOrigin[0] - radius * math.sin(angle) * 0.7, imageOrigin[1] + radius * math.cos(angle) * 0.7)
@@ -594,10 +565,9 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Digital value text
+        digitalText = digitalText.decode('utf_8')
         stringSize = bigSansFont.getsize(digitalText)
-        draw.text(
-            (imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]
-             + radius * 0.4 - stringSize[1] / 2), digitalText,
+        draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]+ radius * 0.4 - stringSize[1] / 2), digitalText,
             font=bigSansFont, fill=self.textColor)
 
         del draw
