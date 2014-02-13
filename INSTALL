@@ -1,5 +1,5 @@
 How to install
-============
+==============
 
 Before we begin...
  1) This has been tested on weewx version 2.5.1, on Ubuntu linux 12.04.
@@ -8,7 +8,11 @@ Before we begin...
 Step 1 - Download from github:
 ==============================
 
+To get the latest development code:
    git clone git://github.com/brewster76/fuzzy-archer
+
+To get the latest stable(ish) release, point your browser here:
+   https://github.com/brewster76/fuzzy-archer/releases
 
 Move gaugeengine.py and historyengine,py into the bin/user directory.
 Move the Bootstrap and Images directory into the skins directory.
