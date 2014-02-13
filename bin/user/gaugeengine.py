@@ -431,11 +431,16 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                                       "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
                     else:
                         bucketNum = int((histValue - minVal) / bucketSpan)
-                        buckets[bucketNum] += 1.0
-                        numPoints += 1
 
-                        if buckets[bucketNum] > roof:
-                            roof = buckets[bucketNum]
+                        if bucketNum >= numBins:
+                            syslog.syslog(syslog.LOG_INFO, "histogram: value %f gives bucket higher than numBins (%d)"
+                                          % (histValue, numBins))
+                        else:
+                            buckets[bucketNum] += 1.0
+                            numPoints += 1
+
+                            if buckets[bucketNum] > roof:
+                                roof = buckets[bucketNum]
 
         buckets = [i / roof for i in buckets]
 
