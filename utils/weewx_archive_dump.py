@@ -1,10 +1,15 @@
 #!/usr/bin/python
-
+#
+# Turn a weewx database into a CSV file.
+#
 import datetime 
 import sqlite3 as lite
 import shutil
 
+# Where your archive database is (sqlite only)
 sourceFile = '/home/weewx/archive/weewx.sdb'
+
+# Where to copy the file so weewx doesn't hang while we lock the database
 tempFile = '/tmp/weewx.sdb.dump'
 
 shutil.copy (sourceFile, tempFile)
