@@ -177,7 +177,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 try:
                     unitType = self.units_dict['Groups'][record_dict_vtd[gauge][2]]
                 except:
-                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%d'" % gauge)
+                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gauge)
                     return
 
                 # Convert it to units in skin.conf file
@@ -421,26 +421,30 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                     record_dict_vtd = weewx.units.ValueTupleDict(rec)
                     valueTuple = weewx.units.convert(record_dict_vtd[gaugeName], unitType)
 
-                    histValue = float(valueTuple[0])
-
-                    if histValue > maxval:
-                        syslog.syslog(syslog.LOG_DEBUG,
-                                      "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxval))
-                    elif histValue < minVal:
-                        syslog.syslog(syslog.LOG_DEBUG,
-                                      "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
+                    try:
+                        histValue = float(valueTuple[0])
+                    except:
+                        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator->histogram(): Cannot decode reading for gauge '%s'" 
+                                     % gaugeName)
                     else:
-                        bucketNum = int((histValue - minVal) / bucketSpan)
-
-                        if bucketNum >= numBins:
-                            syslog.syslog(syslog.LOG_INFO, "histogram: value %f gives bucket higher than numBins (%d)"
-                                          % (histValue, numBins))
+                        if histValue > maxval:
+                            syslog.syslog(syslog.LOG_DEBUG,
+                                          "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxval))
+                        elif histValue < minVal:
+                            syslog.syslog(syslog.LOG_DEBUG,
+                                          "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
                         else:
-                            buckets[bucketNum] += 1.0
-                            numPoints += 1
+                            bucketNum = int((histValue - minVal) / bucketSpan)
 
-                            if buckets[bucketNum] > roof:
-                                roof = buckets[bucketNum]
+                            if bucketNum >= numBins:
+                                syslog.syslog(syslog.LOG_INFO, "histogram: value %f gives bucket higher than numBins (%d)"
+                                              % (histValue, numBins))
+                            else:
+                                buckets[bucketNum] += 1.0
+                                numPoints += 1
+
+                                if buckets[bucketNum] > roof:
+                                    roof = buckets[bucketNum]
 
         buckets = [i / roof for i in buckets]
 
