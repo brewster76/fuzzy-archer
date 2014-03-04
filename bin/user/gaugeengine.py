@@ -45,6 +45,9 @@ Directions for use:
     majorstep = 10
     minorstep = 1
     labelfontsize = 15
+    digitfontsize = 18	#repeat for other gauges if required
+    digittextvpos = 40	#repeat for other gauges if required
+    solidneedle = 1     #set = 0 if only outline required
     history = 24
     bins = 120
 
@@ -140,7 +143,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         b = (x >> 16) & 0xff
         g = (x >> 8) & 0xff
         r = x & 0xff
-        return (r, g, b)
+        return r, g, b
 
     def _calcColor(self, value, index):
         diff = self.fillColorTuple[index] - self.backColorTuple[index]
@@ -183,7 +186,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 # Convert it to units in skin.conf file
                 valueTuple = weewx.units.convert(record_dict_vtd[gauge], unitType)
 
-                syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %f" % (gauge, valueTuple[0]))
+                syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %s" % (gauge, valueTuple[0]))
 
                 if gauge == 'windDir':
                     self.drawwindgauge(gauge)
@@ -202,6 +205,15 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         imagewidth = int(self.gauge_dict.get('image_width', 180))
         imageheight = int(self.gauge_dict.get('image_height', 180))
+
+        #
+        # --- New and untested code:
+        #
+        imagewidth = int(self.gauge_dict[gaugename].get('image_width', imagewidth))
+        imageheight = int(self.gauge_dict[gaugename].get('image_height', imageheight))
+        #
+        # ---
+
         imageorigin = (imagewidth / 2, imageheight / 2)
 
         syslog.syslog(syslog.LOG_DEBUG,
@@ -209,6 +221,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         labelFontSize = int(self.gauge_dict[gaugename].get('labelfontsize', 12))
         digitFontSize = int(self.gauge_dict[gaugename].get('digitfontsize', 20))
+        digitTextVPos = float(self.gauge_dict[gaugename].get('digittextvpos', 40)) / 100
+        solidNeedle = float(self.gauge_dict[gaugename].get('solidneedle', 0))
 
         invertGauge = weeutil.weeutil.tobool(self.gauge_dict[gaugename].get('invert', False))
 
@@ -239,7 +253,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         archive = weewx.archive.Archive.open(
             self.config_dict['Databases'][archive_db])
 
-        windDir = None
         windDirNow = None
         windSpeedNow = None
 
@@ -294,7 +307,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         sansFont = ImageFont.truetype(self.fontPath, labelFontSize)
         bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
-        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
 
         # Plot shaded pie slices if there is sufficient data
         if windSpeedNow is not None:
@@ -318,6 +330,8 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Compass points
         labels = ['N', 'E', 'S', 'W']
+        if digitTextVPos > 0.5:
+             labels = ['N', 'E', ' ', 'W']
 
         for i in range(0, 4, 1):
             angle = i * math.radians(90) + math.radians(180)
@@ -371,10 +385,13 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 imageorigin[0] - radius * math.sin(angle + math.pi) * 0.1,
                 imageorigin[1] + radius * math.cos(angle + math.pi) * 0.1)
 
-            draw.line((leftPoint, endPoint), fill=self.needleColor)
-            draw.line((rightPoint, endPoint), fill=self.needleColor)
-            draw.line((leftPoint, midPoint), fill=self.needleColor)
-            draw.line((rightPoint, midPoint), fill=self.needleColor)
+            if solidNeedle == 1:
+                draw.polygon((midPoint, leftPoint, endPoint, rightPoint), fill=self.needleColor, outline=self.needleColor)
+            else:
+                draw.line((leftPoint, endPoint), fill=self.needleColor)
+                draw.line((rightPoint, endPoint), fill=self.needleColor)
+                draw.line((leftPoint, midPoint), fill=self.needleColor)
+                draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Outline
         draw.ellipse(((imageorigin[0] - radius, imageorigin[1] - radius),
@@ -391,7 +408,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         stringSize = bigSansFont.getsize(digitalText)
         draw.text(
             (imageorigin[0] - stringSize[0] / 2, imageorigin[1]
-             + radius * 0.4 - stringSize[1] / 2), digitalText,
+             + radius * digitTextVPos - stringSize[1] / 2), digitalText,
             font=bigSansFont, fill=self.textColor)
 
         del draw
@@ -424,7 +441,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                     try:
                         histValue = float(valueTuple[0])
                     except:
-                        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator->histogram(): Cannot decode reading for gauge '%s'" 
+                        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator->histogram(): Cannot decode reading for gauge '%s'"
                                      % gaugeName)
                     else:
                         if histValue > maxval:
@@ -453,21 +470,31 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     def drawGauge(self, gaugeName, valueTuple, unitType):
         imageWidth = int(self.gauge_dict.get('image_width', 180))
         imageHeight = int(self.gauge_dict.get('image_height', 180))
-        imageOrigin = (imageWidth / 2, imageHeight / 2)
 
-        digitalText = None
+        #
+        # --- New and untested code:
+        #
+        imagewidth = int(self.gauge_dict[gaugename].get('image_width', imagewidth))
+        imageheight = int(self.gauge_dict[gaugename].get('image_height', imageheight))
+        #
+        # ---
+
+        imageOrigin = (imageWidth / 2, imageHeight / 2)
 
         # Check gauge value is usable
         if valueTuple is None:
             syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), valueTuple = None" % (
                 gaugeName, imageWidth, imageHeight))
             digitalText = "N/A"
+            digitalUnitsText = ""
         else:
-            digitalText = self.units_dict['StringFormats'][valueTuple[1]] % valueTuple[0] + \
-                          self.units_dict['Labels'][valueTuple[1]]
+#            digitalText = self.units_dict['StringFormats'][valueTuple[1]] % valueTuple[0] + \
+#                          self.units_dict['Labels'][valueTuple[1]]
+            digitalText = self.units_dict['StringFormats'][valueTuple[1]] % valueTuple[0]
+            digitalUnitsText = self.units_dict['Labels'][valueTuple[1]]
 
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %s" % (
-                gaugeName, imageWidth, imageHeight, digitalText))
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %s %s" % (
+                gaugeName, imageWidth, imageHeight, digitalText, digitalUnitsText))
 
         minVal = self.gauge_dict[gaugeName].as_float('minvalue')
         maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
@@ -475,6 +502,9 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         minorStep = float(self.gauge_dict[gaugeName].get('minorstep', 1))
         labelFontSize = int(self.gauge_dict[gaugeName].get('labelfontsize', 12))
         digitFontSize = int(self.gauge_dict[gaugeName].get('digitfontsize', 20))
+        digitTextVPos = float(self.gauge_dict[gaugeName].get('digittextvpos', 40)) / 100
+        solidNeedle = float (self.gauge_dict[gaugeName].get('solidneedle', 0))
+
         labelFormat = "%d"
 
         minAngle = 45  # in degrees
@@ -565,15 +595,23 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
                 imageOrigin[0] - radius * math.sin(angle + math.pi) * 0.1,
                 imageOrigin[1] + radius * math.cos(angle + math.pi) * 0.1)
 
-            draw.line((leftPoint, endPoint), fill=self.needleColor)
-            draw.line((rightPoint, endPoint), fill=self.needleColor)
-            draw.line((leftPoint, midPoint), fill=self.needleColor)
-            draw.line((rightPoint, midPoint), fill=self.needleColor)
+            if solidNeedle == 1:
+                draw.polygon((midPoint, leftPoint, endPoint, rightPoint), fill=self.needleColor, outline=self.needleColor)
+            else:
+                draw.line((leftPoint, endPoint), fill=self.needleColor)
+                draw.line((rightPoint, endPoint), fill=self.needleColor)
+                draw.line((leftPoint, midPoint), fill=self.needleColor)
+                draw.line((rightPoint, midPoint), fill=self.needleColor)
 
         # Digital value text
-        digitalText = digitalText.decode('utf_8')
+        digitalUnitsText = unicode(digitalUnitsText, 'utf8')
+        stringSize = bigSansFont.getsize(digitalUnitsText)
+        draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]+ radius * (digitTextVPos * 0.66) - stringSize[1] / 2), digitalUnitsText,
+            font=bigSansFont, fill=self.textColor)
+
+        digitalText = unicode(digitalText, 'utf8')
         stringSize = bigSansFont.getsize(digitalText)
-        draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]+ radius * 0.4 - stringSize[1] / 2), digitalText,
+        draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]+ radius * digitTextVPos - stringSize[1] / 2), digitalText,
             font=bigSansFont, fill=self.textColor)
 
         del draw
