@@ -6,12 +6,12 @@
 """Python gauge for PIL
 
     Typical usage:
-        im = Images.new(dimensions, colours, ...)
+        im = Images.new(dimensions, colors, ...)
         gauge = gaugeDraw(im, min, max, % of dial) <-- extends ImageDraw
         gauge.add_dial_labels(dictionary) <-- e.g. {0: 'N', 90: 'E', 180: 'S', 270: 'W'}
         gauge.add_needle(value)
         gauge.add_history(list, num_buckets)
-        gauge.add_dial(minor_tick, major_tick, show_major_values)
+        gauge.add_dial(minor_tick, major_tick)
         gauge.add_text( ("27", "degC", "(very hot)") )
         gauge.render()
         im.save("filename for png file")
@@ -28,14 +28,18 @@ DEFAULT_FONT = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 class GaugeDraw(ImageDraw.ImageDraw):
     """Class for rendering nice gauge images, e.g. for use on a weather station website."""
 
-    def __init__(self, im, min, max, dial_range=270, background_colour=None):
+    def __init__(self, im, min, max, dial_range=270, background_color=None, offset_angle=0):
         """Initialises the dial. 
            min = minimum value on dial
            max = maximum value on dial
            dial_range = any value between 0 and 360.
                         360: dial is a complete circle
                         180: dial is a semicircle
-                        90: dial is a quarter of a complete circle"""
+                        90: dial is a quarter of a complete circle
+            offset_angle = Change the point in the circle that the gauge begins and ends.self
+                        0: gauge starts and end around the bottom of the image_height
+                        90: the left
+                        180: the top - useful for generating a compass gauge"""
         # This class extends ImageDraw... Initialise it
         ImageDraw.ImageDraw.__init__(self, im)
 
@@ -73,31 +77,37 @@ class GaugeDraw(ImageDraw.ImageDraw):
         # Dial labels
         self.dial_labels = None
 
-        # Default colours...
-        self.colours = { 'histogram' : 4342452,
-                         'background': 16777215,
-                         'label'     : 0,
-                         'dial_label': 0,
-                         'dial'      : 7368816,
-                         'needle'    : 11829826,
-                         'text'      : 11829826}
+        # Default colors...
+        self.colors = { 'histogram'      : 4342452,
+                         'background'     : 16777215,
+                         'label'          : 0,
+                         'dial_label'     : 0,
+                         'dial'           : 7368816,
+                         'needle_outline' : 11829826,
+                         'needle_fill'    : None,
+                         'text'           : 11829826}
 
-        if background_colour is not None:
-            self.colours['background'] = background_colour
+        if background_color is not None:
+            self.colors['background'] = background_color
 
-        self.fillColorTuple = int2rgb(self.colours['histogram'])
-        self.backColorTuple = int2rgb(self.colours['background'])
+        self.fillColorTuple = int2rgb(self.colors['histogram'])
+        self.backColorTuple = int2rgb(self.colors['background'])
 
-    def add_needle(self, value, needle_colour=None):
+        self.offset_angle = offset_angle
+
+    def add_needle(self, value, needle_outline_color=None, needle_fill_color=None):
         """Draws a needle pointing towards value.
 
-        needle_colour overrides the default"""
+        needle_outline_color overrides the default"""
         self.gauge_value = value
 
-        if needle_colour is not None:
-            self.colours['needle'] = needle_colour
+        if needle_outline_color is not None:
+            self.colors['needle_outline'] = needle_outline_color
 
-    def add_dial_labels(self, dial_labels = [], dial_label_font_size=12, dial_label_colour=None,
+        if needle_fill_color is not None:
+            self.colors['needle_fill'] = needle_fill_color
+
+    def add_dial_labels(self, dial_labels = [], dial_label_font_size=12, dial_label_color=None,
                         dial_label_font=None):
         """Takes a dictionary and draws text at every key.
         On a dial from 0 to 360, this dictionary would print the points of the compoass:
@@ -110,11 +120,11 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         self.dial_label_font = ImageFont.truetype(dial_label_font, dial_label_font_size)
 
-        if dial_label_colour is not None:
-            self.colours['dial_label'] = dial_label_colour
+        if dial_label_color is not None:
+            self.colors['dial_label'] = dial_label_color
 
     def add_text(self, text_list = None, text_font_size=20,
-                text_font=None, text_colour=None):
+                text_font=None, text_color=None):
         """Adds multiple lines of text as a caption.
         Usually used to display the value of the gauge.
 
@@ -142,11 +152,11 @@ class GaugeDraw(ImageDraw.ImageDraw):
         self.text_font = ImageFont.truetype(text_font, text_font_size)
         self.text_font_size = text_font_size
 
-        if text_colour is not None:
-            self.colours['text'] = text_colour
+        if text_color is not None:
+            self.colors['text'] = text_color
 
     def add_dial(self, major_ticks, minor_ticks=None, dial_format="%.1f", dial_font_size=12,
-                dial_font=None, dial_colour=None, dial_label_colour=None):
+                dial_font=None, dial_color=None, dial_label_color=None):
         """Configures the background dial
         major_ticks and minor_ticks are how often to add a tick mark to the dial.
 
@@ -165,11 +175,11 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         self.dial_font = ImageFont.truetype(dial_font, dial_font_size)
 
-        if dial_colour is not None:
-            self.colours['dial'] = dial_colour
+        if dial_color is not None:
+            self.colors['dial'] = dial_color
 
-        if dial_label_colour is not None:
-            self.colours['dial_label'] = dial_label_colour
+        if dial_label_color is not None:
+            self.colors['dial_label'] = dial_label_color
 
         self.draw_dial = True
 
@@ -205,7 +215,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         self.buckets = [i / roof for i in self.buckets]
 
         if histogram_color is not None:
-            self.colours['histogram'] = histogram_color
+            self.colors['histogram'] = histogram_color
 
     def render_simple_gauge(self, value=None, major_ticks=None, minor_ticks=None, label=None, font=None):
         """Helper function to create gauges with minimal code, eg:
@@ -215,7 +225,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         g.render_simple_gauge(value=25, major_ticks=10, minor_ticks=2, label="25")
         im.save("simple_gauge_image.png", "PNG")
 
-        Does not support dial labels, histogram dial background or setting colours..
+        Does not support dial labels, histogram dial background or setting colors..
         """
         if value is not None:
             self.add_needle(value)
@@ -241,14 +251,16 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
                 self.pieslice((int(self.gauge_origin[0] - self.radius), int(self.gauge_origin[1] - self.radius),
                               int(self.gauge_origin[0] + self.radius), int(self.gauge_origin[1] + self.radius)),
-                              int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
+                              int(angle + 90 + self.offset_angle), int(angle + angleStep + 90 + self.offset_angle),
+                              fill=fillColor)
                 angle += angleStep
 
         if self.draw_dial is True:
             # Major tic marks and scale labels
             label_value = self.min_value
 
-            for angle in self._frange(math.radians(self.min_angle), math.radians(self.max_angle),
+            for angle in self._frange(math.radians(self.min_angle + self.offset_angle),
+                                      math.radians(self.max_angle + self.offset_angle),
                                       int(1 + (self.max_value - self.min_value) / self.major_tick)):
 
                 startPoint = (self.gauge_origin[0] - self.radius * math.sin(angle)
@@ -257,7 +269,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
                 endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle),
                             self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                self.line((startPoint, endPoint), fill=self.colours['dial'])
+                self.line((startPoint, endPoint), fill=self.colors['dial'])
 
                 if self.dial_format is not None:
                     text = str(self.dial_format % label_value)
@@ -268,33 +280,37 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
                     label_point = (label_point[0] - string_size[0] / 2, label_point[1] - string_size[1] / 2)
 
-                    self.text(label_point, text, font=self.dial_font, fill=self.colours['label'])
+                    self.text(label_point, text, font=self.dial_font, fill=self.colors['label'])
 
                     label_value += self.major_tick
 
             # Minor tic marks
-            for angle in self._frange(math.radians(self.min_angle), math.radians(self.max_angle),
-                                      int(1 + (self.max_value - self.min_value) / self.minor_tick)):
+            if self.minor_tick is not None:
+                for angle in self._frange(math.radians(self.min_angle + self.offset_angle),
+                                          math.radians(self.max_angle + self.offset_angle),
+                                          int(1 + (self.max_value - self.min_value) / self.minor_tick)):
 
-                startPoint = (self.gauge_origin[0] - self.radius * math.sin(angle)
-                              * 0.97, self.gauge_origin[1] + self.radius * math.cos(angle) * 0.97)
+                    startPoint = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.97,
+                                  self.gauge_origin[1] + self.radius * math.cos(angle) * 0.97)
 
-                endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle),
-                            self.gauge_origin[1] + self.radius * math.cos(angle))
+                    endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle),
+                                self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                self.line((startPoint, endPoint), fill=self.colours['dial'])
+                    self.line((startPoint, endPoint), fill=self.colors['dial'])
 
             # The edge of the dial
             self.arc((self.gauge_origin[0] - int(self.radius), self.gauge_origin[1] - int(self.radius),
                       self.gauge_origin[0] + int(self.radius), self.gauge_origin[1] + int(self.radius)),
-                          self.min_angle + 90, self.max_angle + 90, self.colours['dial'])
+                          self.min_angle + 90 + self.offset_angle, self.max_angle + 90 + self.offset_angle,
+                          self.colors['dial'])
 
             # Custom gauge labels?
             if self.dial_labels is not None:
                 for k in self.dial_labels.keys():
                     angle = (k - self.min_value) / (self.max_value - self.min_value)
                     if (angle >= 0.0) and (angle <= 1):
-                        angle = math.radians(self.min_angle + angle * (self.max_angle - self.min_angle))
+                        angle = math.radians(self.min_angle + angle * (self.max_angle - self.min_angle)
+                                             + self.offset_angle)
 
                         string_size = self.dial_label_font.getsize(self.dial_labels[k])
 
@@ -304,10 +320,10 @@ class GaugeDraw(ImageDraw.ImageDraw):
                         label_point = (label_point[0] - string_size[0] / 2, label_point[1] - string_size[1] / 2)
 
                         self.text(label_point, self.dial_labels[k], font=self.dial_label_font,
-                                  fill=self.colours['dial_label'])
+                                  fill=self.colors['dial_label'])
 
         if self.text_labels is not None:
-            vstep = self.text_font_size * 1.5
+            vstep = self.text_font_size * 1.3
             vpos = self.gauge_origin[1] + self.radius * 0.42 - (vstep * len(self.text_labels)) / 2
 
             for l in self.text_labels:
@@ -315,15 +331,17 @@ class GaugeDraw(ImageDraw.ImageDraw):
                 textsize = self.text_font.getsize(text)
 
                 self.text((self.gauge_origin[0] - (textsize[0] / 2), vpos), text,
-                          font=self.text_font, fill=self.colours['text'])
+                          font=self.text_font, fill=self.colors['text'])
                 vpos += vstep
 
         # Do last - the needle is on top of everything
         if self.gauge_value is not None:
             angle = math.radians(self.min_angle + (self.gauge_value - self.min_value) *
-                                 (self.max_angle - self.min_angle) / (self.max_value - self.min_value))
+                                 (self.max_angle - self.min_angle) / (self.max_value - self.min_value)
+                                 + self.offset_angle)
 
-            endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.7, self.gauge_origin[1] + self.radius * math.cos(angle) * 0.7)
+            endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.7, self.gauge_origin[1]
+                        + self.radius * math.cos(angle) * 0.7)
             leftPoint = (self.gauge_origin[0] - self.radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
                          self.gauge_origin[1] + self.radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
             rightPoint = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi * 7 / 8) * 0.2,
@@ -331,10 +349,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
             midPoint = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi) * 0.1,
                         self.gauge_origin[1] + self.radius * math.cos(angle + math.pi) * 0.1)
 
-            self.line((leftPoint, endPoint), fill=self.colours['needle'])
-            self.line((rightPoint, endPoint), fill=self.colours['needle'])
-            self.line((leftPoint, midPoint), fill=self.colours['needle'])
-            self.line((rightPoint, midPoint), fill=self.colours['needle'])
+            self.polygon((leftPoint, endPoint, rightPoint, midPoint), outline=self.colors['needle_outline'],
+                         fill=self.colors['needle_fill'])
 
     def _frange(self, start, stop, n):
         """Range function, for floating point numbers"""
