@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 Nick Dajda <nick.dajda@gmail.com>
+# Copyright (c) 2013-2014  Nick Dajda <nick.dajda@gmail.com>
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
@@ -104,13 +104,9 @@ Directions for use:
 
 import time
 import syslog
-import math
+import os.path
 
 import Image
-import ImageDraw
-import ImageFont
-
-import os.path
 
 import weeutil.weeutil
 import weewx.archive
@@ -120,7 +116,6 @@ import user.gauges
 
 from weewx.units import ValueTupleDict, Converter
 
-
 class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     """Class for managing the gauge generator."""
 
@@ -128,7 +123,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         self.setup()
 
         # Generate any images
-        self.genGauges()
+        self.gen_gauges()
 
     def setup(self):
         self.gauge_dict = self.skin_dict['GaugeGenerator']
@@ -136,10 +131,10 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Lookup the last reading in the archive
         self.archivedb = self._getArchive(self.skin_dict['archive_database'])
-        rec = self.getRecord(self.archivedb, self.archivedb.lastGoodStamp())
+        rec = self._get_record(self.archivedb, self.archivedb.lastGoodStamp())
         self.record_dict_vtd = weewx.units.ValueTupleDict(rec)
 
-    def genGauges(self):
+    def gen_gauges(self):
         """Generate the gauges."""
         t1 = time.time()
         ngen = 0
@@ -147,9 +142,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         # Loop over each time span class (day, week, month, etc.):
         for gauge in self.gauge_dict.sections:
             plot_options = weeutil.weeutil.accumulateLeaves(self.gauge_dict[gauge])
-
-            # Get the database archive
-            archivedb = self._getArchive(plot_options['archive_database'])
 
             image_root = os.path.join(self.config_dict['WEEWX_ROOT'], plot_options['HTML_ROOT'])
             # Get the path of the file that the image is going to be saved to:
@@ -162,7 +154,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             except:
                 pass
 
-            self.genGauge(gauge, plot_options, img_file)
+            self.gen_gauge(gauge, plot_options, img_file)
             ngen += 1
 
         t2 = time.time()
@@ -170,8 +162,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Generated %d images for %s in %.2f seconds" %
                                        (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
 
-
-    def genGauge(self, gaugename, plot_options, img_file):
+    def gen_gauge(self, gaugename, plot_options, img_file):
         image_width = int(plot_options.get('image_width', 180))
         image_height = int(plot_options.get('image_height', 180))
 
@@ -239,18 +230,27 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         value_tuple = weewx.units.convert(self.record_dict_vtd[gaugename], unit_type)
 
         syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %s" % (gaugename, value_tuple[0]))
-        print "GaugeGenerator: %s = %s" % (gaugename, value_tuple[0])
 
-        # TODO - implement solid needle option
-        gauge.add_needle(float(value_tuple[0]), needle_outline_color=needle_outline_color,
-                         needle_fill_color=needle_fill_color)
+        # Do we have a proper numeric reading?
+        try:
+            needle_value = float(value_tuple[0])
+        except:
+            # Log the error, do not draw the needle and display '-'
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
+                                           (gaugename, value_tuple[0]))
+            label_text = '-'
+            digit_format = None
+        else:
+            gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
+                             needle_fill_color=needle_fill_color)
 
-        label_format = self.units_dict['StringFormats'][value_tuple[1]]
-        label_text = unicode(label_format % value_tuple[0], "utf8")
-        label_units_text = unicode(self.units_dict['Labels'][value_tuple[1]], "utf8")
+            label_format = self.units_dict['StringFormats'][value_tuple[1]]
+            digit_format = plot_options.get("digitformat", label_format)
 
-        gauge.add_text((label_text + label_units_text), text_font_size=label_font_size,
-            text_font=font_path, text_color=text_color)
+            label_text = unicode(label_format % value_tuple[0], "utf8")
+            label_text += unicode(self.units_dict['Labels'][value_tuple[1]], "utf8")
+
+        gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
         try:
             history = int(plot_options.get('history'))
@@ -265,7 +265,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
             for t1 in data_time:
                 for t2 in t1:
-                    rec = self.archivedb.getRecord(t2)
+                    rec = self.archivedb._get_record(t2)
 
                     if rec is not None:
                         value_tuple = weewx.units.convert(weewx.units.ValueTupleDict(rec)[gaugename], unit_type)
@@ -284,8 +284,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         # Do not draw labels if this is a wind gauge
         if gaugename == 'windDir':
             digit_format = None
-        else:
-            digit_format = plot_options.get("digitformat", label_format)
 
         gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_font_size=digit_font_size,
                        dial_font=font_path, dial_color=dial_color, dial_label_color=label_color,
@@ -294,14 +292,16 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         gauge.render()
         image.save(img_file)
 
-    def getRecord(self, archivedb, time_ts):
+    @staticmethod
+    def _get_record(archivedb, time_ts):
         """Return a value tuple dictionary which can be used to get current
         readings in skin units."""
-        record_dict = archivedb.getRecord(time_ts)
+        record_dict = archivedb._get_record(time_ts)
 
         return ValueTupleDict(record_dict)
 
-    def _int2rgb(self, x):
+    @staticmethod
+    def _int2rgb(x):
     #
     # Stolen from genploy.py Weewx file
     #

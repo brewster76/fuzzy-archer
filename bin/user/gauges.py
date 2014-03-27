@@ -19,7 +19,6 @@
 
 import math
 
-import Image
 import ImageDraw
 import ImageFont
 
@@ -28,10 +27,10 @@ DEFAULT_FONT = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 class GaugeDraw(ImageDraw.ImageDraw):
     """Class for rendering nice gauge images, e.g. for use on a weather station website."""
 
-    def __init__(self, im, min, max, dial_range=270, background_color=None, offset_angle=0):
+    def __init__(self, im, min_val, max_val, dial_range=270, background_color=None, offset_angle=0):
         """Initialises the dial. 
-           min = minimum value on dial
-           max = maximum value on dial
+           min_val = minimum value on dial
+           max_val = maximum value on dial
            dial_range = any value between 0 and 360.
                         360: dial is a complete circle
                         180: dial is a semicircle
@@ -43,8 +42,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
         # This class extends ImageDraw... Initialise it
         ImageDraw.ImageDraw.__init__(self, im)
 
-        self.min_value = float(min)
-        self.max_value = float(max)
+        self.min_value = float(min_val)
+        self.max_value = float(max_val)
 
         if dial_range < 360:
             self.min_angle = (360 - dial_range) / 2
@@ -90,8 +89,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
         if background_color is not None:
             self.colors['background'] = background_color
 
-        self.fillColorTuple = int2rgb(self.colors['histogram'])
-        self.backColorTuple = int2rgb(self.colors['background'])
+        self.fill_color_tuple = int2rgb(self.colors['histogram'])
+        self.back_color_tuple = int2rgb(self.colors['background'])
 
         self.offset_angle = offset_angle
 
@@ -183,14 +182,14 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         self.draw_dial = True
 
-    def add_history(self, list, num_buckets, histogram_color=None):
-        """Turn list of values into a histogram"""
+    def add_history(self, list_vals, num_buckets, histogram_color=None):
+        """Turn list_vals of values into a histogram"""
         if num_buckets is None:
             raise Exception("Need to specify number of buckets to split histogram into.")
     
         self.num_buckets = num_buckets
     
-        if list is None:
+        if list_vals is None:
             raise Exception("No data specified.")
         
         self.buckets = [0.0] * num_buckets
@@ -198,7 +197,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         num_points = 0
         roof = 0.0
 
-        for data in list:
+        for data in list_vals:
             # Ignore data which is outside range of gauge
             if (data < self.max_value) and (data > self.min_value):
                 bucket = int((data - self.min_value) / bucket_span)
@@ -220,10 +219,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
     def render_simple_gauge(self, value=None, major_ticks=None, minor_ticks=None, label=None, font=None):
         """Helper function to create gauges with minimal code, eg:
 
-        im = Image.new("RGB", (200, 200), (255, 255, 255)
-        g = gauges.GaugeDraw(im, 0, 100)
-        g.render_simple_gauge(value=25, major_ticks=10, minor_ticks=2, label="25")
-        im.save("simple_gauge_image.png", "PNG")
+            import Image
+            import gauges
+
+            im = Image.new("RGB", (200, 200), (255, 255, 255))
+            g = gauges.GaugeDraw(im, 0, 100)
+            g.render_simple_gauge(value=25, major_ticks=10, minor_ticks=2, label="25")
+            im.save("simple_gauge_image.png", "PNG")
 
         Does not support dial labels, histogram dial background or setting colors..
         """
@@ -244,16 +246,16 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         if self.num_buckets is not None:
             angle = float(self.min_angle)
-            angleStep = (self.max_angle - self.min_angle) / float(self.num_buckets)
+            angle_step = (self.max_angle - self.min_angle) / float(self.num_buckets)
 
             for bucket in self.buckets:
-                fillColor = (self._calcColor(bucket, 0), self._calcColor(bucket, 1), self._calcColor(bucket, 2))
+                fill_color = (self._calc_color(bucket, 0), self._calc_color(bucket, 1), self._calc_color(bucket, 2))
 
                 self.pieslice((int(self.gauge_origin[0] - self.radius), int(self.gauge_origin[1] - self.radius),
                               int(self.gauge_origin[0] + self.radius), int(self.gauge_origin[1] + self.radius)),
-                              int(angle + 90 + self.offset_angle), int(angle + angleStep + 90 + self.offset_angle),
-                              fill=fillColor)
-                angle += angleStep
+                              int(angle + 90 + self.offset_angle), int(angle + angle_step + 90 + self.offset_angle),
+                              fill=fill_color)
+                angle += angle_step
 
         if self.draw_dial is True:
             # Major tic marks and scale labels
@@ -263,13 +265,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
                                       math.radians(self.max_angle + self.offset_angle),
                                       int(1 + (self.max_value - self.min_value) / self.major_tick)):
 
-                startPoint = (self.gauge_origin[0] - self.radius * math.sin(angle)
+                start_point = (self.gauge_origin[0] - self.radius * math.sin(angle)
                               * 0.93, self.gauge_origin[1] + self.radius * math.cos(angle) * 0.93)
 
-                endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle),
+                end_point = (self.gauge_origin[0] - self.radius * math.sin(angle),
                             self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                self.line((startPoint, endPoint), fill=self.colors['dial'])
+                self.line((start_point, end_point), fill=self.colors['dial'])
 
                 if self.dial_format is not None:
                     text = str(self.dial_format % label_value)
@@ -290,13 +292,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
                                           math.radians(self.max_angle + self.offset_angle),
                                           int(1 + (self.max_value - self.min_value) / self.minor_tick)):
 
-                    startPoint = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.97,
+                    start_point = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.97,
                                   self.gauge_origin[1] + self.radius * math.cos(angle) * 0.97)
 
-                    endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle),
+                    end_point = (self.gauge_origin[0] - self.radius * math.sin(angle),
                                 self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                    self.line((startPoint, endPoint), fill=self.colors['dial'])
+                    self.line((start_point, end_point), fill=self.colors['dial'])
 
             # The edge of the dial
             self.arc((self.gauge_origin[0] - int(self.radius), self.gauge_origin[1] - int(self.radius),
@@ -340,38 +342,39 @@ class GaugeDraw(ImageDraw.ImageDraw):
                                  (self.max_angle - self.min_angle) / (self.max_value - self.min_value)
                                  + self.offset_angle)
 
-            endPoint = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.7, self.gauge_origin[1]
+            end_point = (self.gauge_origin[0] - self.radius * math.sin(angle) * 0.7, self.gauge_origin[1]
                         + self.radius * math.cos(angle) * 0.7)
-            leftPoint = (self.gauge_origin[0] - self.radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
+            left_point = (self.gauge_origin[0] - self.radius * math.sin(angle - math.pi * 7 / 8) * 0.2,
                          self.gauge_origin[1] + self.radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
-            rightPoint = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi * 7 / 8) * 0.2,
+            right_point = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi * 7 / 8) * 0.2,
                           self.gauge_origin[1] + self.radius * math.cos(angle + math.pi * 7 / 8) * 0.2)
-            midPoint = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi) * 0.1,
+            mid_point = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi) * 0.1,
                         self.gauge_origin[1] + self.radius * math.cos(angle + math.pi) * 0.1)
 
-            self.polygon((leftPoint, endPoint, rightPoint, midPoint), outline=self.colors['needle_outline'],
+            self.polygon((left_point, end_point, right_point, mid_point), outline=self.colors['needle_outline'],
                          fill=self.colors['needle_fill'])
 
-    def _frange(self, start, stop, n):
+    @staticmethod
+    def _frange(start, stop, n):
         """Range function, for floating point numbers"""
-        L = [0.0] * n
+        l = [0.0] * n
         nm1 = n - 1
         nm1inv = 1.0 / nm1
         for i in range(n):
-            L[i] = nm1inv * (start * (nm1 - i) + stop * i)
-        return L
+            l[i] = nm1inv * (start * (nm1 - i) + stop * i)
+        return l
 
-    def _calcColor(self, value, index):
-        diff = self.fillColorTuple[index] - self.backColorTuple[index]
-        newColor = self.backColorTuple[index] + int(diff * value)
+    def _calc_color(self, value, index):
+        diff = self.fill_color_tuple[index] - self.back_color_tuple[index]
+        new_color = self.back_color_tuple[index] + int(diff * value)
 
-        if newColor < 0:
-            newColor = 0
+        if new_color < 0:
+            new_color = 0
 
-        if newColor > 0xff:
-            newColor = 0xff
+        if new_color > 0xff:
+            new_color = 0xff
 
-        return newColor
+        return new_color
 
 def int2rgb(x):
 #
