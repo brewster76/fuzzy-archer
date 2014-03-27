@@ -265,7 +265,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
             for t1 in data_time:
                 for t2 in t1:
-                    rec = self.archivedb._get_record(t2)
+                    rec = self.archivedb.getRecord(t2)
 
                     if rec is not None:
                         value_tuple = weewx.units.convert(weewx.units.ValueTupleDict(rec)[gaugename], unit_type)
@@ -296,7 +296,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
     def _get_record(archivedb, time_ts):
         """Return a value tuple dictionary which can be used to get current
         readings in skin units."""
-        record_dict = archivedb._get_record(time_ts)
+        record_dict = archivedb.getRecord(time_ts)
 
         return ValueTupleDict(record_dict)
 
