@@ -2,11 +2,36 @@ How to install
 ==============
 
 Before we begin...
- 1) This has been tested on weewx version 2.5.1, on Ubuntu linux 12.04.
+ 1) This has been tested on weewx versions 2.4.0 - 2.6.2, on Ubuntu linux 12.04, and on a Raspberry Pi running wheezy.
  2) Only sqlite databases currently supported, not mysql.
 
+The easy way
+============
+
+Get hold of bootstrap-1.01.tar.gz.
+
+Use the WeeWx extension installer:
+
+   cd /home/weewx
+   setup.py --extension --install [wherever you've put bootstrap-1.01.tar.gz]
+
+This installer will not turn off the standard WeeWx skin, so to generate only Bootstrap webpage files, comment out
+the StandardReport section in weewx.conf:
+
+    # Each subsection represents a report you wish to run:
+    # [[StandardReport]]
+    #
+    #     # What skin this report should be based on:
+    #     skin = Standard
+
+Enjoy.
+
+
+The involved way
+================
+
 Step 1 - Download from github:
-==============================
+------------------------------
 
 To get the latest development code:
    git clone git://github.com/brewster76/fuzzy-archer
@@ -18,7 +43,7 @@ Move gaugeengine.py and historyengine,py into the bin/user directory.
 Move the Bootstrap and Images directory into the skins directory.
 
 Step 2 - Add the skins to weewx.conf
-====================================
+------------------------------------
 
 So the [StdReport] section will need to look something like this:
 
@@ -61,7 +86,7 @@ So the [StdReport] section will need to look something like this:
             skin = Rsync
 
 Step 3 - Add Bootstrap support files to your website
-====================================================
+----------------------------------------------------
 
 Add these files to weewx/public_html/assets
 
