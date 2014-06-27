@@ -175,6 +175,7 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         needle_fill_color = weeplot.utilities.tobgr(plot_options.get('needle_fill_color', None))
 
         text_color = weeplot.utilities.tobgr(plot_options.get('text_color', '0xb48242'))
+        history_color = weeplot.utilities.tobgr(plot_options.get('history_color', '0x4242b4'))
 
         font_path = plot_options.get('font_path', '/usr/share/fonts/truetype/freefont/FreeSans.ttf')
 
@@ -263,22 +264,17 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
             num_buckets = int(plot_options.get('bins', 10))
             history_list = []
 
-            for t1 in data_time:
-                for t2 in t1:
-                    rec = self.archivedb.getRecord(t2)
+            for i in range(len(data_time[0])):
+                value_tuple = weewx.units.convert((data_value[0][i], data_value[1], data_value[2]), unit_type)
 
-                    if rec is not None:
-                        value_tuple = weewx.units.convert(weewx.units.ValueTupleDict(rec)[gaugename], unit_type)
+                try:
+                     hist_value = float(value_tuple[0])
+                except:
+                    syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading for gauge '%s'" % gaugename)
+                else:
+                    history_list.append(hist_value)
 
-                        try:
-                            hist_value = float(value_tuple[0])
-                        except:
-                            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading for gauge '%s'"
-                                         % gaugename)
-                        else:
-                            history_list.append(hist_value)
-
-            gauge.add_history(history_list, num_buckets)
+            gauge.add_history(history_list, num_buckets, history_color)
 
         # Uses the skin.conf string format for the labels unless overwritten in the gauge generator section
         # Do not draw labels if this is a wind gauge

@@ -21,15 +21,17 @@ class BootstrapInstaller(ExtensionInstaller):
             config={
                 'StdReport': {
                     'SmallImages': {
-                        'skin':'Images'},
+                        'skin':'Images',
+                        'HTML_ROOT':'Bootstrap'},
                     'BigImages': {
                         'skin':'Images',
-                        'HTML_ROOT':'big_images/',
+                        'HTML_ROOT':'Bootstrap/big_images',
                         'ImageGenerator' : {
                             'image_width' : '800',
                             'image_height' : '500'}},
                     'HTMLPages': {
-                        'skin':'Bootstrap'}}},
+                        'skin':'Bootstrap',
+                        'HTML_ROOT':'Bootstrap'}}},
 
             files=[('skins/Bootstrap',
                     ['skins/Bootstrap/index.html.tmpl',
@@ -51,23 +53,23 @@ class BootstrapInstaller(ExtensionInstaller):
                     ['bin/user/gaugeengine.py',
                      'bin/user/gauges.py',
                      'bin/user/historygenerator.py']),
-                   ('public_html/assets/css',
-                    ['public_html/assets/css/bootstrap.css',
-                     'public_html/assets/css/bootstrap.min.css',
-                     'public_html/assets/css/bootstrap-responsive.css',
-                     'public_html/assets/css/bootstrap-responsive.min.css',
-                     'public_html/assets/css/lightbox.css']),
-                   ('public_html/assets/img',
-                    ['public_html/assets/img/close.png',
-                     'public_html/assets/img/glyphicons-halflings.png',
-                     'public_html/assets/img/glyphicons-halflings-white.png',
-                     'public_html/assets/img/loading.gif',
-                     'public_html/assets/img/next.png',
-                     'public_html/assets/img/prev.png']),
-                   ('public_html/assets/js',
-                    ['public_html/assets/js/bootstrap.min.js',
-                     'public_html/assets/js/jquery-1.7.2.min.js',
-                     'public_html/assets/js/lightbox.js'])
+                   ('public_html/Bootstrap/assets/css',
+                    ['public_html/Bootstrap/assets/css/bootstrap.css',
+                     'public_html/Bootstrap/assets/css/bootstrap.min.css',
+                     'public_html/Bootstrap/assets/css/bootstrap-responsive.css',
+                     'public_html/Bootstrap/assets/css/bootstrap-responsive.min.css',
+                     'public_html/Bootstrap/assets/css/lightbox.css']),
+                   ('public_html/Bootstrap/assets/img',
+                    ['public_html/Bootstrap/assets/img/close.png',
+                     'public_html/Bootstrap/assets/img/glyphicons-halflings.png',
+                     'public_html/Bootstrap/assets/img/glyphicons-halflings-white.png',
+                     'public_html/Bootstrap/assets/img/loading.gif',
+                     'public_html/Bootstrap/assets/img/next.png',
+                     'public_html/Bootstrap/assets/img/prev.png']),
+                   ('public_html/Bootstrap/assets/js',
+                    ['public_html/Bootstrap/assets/js/bootstrap.min.js',
+                     'public_html/Bootstrap/assets/js/jquery-1.7.2.min.js',
+                     'public_html/Bootstrap/assets/js/lightbox.js'])
                    ]
             )
 

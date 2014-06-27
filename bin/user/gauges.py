@@ -214,7 +214,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         self.buckets = [i / roof for i in self.buckets]
 
         if histogram_color is not None:
-            self.colors['histogram'] = histogram_color
+            self.fill_color_tuple = int2rgb(self.colors['histogram'])
 
     def render_simple_gauge(self, value=None, major_ticks=None, minor_ticks=None, label=None, font=None):
         """Helper function to create gauges with minimal code, eg:
