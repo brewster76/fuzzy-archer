@@ -282,7 +282,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
                     label_point = (label_point[0] - string_size[0] / 2, label_point[1] - string_size[1] / 2)
 
-                    self.text(label_point, text, font=self.dial_font, fill=self.colors['label'])
+                    self.text(label_point, text, font=self.dial_font, fill=self.colors['dial_label'])
 
                     label_value += self.major_tick
 
