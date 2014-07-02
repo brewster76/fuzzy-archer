@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 Nick Dajda <nick.dajda@gmail.com>
+# Copyright (c) 2013-2014  Nick Dajda <nick.dajda@gmail.com>
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
@@ -25,593 +25,286 @@ Directions for use:
 [GaugeGenerator]
     image_width = 180
     image_height = 180
-    GAUGE_ROOT = public_html/
+    labelfontsize = 12
+
+    # This overwrites HTML_ROOT in weewx.conf if you want the images elsewhere
+    HTML_ROOT = public_html/gauges/
+
     font_path = /usr/share/fonts/truetype/freefont/FreeSans.ttf
 
     # Colors...
     #
-    # Format is 0xBBGGRR, so a pinky-purple color (r=FF, g=00, B=99) which
-    # would have an HTML tag of #FF0099 is expressed as 0x9900FF
+    # Format is 0xBBGGRR, so a pinky-purple color (r=FF, g=00, B=99) which would have
+    # an HTML tag of #FF0099 is expressed as 0x9900FF
     fill_color = 0x4242b4
     background_color = 0xffffff
     label_color = 0x000000
     dial_color = 0x707070
-    needle_color = 0xb48242
+    needle_outline_color = 0xb48242
+    needle_fill_color = 0xb48242   # Leave option out for a transparent needle
     text_color = 0xb48242
 
-    [[Temperature]]
-    minvalue = -20
-    maxvalue = 40
-    majorstep = 10
-    minorstep = 1
-    labelfontsize = 15
-    history = 24
-    bins = 120
+    # How far the gauge extends, e.g. 180 is half a full dial, 270 is three quarters
+    # This is ignored when plotting wind direction which always uses 360.
+    # Must be an integer
+    dial_arc = 270
 
-    [[Pressure]]
-    minvalue = 970
-    maxvalue = 1050
-    majorstep = 20
-    minorstep = 10
-    labelfontsize = 12
+    digitfontsize = 15
+    labelfontsize = 16
 
-    [[Humidity]]
-    minvalue = 0
-    maxvalue = 100
-    majorstep = 20
-    minorstep = 10
-    labelfontsize = 13
+    [[outTemp]]
+        minvalue = -20
+        maxvalue = 40
+        majorstep = 10
+        minorstep = 2
+        digitformat = %d
+        history = 24
+        bins = 90
 
-    [[WindSpeed]]
-    minvalue = 0
-    maxvalue = 40
-    majorstep = 10
-    minorstep = 2
-    labelfontsize = 15
+    [[barometer]]
+        minvalue = 970
+        maxvalue = 1050
+        majorstep = 20
+        minorstep = 5
+        digitformat = %d
+        history = 24
+        bins = 80
 
-    [[WindGust]]
-    minvalue = 0
-    maxvalue = 40
-    majorstep = 10
-    minorstep = 2
-    labelfontsize = 15
+    [[outHumidity]]
+        minvalue = 0
+        maxvalue = 100
+        majorstep = 20
+        minorstep = 5
+        history = 24
+        bins = 50
 
-    [[WindDirection]]
-    labelfontsize = 12
+    [[windSpeed]]
+        minvalue = 0
+        maxvalue = 40
+        majorstep = 10
+        minorstep = 2
+        history = 24
+        bins = 40
 
-    # By default, needle points towards direction of wind source. Use invert to
-    # point towards wind destination. Can be True or False.
-    invert = False
+    [[windGust]]
+        minvalue = 0
+        maxvalue = 40
+        majorstep = 10
+        minorstep = 2
+        history = 24
+        bins = 40
 
-    # Number of groups that wind direction history is split into.
-    bins = 32
-
-    # hours of data to use for windgauge background shading.
-    history = 12
+    [[windDir]]
+        majorstep = 90
+        minorstep = 30
+        invert = false
+        history = 24
+        bins = 16
 """
 
 import time
 import syslog
-import math
+import os.path
 
 import Image
-import ImageDraw
-import ImageFont
-
-import os.path
 
 import weeutil.weeutil
 import weewx.archive
 import weewx.reportengine
 import weeplot.utilities
+import user.gauges
 
 from weewx.units import ValueTupleDict, Converter
 
-
 class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
+    """Class for managing the gauge generator."""
 
-    """Class for creating nice gauge graphics."""
+    def run(self):
+        self.setup()
 
-    def __init__(self, config_dict, skin_dict, gen_ts, first_run, stn_info):
-        super(GaugeGenerator, self).__init__(config_dict, skin_dict, gen_ts,
-                                             first_run, stn_info)
+        # Generate any images
+        self.gen_gauges()
 
+    def setup(self):
         self.gauge_dict = self.skin_dict['GaugeGenerator']
         self.units_dict = self.skin_dict['Units']
 
-        self.wheretosaveit = os.path.join(self.config_dict['WEEWX_ROOT'],
-                                          self.gauge_dict.get('GAUGE_ROOT', "public_html/"))
-        self.Converter = Converter(self.skin_dict['Units']['Groups'])
+        # Lookup the last reading in the archive
+        self.archivedb = self._getArchive(self.skin_dict['archive_database'])
+        rec = self._get_record(self.archivedb, self.archivedb.lastGoodStamp())
+        self.record_dict_vtd = weewx.units.ValueTupleDict(rec)
 
-        self.fillColor = weeplot.utilities.tobgr(self.gauge_dict.get('fill_color', '0x999999'))
-        self.fillColorTuple = int2rgb(self.fillColor)
-
-        self.backColor = weeplot.utilities.tobgr(self.gauge_dict.get('background_color', '0xffffff'))
-        self.backColorTuple = int2rgb(self.backColor)
-
-        self.labelColor = weeplot.utilities.tobgr(self.gauge_dict.get('label_color', '0x000000'))
-        self.dialColor = weeplot.utilities.tobgr(self.gauge_dict.get('dial_color', '0x707070'))
-        self.needleColor = weeplot.utilities.tobgr(self.gauge_dict.get('needle_color', '0xb48242'))
-        self.textColor = weeplot.utilities.tobgr(self.gauge_dict.get('text_color', '0xb48242'))
-
-        self.fontPath = self.gauge_dict.get('font_path', '/usr/share/fonts/truetype/freefont/FreeSans.ttf')
-
-    def _hexToTuple(self, x):
-        b = (x >> 16) & 0xff
-        g = (x >> 8) & 0xff
-        r = x & 0xff
-        return (r, g, b)
-
-    def _calcColor(self, value, index):
-        diff = self.fillColorTuple[index] - self.backColorTuple[index]
-        newColor = self.backColorTuple[index] + int(diff * value)
-
-        if newColor < 0:
-            newColor = 0
-
-        if newColor > 0xff:
-            newColor = 0xff
-
-        return newColor
-
-    def run(self):
+    def gen_gauges(self):
+        """Generate the gauges."""
         t1 = time.time()
-        gaugesDrawn = 0
+        ngen = 0
 
-        syslog.syslog(syslog.LOG_DEBUG,
-                      "GaugeGenerator: Gauge generator code run... marvellous.")
+        # Loop over each time span class (day, week, month, etc.):
+        for gauge in self.gauge_dict.sections:
+            plot_options = weeutil.weeutil.accumulateLeaves(self.gauge_dict[gauge])
 
-        # Load up config info from skin.conf file
-        archivedb = self._getArchive(self.skin_dict['archive_database'])
+            image_root = os.path.join(self.config_dict['WEEWX_ROOT'], plot_options['HTML_ROOT'])
+            # Get the path of the file that the image is going to be saved to:
+            img_file = os.path.join(image_root, '%sGauge.png' % gauge)
 
-        rec = self.getRecord(archivedb, archivedb.lastGoodStamp())
-        record_dict_vtd = weewx.units.ValueTupleDict(rec)
+            # Create the subdirectory that the image is to be put in.
+            # Wrap in a try block in case it already exists.
+            try:
+                os.makedirs(os.path.dirname(img_file))
+            except:
+                pass
 
-
-        for gauge in self.gauge_dict:
-            # Only interested in the section headings within the gauge config file
-            if isinstance(self.gauge_dict[gauge], dict):
-
-                # Do we have a reading for it?
-
-                try:
-                    unitType = self.units_dict['Groups'][record_dict_vtd[gauge][2]]
-                except:
-                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gauge)
-                    return
-
-                # Convert it to units in skin.conf file
-                valueTuple = weewx.units.convert(record_dict_vtd[gauge], unitType)
-
-                syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %f" % (gauge, valueTuple[0]))
-
-                if gauge == 'windDir':
-                    self.drawwindgauge(gauge)
-                else:
-                    self.drawGauge(gauge, valueTuple, unitType)
-
-                gaugesDrawn += 1
+            self.gen_gauge(gauge, plot_options, img_file)
+            ngen += 1
 
         t2 = time.time()
-        syslog.syslog(
-            syslog.LOG_INFO, "GaugeGenerator: Created %d gauges in %.2f seconds." %
-            (gaugesDrawn, t2 - t1))
 
-    def drawwindgauge(self, gaugename):
-        """Wind direction gauge generator with shaded background to indicate historic wind directions"""
+        syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Generated %d images for %s in %.2f seconds" %
+                                       (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
 
-        imagewidth = int(self.gauge_dict.get('image_width', 180))
-        imageheight = int(self.gauge_dict.get('image_height', 180))
-        imageorigin = (imagewidth / 2, imageheight / 2)
+    def gen_gauge(self, gaugename, plot_options, img_file):
+        image_width = int(plot_options.get('image_width', 180))
+        image_height = int(plot_options.get('image_height', 180))
 
-        syslog.syslog(syslog.LOG_DEBUG,
-                      "GaugeGenerator: Generating %s gauge, (%d x %d)" % (gaugename, imagewidth, imageheight))
+        back_color = weeplot.utilities.tobgr(plot_options.get('background_color', '0xffffff'))
+        back_color_tuple = self._int2rgb(back_color)
 
-        labelFontSize = int(self.gauge_dict[gaugename].get('labelfontsize', 12))
-        digitFontSize = int(self.gauge_dict[gaugename].get('digitfontsize', 20))
+        label_color = weeplot.utilities.tobgr(plot_options.get('label_color', '0x000000'))
+        dial_color = weeplot.utilities.tobgr(plot_options.get('dial_color', '0x707070'))
+        needle_outline_color = weeplot.utilities.tobgr(plot_options.get('needle_outline_color', '0xb48242'))
+        needle_fill_color = weeplot.utilities.tobgr(plot_options.get('needle_fill_color', None))
 
-        invertGauge = weeutil.weeutil.tobool(self.gauge_dict[gaugename].get('invert', False))
+        text_color = weeplot.utilities.tobgr(plot_options.get('text_color', '0xb48242'))
+        history_color = weeplot.utilities.tobgr(plot_options.get('history_color', '0x4242b4'))
 
-        archivedb = self._getArchive(self.skin_dict['archive_database'])
+        font_path = plot_options.get('font_path', '/usr/share/fonts/truetype/freefont/FreeSans.ttf')
 
-        (data_time, data_value) = archivedb.getSqlVectors('windDir', archivedb.lastGoodStamp() -
-                                                          self.gauge_dict[gaugename].as_int('history') * 60 * 60,
-                                                          archivedb.lastGoodStamp())
+        label_font_size = int(plot_options.get('labelfontsize', 15))
+        digit_font_size = int(plot_options.get('digitfontsize', 15))
 
-        for rec in data_value:
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s" % rec)
+        major_step = float(plot_options.get('majorstep'))
+        try:
+            minor_step = float(plot_options.get('minorstep'))
+        except:
+            minor_step = None
 
-        # Number of bins to count wind history into
-        numBins = int(self.gauge_dict[gaugename].get('bins', 16))
+        image = Image.new("RGB", (image_width, image_height), back_color_tuple)
 
-        # One data point recorded every 5 mins for 'history' number of hours
-        numPoints = int(self.gauge_dict[gaugename].get('history'), 12) * 60 / 5
-
-        #
-        # Get the wind data
-        #
-        buckets = [0.0] * numBins
-
-        #
-        # Now looks up historic data using weewx helper functions... Thanks Tom!
-        #
-        archive_db = self.config_dict['StdArchive']['archive_database']
-        archive = weewx.archive.Archive.open(
-            self.config_dict['Databases'][archive_db])
-
-        windDir = None
-        windDirNow = None
-        windSpeedNow = None
-
-        #
-        # TODO: Get rid of this SQL stuff and collect the data using weewx helper functions
-        #       (like the histogram function does)
-        #
-        for row in archive.genSql("SELECT windDir, windSpeed FROM archive ORDER BY dateTime DESC LIMIT %d" % numPoints):
-            if row[0] is not None:
-                try:
-                    windDir = float(row[0])
-                except:
-                    syslog.syslog(
-                        syslog.LOG_INFO, "drawWindGauge: Cannot convert wind direction into a float value")
-                else:
-
-                    if (windDir < 0) or (windDir > 360):
-                        syslog.syslog(
-                            syslog.LOG_INFO, "drawWindGauge: %f should be in the range 0-360 degrees",
-                            windDir)
-                    else:
-                        buckets[int(windDir * numBins / 360)] += 1
-
-                        if windDirNow is None:
-                            windDirNow = windDir
-
-            if windSpeedNow is None:
-                if row[1] is not None:
-                    try:
-                        windSpeedNow = float(row[1])
-                    except:
-                        syslog.syslog(
-                            syslog.LOG_INFO, "drawWindGauge; Cannot convert wind speed into a float")
-
-        # If we haven't been able to find a windSpeed then there must be no
-        # wind...
-        if windSpeedNow is not None:
-            maxval = maxvalue(buckets)
-            buckets = [i / maxval for i in buckets]
-
-        #
-        # Draw the gauge
-        #
-        im = Image.new("RGB", (imagewidth, imageheight), (255, 255, 255))
-
-        draw = ImageDraw.Draw(im)
-
-        if imagewidth < imageheight:
-            radius = imagewidth * 0.45
+        if gaugename == 'windDir':
+            # Need to do some special setup for wind gauges
+            min_value = 0
+            max_value = 360
+            dial_arc = 360
+            offset_angle = 180
         else:
-            radius = imageheight * 0.45
+            min_value = float(plot_options.get('minvalue')) # Field is mandatory
+            max_value = float(plot_options.get('maxvalue')) # Field is mandatory
+            dial_arc = int(plot_options.get('dial_arc', 270))
+            offset_angle = 0
 
-        sansFont = ImageFont.truetype(self.fontPath, labelFontSize)
-        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
-        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
+        # Create a new gauge instance using the gauges.py library
+        gauge = user.gauges.GaugeDraw(image, min_value, max_value,  dial_range=dial_arc, offset_angle=offset_angle)
 
-        # Plot shaded pie slices if there is sufficient data
-        if windSpeedNow is not None:
-            angleStep = 360.0 / numBins
-            angle = 0.0
-
-            if not invertGauge:
-                angle = 180.0
-
-            for i in range(0, numBins, 1):
-                fillColor = (self._calcColor(buckets[i], 0), self._calcColor(
-                    buckets[i], 1), self._calcColor(buckets[i], 2))
-
-                draw.pieslice(
-                    (int(imageorigin[
-                        0] - radius), int(
-                        imageorigin[1] - radius), int(
-                        imageorigin[0] + radius),
-                     int(imageorigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
-                angle += angleStep
-
-        # Compass points
-        labels = ['N', 'E', 'S', 'W']
-
-        for i in range(0, 4, 1):
-            angle = i * math.radians(90) + math.radians(180)
-
-            # Major tic
-            startPoint = (imageorigin[0] - radius * math.sin(angle)
-                          * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
-            endPoint = (imageorigin[0] - radius * math.sin(angle),
-                        imageorigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=self.dialColor)
-
-            labelText = labels[i]
-            stringSize = sansFont.getsize(labelText)
-
-            labelPoint = (imageorigin[0] - radius * math.sin(angle)
-                          * 0.80, imageorigin[1] + radius * math.cos(angle) * 0.80)
-            labelPoint = (labelPoint[0] - stringSize[0]
-                          / 2, labelPoint[1] - stringSize[1] / 2)
-
-            draw.text(labelPoint, labelText,
-                      font=sansFont, fill=self.labelColor)
-
-            # Minor tic
-            angle += math.radians(45)
-            startPoint = (imageorigin[0] - radius * math.sin(angle)
-                          * 0.93, imageorigin[1] + radius * math.cos(angle) * 0.93)
-            endPoint = (imageorigin[0] - radius * math.sin(angle),
-                        imageorigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=self.dialColor)
-
-        # The needle
-        if windSpeedNow is not None:
-            if invertGauge:
-                angle = math.radians(windDirNow)
+        if gaugename == 'windDir':
+            # Lookup the labels for the main compass points and add them to the gauge
+            try:
+                labels_dict = self.skin_dict['Labels']
+            except:
+                hemispheres = ['N', 'S', 'E', 'W']
             else:
-                angle = math.radians(windDirNow + 180)
+                hemispheres = labels_dict.get("hemispheres", ['N', 'S', 'E', 'W'])
 
-            # As designed orignally, this draws the needle pointing towards
-            # wind destination, not source (i.e. inverted)
-            endPoint = (imageorigin[0] - radius * math.sin(angle)
-                        * 0.7, imageorigin[1] + radius * math.cos(angle) * 0.7)
-            leftPoint = (
-                imageorigin[0] - radius *
-                math.sin(angle - math.pi * 7 / 8) * 0.2,
-                imageorigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
-            rightPoint = (
-                imageorigin[0] - radius *
-                math.sin(angle + math.pi * 7 / 8) * 0.2,
-                imageorigin[1] + radius * math.cos(angle + math.pi * 7 / 8) * 0.2)
-            midPoint = (
-                imageorigin[0] - radius * math.sin(angle + math.pi) * 0.1,
-                imageorigin[1] + radius * math.cos(angle + math.pi) * 0.1)
+            compass_points = [0, 180, 90, 270]
+            dial_labels = dict(zip(compass_points, hemispheres))
 
-            draw.line((leftPoint, endPoint), fill=self.needleColor)
-            draw.line((rightPoint, endPoint), fill=self.needleColor)
-            draw.line((leftPoint, midPoint), fill=self.needleColor)
-            draw.line((rightPoint, midPoint), fill=self.needleColor)
+            gauge.add_dial_labels(dial_labels = dial_labels, dial_label_font_size=digit_font_size,
+                                  dial_label_color=label_color, dial_label_font=font_path)
 
-        # Outline
-        draw.ellipse(((imageorigin[0] - radius, imageorigin[1] - radius),
-                      (imageorigin[0] + radius, imageorigin[1] + radius)), outline=self.dialColor)
+        # Do we have a reading for it?
+        try:
+            unit_type = self.units_dict['Groups'][self.record_dict_vtd[gaugename][2]]
+        except:
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gaugename)
+            return
 
-        # Digital value text
-        degreeSign = u'\N{DEGREE SIGN}'
+        # Convert it to units in skin.conf file
+        value_tuple = weewx.units.convert(self.record_dict_vtd[gaugename], unit_type)
 
-        if windSpeedNow is not None:
-            digitalText = "%d" % windDirNow + degreeSign
+        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s = %s" % (gaugename, value_tuple[0]))
+
+        # Do we have a proper numeric reading?
+        try:
+            needle_value = float(value_tuple[0])
+        except:
+            # Log the error, do not draw the needle and display '-'
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
+                                           (gaugename, value_tuple[0]))
+            label_text = '-'
+            digit_format = None
         else:
-            digitalText = "No wind"
+            gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
+                             needle_fill_color=needle_fill_color)
 
-        stringSize = bigSansFont.getsize(digitalText)
-        draw.text(
-            (imageorigin[0] - stringSize[0] / 2, imageorigin[1]
-             + radius * 0.4 - stringSize[1] / 2), digitalText,
-            font=bigSansFont, fill=self.textColor)
+            label_format = self.units_dict['StringFormats'][value_tuple[1]]
+            digit_format = plot_options.get("digitformat", label_format)
 
-        del draw
+            label_text = unicode(label_format % value_tuple[0], "utf8")
+            label_text += unicode(self.units_dict['Labels'][value_tuple[1]], "utf8")
 
-        im.save(self.wheretosaveit + gaugename + "Gauge.png", "PNG")
+        gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
-    def histogram(self, gaugeName, fieldName, unitType, numBins):
-        minVal = self.gauge_dict[gaugeName].as_float('minvalue')
-        maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
-
-        buckets = [0.0] * numBins
-        bucketSpan = (maxval - minVal) / numBins
-        numPoints = 0
-        roof = 0
-
-        archivedb = self._getArchive(self.skin_dict['archive_database'])
-
-        (data_time, data_value) = archivedb.getSqlVectors(gaugeName, archivedb.lastGoodStamp() -
-                                                          int(self.gauge_dict[gaugeName].get('history', 12)) * 60 * 60,
-                                                          archivedb.lastGoodStamp())
-        for t1 in data_time:
-            for t2 in t1:
-                rec = archivedb.getRecord(t2)
-
-                if rec is not None:
-
-                    record_dict_vtd = weewx.units.ValueTupleDict(rec)
-                    valueTuple = weewx.units.convert(record_dict_vtd[gaugeName], unitType)
-
-                    try:
-                        histValue = float(valueTuple[0])
-                    except:
-                        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator->histogram(): Cannot decode reading for gauge '%s'" 
-                                     % gaugeName)
-                    else:
-                        if histValue > maxval:
-                            syslog.syslog(syslog.LOG_DEBUG,
-                                          "histogram: %s = %f is higher than maxvalue (%f)" % (fieldName, histValue, maxval))
-                        elif histValue < minVal:
-                            syslog.syslog(syslog.LOG_DEBUG,
-                                          "histogram: %s = %f is lower than minvalue (%f)" % (fieldName, histValue, minVal))
-                        else:
-                            bucketNum = int((histValue - minVal) / bucketSpan)
-
-                            if bucketNum >= numBins:
-                                syslog.syslog(syslog.LOG_INFO, "histogram: value %f gives bucket higher than numBins (%d)"
-                                              % (histValue, numBins))
-                            else:
-                                buckets[bucketNum] += 1.0
-                                numPoints += 1
-
-                                if buckets[bucketNum] > roof:
-                                    roof = buckets[bucketNum]
-
-        buckets = [i / roof for i in buckets]
-
-        return buckets
-
-    def drawGauge(self, gaugeName, valueTuple, unitType):
-        imageWidth = int(self.gauge_dict.get('image_width', 180))
-        imageHeight = int(self.gauge_dict.get('image_height', 180))
-        imageOrigin = (imageWidth / 2, imageHeight / 2)
-
-        digitalText = None
-
-        # Check gauge value is usable
-        if valueTuple is None:
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), valueTuple = None" % (
-                gaugeName, imageWidth, imageHeight))
-            digitalText = "N/A"
+        try:
+            history = int(plot_options.get('history'))
+        except:
+            history = None
         else:
-            digitalText = self.units_dict['StringFormats'][valueTuple[1]] % valueTuple[0] + \
-                          self.units_dict['Labels'][valueTuple[1]]
+            (data_time, data_value) = self.archivedb.getSqlVectors(gaugename, self.archivedb.lastGoodStamp() -
+                                                          history * 60 * 60, self.archivedb.lastGoodStamp())
 
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Generating %s gauge, (%d x %d), value = %s" % (
-                gaugeName, imageWidth, imageHeight, digitalText))
+            num_buckets = int(plot_options.get('bins', 10))
+            history_list = []
 
-        minVal = self.gauge_dict[gaugeName].as_float('minvalue')
-        maxval = self.gauge_dict[gaugeName].as_float('maxvalue')
-        majorStep = float(self.gauge_dict[gaugeName].get('majorstep', 10))
-        minorStep = float(self.gauge_dict[gaugeName].get('minorstep', 1))
-        labelFontSize = int(self.gauge_dict[gaugeName].get('labelfontsize', 12))
-        digitFontSize = int(self.gauge_dict[gaugeName].get('digitfontsize', 20))
-        labelFormat = "%d"
+            for i in range(len(data_time[0])):
+                value_tuple = weewx.units.convert((data_value[0][i], data_value[1], data_value[2]), unit_type)
 
-        minAngle = 45  # in degrees
-        maxAngle = 315
+                try:
+                     hist_value = float(value_tuple[0])
+                except:
+                    syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading for gauge '%s'" % gaugename)
+                else:
+                    history_list.append(hist_value)
 
-        im = Image.new("RGB", (imageWidth, imageHeight), (255, 255, 255))
+            gauge.add_history(history_list, num_buckets, history_color)
 
-        draw = ImageDraw.Draw(im)
+        # Uses the skin.conf string format for the labels unless overwritten in the gauge generator section
+        # Do not draw labels if this is a wind gauge
+        if gaugename == 'windDir':
+            digit_format = None
 
-        if imageWidth < imageHeight:
-            radius = imageWidth * 0.45
-        else:
-            radius = imageHeight * 0.45
+        gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_font_size=digit_font_size,
+                       dial_font=font_path, dial_color=dial_color, dial_label_color=label_color,
+                       dial_format=digit_format)
 
-        # Background
+        gauge.render()
+        image.save(img_file)
 
-        if int(self.gauge_dict[gaugeName].get('history', 0)) > 0:
-
-            numBins = int(self.gauge_dict[gaugeName].get('bins', 100))
-            buckets = self.histogram(gaugeName, gaugeName, unitType, numBins)
-
-            angle = float(minAngle)
-            angleStep = (maxAngle - minAngle) / float(numBins)
-            for i in range(0, numBins, 1):
-                fillColor = (self._calcColor(buckets[i], 0), self._calcColor(
-                    buckets[i], 1), self._calcColor(buckets[i], 2))
-
-                draw.pieslice(
-                    (int(imageOrigin[
-                        0] - radius), int(
-                        imageOrigin[1] - radius), int(
-                        imageOrigin[0] + radius),
-                     int(imageOrigin[1] + radius)), int(angle + 90), int(angle + angleStep + 90), fill=fillColor)
-                angle += angleStep
-
-        draw.ellipse(((imageOrigin[0] - radius, imageOrigin[1] - radius),
-                      (imageOrigin[0] + radius, imageOrigin[1] + radius)), outline=self.dialColor)
-
-        sansFont = ImageFont.truetype(self.fontPath, labelFontSize)
-        bigSansFont = ImageFont.truetype(self.fontPath, digitFontSize)
-
-        labelValue = minVal
-
-        # Major tic marks and scale labels
-        for angle in frange(math.radians(minAngle), math.radians(maxAngle), int(1 + (maxval - minVal) / majorStep)):
-            startPoint = (imageOrigin[0] - radius * math.sin(angle)
-                          * 0.93, imageOrigin[1] + radius * math.cos(angle) * 0.93)
-            endPoint = (imageOrigin[0] - radius * math.sin(angle),
-                        imageOrigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=self.dialColor)
-
-            labelText = str(labelFormat % labelValue)
-            stringSize = sansFont.getsize(labelText)
-
-            labelPoint = (
-                imageOrigin[0] - radius * math.sin(angle) * 0.80, imageOrigin[1] + radius * math.cos(angle) * 0.80)
-            labelPoint = (labelPoint[0] - stringSize[0]
-                          / 2, labelPoint[1] - stringSize[1] / 2)
-
-            draw.text(labelPoint, labelText,
-                      font=sansFont, fill=self.labelColor)
-            # draw.point(labelPoint)
-            labelValue += majorStep
-
-        # Minor tic marks
-        for angle in frange(math.radians(minAngle), math.radians(maxAngle), int(1 + (maxval - minVal) / minorStep)):
-            startPoint = (imageOrigin[0] - radius * math.sin(angle)
-                          * 0.97, imageOrigin[1] + radius * math.cos(angle) * 0.97)
-            endPoint = (imageOrigin[0] - radius * math.sin(angle),
-                        imageOrigin[1] + radius * math.cos(angle))
-            draw.line((startPoint, endPoint), fill=self.dialColor)
-
-        # The needle
-        if valueTuple[0] is not None:
-            angle = math.radians(minAngle + (valueTuple[0] - minVal)
-                                 * (maxAngle - minAngle) / (maxval - minVal))
-            endPoint = (
-                imageOrigin[0] - radius * math.sin(angle) * 0.7, imageOrigin[1] + radius * math.cos(angle) * 0.7)
-            leftPoint = (
-                imageOrigin[0] - radius *
-                math.sin(angle - math.pi * 7 / 8) * 0.2,
-                imageOrigin[1] + radius * math.cos(angle - math.pi * 7 / 8) * 0.2)
-            rightPoint = (
-                imageOrigin[0] - radius *
-                math.sin(angle + math.pi * 7 / 8) * 0.2,
-                imageOrigin[1] + radius * math.cos(angle + math.pi * 7 / 8) * 0.2)
-            midPoint = (
-                imageOrigin[0] - radius * math.sin(angle + math.pi) * 0.1,
-                imageOrigin[1] + radius * math.cos(angle + math.pi) * 0.1)
-
-            draw.line((leftPoint, endPoint), fill=self.needleColor)
-            draw.line((rightPoint, endPoint), fill=self.needleColor)
-            draw.line((leftPoint, midPoint), fill=self.needleColor)
-            draw.line((rightPoint, midPoint), fill=self.needleColor)
-
-        # Digital value text
-        digitalText = digitalText.decode('utf_8')
-        stringSize = bigSansFont.getsize(digitalText)
-        draw.text((imageOrigin[0] - stringSize[0] / 2, imageOrigin[1]+ radius * 0.4 - stringSize[1] / 2), digitalText,
-            font=bigSansFont, fill=self.textColor)
-
-        del draw
-
-        im.save(self.wheretosaveit + gaugeName + "Gauge.png", "PNG")
-
-    def getRecord(self, archivedb, time_ts):
-        # Return a value tuple dictionary which can be used to get current
-        # readings in skin units
+    @staticmethod
+    def _get_record(archivedb, time_ts):
+        """Return a value tuple dictionary which can be used to get current
+        readings in skin units."""
         record_dict = archivedb.getRecord(time_ts)
 
         return ValueTupleDict(record_dict)
 
-
-def int2rgb(x):
-#
-# Stolen from genploy.py Weewx file
-#
-    b = (x >> 16) & 0xff
-    g = (x >> 8) & 0xff
-    r = x & 0xff
-    return r, g, b
-
-
-def frange(start, stop, n):
-    L = [0.0] * n
-    nm1 = n - 1
-    nm1inv = 1.0 / nm1
-    for i in range(n):
-        L[i] = nm1inv * (start * (nm1 - i) + stop * i)
-    return L
-
-
-def maxvalue(array):
-    maxval = 0.0
-
-    for i in array:
-        if i > maxval:
-            maxval = i
-
-    return maxval
+    @staticmethod
+    def _int2rgb(x):
+    #
+    # Stolen from genploy.py Weewx file
+    #
+        if x is None:
+            return None
+        else:
+            b = (x >> 16) & 0xff
+            g = (x >> 8) & 0xff
+            r = x & 0xff
+            return r, g, b

@@ -83,6 +83,106 @@ from weewx.stats import TimeSpanStats
 from weeutil.weeutil import TimeSpan
 from weewx.units import conversionDict
 
+
+class googleChart(SearchList):
+    def get_extension(self, valid_timespan, archivedb, statsdb):
+        all_stats = TimeSpanStats(valid_timespan,
+                                  statsdb,
+                                  formatter=self.generator.formatter,
+                                  converter=self.generator.converter)
+
+        recordListRaw = []
+
+        cursor = statsdb.connection.cursor()
+        try:
+            for row in cursor.execute("SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, strftime('%d', datetime(dateTime, 'unixepoch', 'localtime')) as Day, SUM(sum) FROM rain GROUP BY Year, Month, Day"):
+                record = (int(row[0]), int(row[1]), int(row[2]), row[3])
+                recordListRaw.append(record)
+        finally:
+            cursor.close()
+
+        rainChartText = "dataTable.addRows([\n"
+
+        for record in recordListRaw:
+            if record[0] >= 2011:
+                rainChartText += "   [ new Date(%d, %d, %d), %0.3f ],\n" % record
+
+        rainChartText += " ]);"
+
+       #dataTable.addRows([
+       #   [ new Date(2012, 3, 13), 37032 ],
+       #   [ new Date(2012, 3, 14), 38024 ],
+       #   [ new Date(2012, 3, 15), 38024 ],
+       #   [ new Date(2012, 3, 16), 38108 ],
+       #   [ new Date(2012, 3, 17), 38229 ],
+       #   // Many rows omitted for brevity.
+       #   [ new Date(2013, 9, 4), 38177 ],
+       #   [ new Date(2013, 9, 5), 38705 ],
+       #   [ new Date(2013, 9, 12), 38210 ],
+       #   [ new Date(2013, 9, 13), 38029 ],
+       #   [ new Date(2013, 9, 19), 38823 ],
+       #   [ new Date(2013, 9, 23), 38345 ],
+       #   [ new Date(2013, 9, 24), 38436 ],
+       #   [ new Date(2013, 9, 30), 38447 ]
+       # ]);
+
+        search_list_extension = {'google_chart': rainChartText}
+
+        return search_list_extension
+
+
+class googleTemperatureChart(SearchList):
+    def get_extension(self, valid_timespan, archivedb, statsdb):
+        all_stats = TimeSpanStats(valid_timespan,
+                                  statsdb,
+                                  formatter=self.generator.formatter,
+                                  converter=self.generator.converter)
+
+        recordListRaw = []
+
+        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year,"
+        sqlQuery += " strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month,"
+        sqlQuery += " strftime('%d', datetime(dateTime, 'unixepoch', 'localtime')) as Day,"
+        sqlQuery += " strftime('%H', datetime(dateTime, 'unixepoch', 'localtime')) as Hour,"
+        sqlQuery += "avg(outTemp) FROM archive GROUP BY Year, Month, Day, Hour"
+
+        cursor = archivedb.connection.cursor()
+        try:
+            for row in cursor.execute(sqlQuery):
+                record = (int(row[0]), int(row[1]), int(row[2]), int(row[3]), row[4])
+                recordListRaw.append(record)
+        finally:
+            cursor.close()
+
+        tempChartText = "data.addRows([\n"
+
+        for record in recordListRaw:
+            if 2014 == record[0]:
+                tempChartText += "   [ new Date(%d, %d, %d, %d), %.1f, undefined, undefined, undefined, undefined, undefined],\n" % record
+
+        tempChartText += " ]);"
+
+
+        #data.addRows([
+        #  [new DateTime(2314, 2, 15), 12400, undefined, undefined,
+        #                          10645, undefined, undefined],
+        #  [new Date(2314, 2, 16), 24045, 'Lalibertines', 'First encounter',
+        #                          12374, undefined, undefined],
+        #  [new Date(2314, 2, 17), 35022, 'Lalibertines', 'They are very tall',
+        #                          15766, 'Gallantors', 'First Encounter'],
+        #  [new Date(2314, 2, 18), 12284, 'Lalibertines', 'Attack on our crew!',
+        #                          34334, 'Gallantors', 'Statement of shared principles'],
+        #  [new Date(2314, 2, 19), 8476, 'Lalibertines', 'Heavy casualties',
+        #                          66467, 'Gallantors', 'Mysteries revealed'],
+        #  [new Date(2314, 2, 20), 0, 'Lalibertines', 'All crew lost',
+        #                          79463, 'Gallantors', 'Omniscience achieved']
+        #]);
+
+        search_list_extension = {'google_temp_chart': tempChartText}
+
+        return search_list_extension
+
+
 class MyXSearch(SearchList):                                           
     
     def __init__(self, generator):                                     
