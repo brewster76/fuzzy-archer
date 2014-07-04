@@ -9,12 +9,12 @@ Before we begin...
 The easy way
 ============
 
-Get hold of bootstrap-prev2.tar.gz.
+Get hold of v2.0.tar.gz.
 
 Use the WeeWx extension installer:
 
    cd /home/weewx
-   setup.py --extension --install [wherever you've put bootstrap-prev2.tar.gz]
+   setup.py --extension --install [wherever you've put v2.0.tar.gz]
 
 Web content is stored in public_html/Bootstrap.
 
@@ -33,7 +33,7 @@ To get the latest development code:
 To get the latest stable(ish) release, point your browser here:
    https://github.com/brewster76/fuzzy-archer/releases
 
-Move gaugeengine.py and historyengine,py into the bin/user directory.
+Move gaugeengine.py, gauges.py and historyengine,py into the bin/user directory.
 Move the Bootstrap and Images directory into the skins directory.
 
 Step 2 - Add the skins to weewx.conf
