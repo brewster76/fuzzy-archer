@@ -39,6 +39,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
                         0: gauge starts and end around the bottom of the image_height
                         90: the left
                         180: the top - useful for generating a compass gauge"""
+
         # This class extends ImageDraw... Initialise it
         ImageDraw.ImageDraw.__init__(self, im)
 
@@ -51,7 +52,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         else:
             self.min_angle = 0
             self.max_angle = 360
-        
+
         # Derive image dimensions from im
         (self.image_width, self.image_height) = im.size
         self.gauge_origin = (int(self.image_width / 2), int(self.image_height / 2))
@@ -60,10 +61,10 @@ class GaugeDraw(ImageDraw.ImageDraw):
             self.radius = self.image_width * 0.45
         else:
             self.radius = self.image_height * 0.45
-    
+
         # If None, means no histogram data added
         self.num_buckets = None
-        
+
         # Whether to draw the dial
         self.draw_dial = False
 
@@ -79,7 +80,6 @@ class GaugeDraw(ImageDraw.ImageDraw):
         # Default colors...
         self.colors = { 'histogram'      : 4342452,
                          'background'     : 16777215,
-                         'label'          : 0,
                          'dial_label'     : 0,
                          'dial'           : 7368816,
                          'needle_outline' : 11829826,
@@ -165,7 +165,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
             self.major_tick = float(major_ticks)
         except:
             raise Exception("Need to specify a number for major_ticks.")
-    
+
         self.minor_tick = minor_ticks
         self.dial_format = dial_format
 
@@ -186,12 +186,12 @@ class GaugeDraw(ImageDraw.ImageDraw):
         """Turn list_vals of values into a histogram"""
         if num_buckets is None:
             raise Exception("Need to specify number of buckets to split histogram into.")
-    
+
         self.num_buckets = num_buckets
-    
+
         if list_vals is None:
             raise Exception("No data specified.")
-        
+
         self.buckets = [0.0] * num_buckets
         bucket_span = (self.max_value - self.min_value) / num_buckets
         num_points = 0
@@ -214,6 +214,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         self.buckets = [i / roof for i in self.buckets]
 
         if histogram_color is not None:
+            self.colors['histogram'] = histogram_color
             self.fill_color_tuple = int2rgb(self.colors['histogram'])
 
     def render_simple_gauge(self, value=None, major_ticks=None, minor_ticks=None, label=None, font=None):
@@ -240,10 +241,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         self.render()
 
-
-    def render(self):
-        """Renders the gauge. Call this function last."""
-
+    def draw_buckets(self):
+        """Draws the history buckets."""
         if self.num_buckets is not None:
             angle = float(self.min_angle)
             angle_step = (self.max_angle - self.min_angle) / float(self.num_buckets)
@@ -257,6 +256,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
                               fill=fill_color)
                 angle += angle_step
 
+    def draw_scale(self):
+        """Draws the dial with tick marks and dial labels"""
         if self.draw_dial is True:
             # Major tic marks and scale labels
             label_value = self.min_value
@@ -273,7 +274,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
                 self.line((start_point, end_point), fill=self.colors['dial'])
 
-                if self.dial_format is not None:
+                if self.dial_format is not None and self.dial_format != 'None':
                     text = str(self.dial_format % label_value)
                     string_size = self.dial_font.getsize(text)
 
@@ -324,6 +325,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
                         self.text(label_point, self.dial_labels[k], font=self.dial_label_font,
                                   fill=self.colors['dial_label'])
 
+    def draw_labels(self):
+        """Draws the reading/text label"""
         if self.text_labels is not None:
             vstep = self.text_font_size * 1.3
             vpos = self.gauge_origin[1] + self.radius * 0.42 - (vstep * len(self.text_labels)) / 2
@@ -336,7 +339,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
                           font=self.text_font, fill=self.colors['text'])
                 vpos += vstep
 
-        # Do last - the needle is on top of everything
+    def draw_needle(self):
+        """Draws the needle"""
         if self.gauge_value is not None:
             angle = math.radians(self.min_angle + (self.gauge_value - self.min_value) *
                                  (self.max_angle - self.min_angle) / (self.max_value - self.min_value)
@@ -353,6 +357,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
             self.polygon((left_point, end_point, right_point, mid_point), outline=self.colors['needle_outline'],
                          fill=self.colors['needle_fill'])
+
+    def render(self):
+        """Renders the gauge. Call this function last."""
+        self.draw_buckets() # History
+        self.draw_scale()    # Dial and dial labels
+        self.draw_labels()  # Reading/Text labels
+        self.draw_needle()  # Do last - the needle is on top of everything
 
     @staticmethod
     def _frange(start, stop, n):
@@ -375,6 +386,113 @@ class GaugeDraw(ImageDraw.ImageDraw):
             new_color = 0xff
 
         return new_color
+
+
+class WindRoseGaugeDraw(GaugeDraw):
+    """Class for rendering a meteorological wind rose"""
+
+    def __init__(self, im, background_color=None):
+        """Initialises the dial.
+            background_color = color outside the dial"""
+
+        # This class extends GaugeDraw... Initialise it
+        GaugeDraw.__init__(self, im, 0, 360, dial_range=360, background_color=background_color, offset_angle=180)
+
+    def add_history(self, list_vals, num_buckets, ring_vals=None, rings=None, ring_colors=None):
+        """Turn list_vals of values into a histogram
+
+        Polar history data get mapped to polar coordinates. Angular dimension are Vals, distance dimension is number of data point in per angular bucket.
+        Buckets can be divided into rings. Values are mapped to rings via rings.
+
+        Ring 0 does not get drawn. If you want to have one, put a lower limit in rings.
+
+        list_vals = angular values, assigned to buckets by dividing 360 degree by bucket_num. Typical wind direction.
+        ring_vals = List of values for rings. Typical wind speed ranges.
+        rings = Mapping instruction for ring values
+        ring_colors = Colors for the rings"""
+
+        if num_buckets is None:
+            raise Exception("Need to specify number of buckets to split histogram into.")
+
+        self.num_buckets = num_buckets
+
+        if list_vals is None:
+            raise Exception("No data specified.")
+
+        self.num_rings = 0
+
+        if ring_vals is not None:
+            if rings is None:
+                raise Exception("No ring ranges specified.")
+            if len(ring_vals) != len(list_vals):
+                raise Exception("Number of ring vals (%d) does not match the number of list vals (%d)." % (len(ring_vals), len(list_vals)))
+            if len(rings) > len(ring_colors):
+                raise Exception("Number of ring colors (%d) does not match the number of rings (%d)." % (len(ring_colors), len(rings)))
+            self.num_rings = len(rings)
+            self.ring_colors = ring_colors
+
+        # Buckets contains a list of buckets.
+        # A bucket is list which in turn contains at index [0] the number of data points and at index[1] 
+        # a list of rings
+        # The list of rings contains for each ring the number of data point
+        self.buckets = []
+        for i in range(num_buckets):
+            self.buckets.append([0.0, [0.0] * self.num_rings])
+
+        bucket_span = (self.max_value - self.min_value) / num_buckets
+
+        for i in range(len(list_vals)):
+            data = list_vals[i]
+            # Ignore data which is outside range of gauge
+            if (data > self.min_value) and (data < self.max_value):
+                data = (data + 360 + (bucket_span / 2)) % self.max_value  # take bucket offset into account
+                bucket = int((data - self.min_value) / bucket_span)
+
+                if bucket >= num_buckets:
+                    raise Exeption("Value %f gives bucket higher than num_buckets (%d)" % (data, num_buckets))
+                else:
+                    self.buckets[bucket][0] += 1.0
+                    if ring_vals is not None:
+                        ring = get_ring(ring_vals[i], rings)
+                        self.buckets[bucket][1][ring] += 1.0
+
+        bucket_max = max(self.buckets)[0]
+        for bucket in self.buckets:
+            bucket[0] /= bucket_max
+            ring_sum = max(1.0, sum(bucket[1][1:]))
+            ring = 0.0
+            for k in range(1,len(bucket[1])):
+                if bucket[1][k] != 0:
+                    ring += bucket[1][k] / ring_sum
+                    bucket[1][k] = ring
+
+    def draw_buckets(self):
+        """Draw the wind rose. 
+            - Bucket size is relative number of entries in buckets
+            - Bucket color shade is absolute wind speed in beaufort"""
+        if self.num_buckets is not None:
+            angle = float(self.min_angle)
+            angle_step = (self.max_angle - self.min_angle) / float(self.num_buckets)
+            bucket_angle_offset = angle_step / float(2)
+
+            for bucket in self.buckets:
+                for i in reversed(range(1, len(bucket[1]))):
+                    ring = bucket[1][i]
+                    radius = self.radius * bucket[0] * ring
+                    if radius > 0:
+                        self.pieslice((int(self.gauge_origin[0] - radius), int(self.gauge_origin[1] - radius), # bounding box x0, y0
+                                       int(self.gauge_origin[0] + radius), int(self.gauge_origin[1] + radius)), # bounding box x1, y1
+                                       int(angle + 90 + self.offset_angle - bucket_angle_offset),              # start angle
+                                       int(angle + angle_step + 90 + self.offset_angle - bucket_angle_offset), # end angle
+                                       outline=self.colors["dial"],
+                                       fill=self.ring_colors[i])
+                angle += angle_step
+           
+def get_ring(value, rings):
+    for i in range(len(rings)):
+        if value < rings[i]:
+            return i
+    return len(rings)
 
 def int2rgb(x):
 #
