@@ -74,15 +74,13 @@ and rain is mm.
         units = rain
 """
 
-import datetime
 import time
 from operator import itemgetter
 
 from weewx.cheetahgenerator import SearchList
 from weewx.stats import TimeSpanStats
-from weeutil.weeutil import TimeSpan
 from weewx.units import conversionDict
-
+import weeutil.weeutil
 
 class googleChart(SearchList):
     def get_extension(self, valid_timespan, archivedb, statsdb):
@@ -189,6 +187,11 @@ class MyXSearch(SearchList):
         SearchList.__init__(self, generator)
         self.table_dict = generator.skin_dict['TableGenerator']
 
+        # Calculate the tables once every refresh_interval mins
+        self.refresh_interval = int(self.table_dict.get('refresh_interval', 5))
+        self.cache_time = 0
+        self.search_list_extension = None
+
     def get_extension(self, valid_timespan, archivedb, statsdb):       
         """Returns a search list extension with two additions.
         
@@ -202,21 +205,26 @@ class MyXSearch(SearchList):
           statsdb:   An instance of weewx.stats.StatsDb
         """
 
-        # First, get a TimeSpanStats object for all time. This one is easy
-        # because the object valid_timespan already holds all valid times to be
-        # used in the report.
-        all_stats = TimeSpanStats(valid_timespan,
-                                  statsdb,
-                                  formatter=self.generator.formatter,
-                                  converter=self.generator.converter)  
+        # TODO: Set time interval when to recalculate
 
-        # Now create a small dictionary with keys 'alltime' and 'seven_day':
-        search_list_extension = {'alltime' : all_stats}             
+        # Recalculate when 60 mins passed
+        if (time.time() - (self.refresh_interval * 60)) > self.cache_time:
+            self.cache_time = time.time()
 
-        for table in self.table_dict:
-            search_list_extension[table + '_table'] = self.statsHTMLTable(table, self.table_dict[table]['sqlquery'], self.table_dict[table]['units'], statsdb)
-        
-        return search_list_extension
+            # First, get a TimeSpanStats object for all time. This one is easy
+            # because the object valid_timespan already holds all valid times to be
+            # used in the report.
+            all_stats = TimeSpanStats(valid_timespan, statsdb, formatter=self.generator.formatter,
+                                      converter=self.generator.converter)
+
+            # Now create a small dictionary with keys 'alltime' and 'seven_day':
+            self.search_list_extension = {'alltime' : all_stats}
+
+            for table in self.table_dict.sections:
+                table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
+                self.search_list_extension[table + '_table'] = self.statsHTMLTable(table, table_options, statsdb)
+
+        return self.search_list_extension
 
     def colorCell(self, value, units, bgColours):
         cellText = "<td"
@@ -240,15 +248,15 @@ class MyXSearch(SearchList):
 
         return cellText
 
-    def statsHTMLTable(self, table, sqlQuery, units, statsdb):
+    def statsHTMLTable(self, table, table_options, statsdb):
 
         recordListRaw = []
 
-        bgColours = zip(self.table_dict[table]['minvalues'], self.table_dict[table]['maxvalues'], self.table_dict[table]['colours'])
+        bgColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'])
 
         cursor = statsdb.connection.cursor()
         try:
-            for row in cursor.execute(sqlQuery):
+            for row in cursor.execute(table_options['sqlquery']):
                 record = (int(row[0]), int(row[1]), row[2])
                 recordListRaw.append(record)
         finally:
@@ -306,7 +314,7 @@ class MyXSearch(SearchList):
                 htmlLine += (' ' * 12) + "<td>-</td>\n"
 
             month = record[1]
-            htmlLine += (' ' * 12) + self.colorCell(record[2], units, bgColours)
+            htmlLine += (' ' * 12) + self.colorCell(record[2], table_options['units'], bgColours)
 
         # Any padding required?
         for i in range(12 - month):
