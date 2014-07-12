@@ -211,11 +211,16 @@ class GaugeDraw(ImageDraw.ImageDraw):
                     if self.buckets[bucket] > roof:
                         roof = self.buckets[bucket]
 
-        self.buckets = [i / roof for i in self.buckets]
+        if roof != 0.0:
+            self.buckets = [i / roof for i in self.buckets]
 
-        if histogram_color is not None:
-            self.colors['histogram'] = histogram_color
-            self.fill_color_tuple = int2rgb(self.colors['histogram'])
+            if histogram_color is not None:
+                self.colors['histogram'] = histogram_color
+                self.fill_color_tuple = int2rgb(self.colors['histogram'])
+        else:
+            # No history values found within the visible range of the gauge
+            self.num_buckets = None
+
 
     def render_simple_gauge(self, value=None, major_ticks=None, minor_ticks=None, label=None, font=None):
         """Helper function to create gauges with minimal code, eg:
