@@ -1,0 +1,249 @@
+#errorCatcher Echo
+##    $Revision: 248 $
+##    $Author: tkeffer - Juan Antonio Mosquera (ES) (2014)$
+##    $Date: 2010-04-18 15:59:52 -0700 (Sun, 18 Apr 2010) $
+#set $YM="%Y %m"
+#set $D="  %d"
+#set $M=" %b"
+#set $NODAY=" N/A"
+#set $Temp="%6.1f"
+#set $Wind="%6.1f"
+#set $Dir="%6.0f"
+#set $Count="%6d"
+#set $NONE="   N/A"
+#if $unit.unit_type_dict.group_temperature == "degree_F"
+#set $Hot     =(90.0,"degree_F")
+#set $Cold    =(32.0,"degree_F")
+#set $VeryCold=(0.0, "degree_F")
+#else
+#set $Hot     =(30.0,"degree_C")
+#set $Cold    =(0.0,"degree_C")
+#set $VeryCold=(-20.0,"degree_C")
+#end if
+#if $unit.unit_type_dict.group_rain == "inch"
+#set $Trace    =(0.01,"inch")
+#set $SomeRain =(0.1, "inch")
+#set $Soak     =(1.0, "inch")
+#set $Rain="%6.2f"
+#elif $unit.unit_type_dict.group_rain == "mm"
+#set $Trace    =(.3,  "mm")
+#set $SomeRain =(3,   "mm")
+#set $Soak     =(30.0,"mm")
+#set $Rain="%6.1f"
+#else
+#set $Trace    =(.03,"cm")
+#set $SomeRain =(.3, "cm")
+#set $Soak     =(3.0,"cm")
+#set $Rain="%6.2f"
+#end if
+#def ShowInt($T)
+$("%6d" % $T[0])#slurp
+#end def
+#def ShowFloat($R)
+$("%6.2f" % $R[0])#slurp
+#end def
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title>Resumen climatol&oacute;gico</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Juan Antonio Mosquera" >
+
+    <!-- Le styles -->
+    <link href="../assets/css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="../assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body>
+    <div class="container">
+
+<h2>Resumen climatol&oacute;gico para el a&ntilde;o $year_name</h2>
+
+<table class="table table-striped table-condensed">
+<tr><td>NOMBRE:</td><td>$station.location</td></tr>
+<tr><td>ALTITUD:</td><td>$station.altitude</td></tr>
+<tr><td>LAT:</td><td>$station.latitude[0]-$station.latitude[1] $station.latitude[2]</td></tr>
+<tr><td>LONG:</td><td>$station.longitude[0]-$station.longitude[1] $station.longitude[2]</td></tr>
+</table>
+
+<h3>Temperatura ($unit.label.outTemp.strip())</h3>
+<table class="table table-striped table-condensed">
+<thead>
+<tr>
+<th>A&ntilde;o mes</th>
+<th>Media Max</th>
+<th>Media Min</th>
+<th>Media</th>
+<th>Heat deg days</th>
+<th>Cool deg days</th>
+<th>MAX</th>
+<th>D&iacute;a</th>
+<th>MIN</th>
+<th>D&iacute;a</th>
+<th>Max >= 30</th>
+<th>Max <= 30</th>
+<th>Min <= 0</th>
+<th>Min <= -20</th>
+</tr>
+</thead>
+
+<tbody>
+
+#for $month in $year.months
+<tr>
+#if $month.barometer.count.raw
+<td>$month.dateTime.format($YM)</td>
+<td>$month.outTemp.meanmax.nolabel($Temp,$NONE)</td>
+<td>$month.outTemp.meanmin.nolabel($Temp,$NONE)</td>
+<td>$month.outTemp.avg.nolabel($Temp,$NONE)</td>
+<td>$month.heatdeg.sum.nolabel($Temp,$NONE)</td>
+<td>$month.cooldeg.sum.nolabel($Temp,$NONE)</td>
+<td>$month.outTemp.max.nolabel($Temp,$NONE)</td>
+<td>$month.outTemp.maxtime.format($D,$NODAY)</td>
+<td>$month.outTemp.min.nolabel($Temp,$NONE)</td>
+<td>$month.outTemp.mintime.format($D,$NODAY)</td>
+<td>$month.outTemp.max_ge($Hot).nolabel($Count,$NONE)</td>
+<td>$month.outTemp.max_le($Cold).nolabel($Count,$NONE)</td>
+<td>$month.outTemp.min_le($Cold).nolabel($Count,$NONE)</td>
+<td>$month.outTemp.min_le($VeryCold).nolabel($Count,$NONE)</td>
+#else
+<td>$month.dateTime.format($YM)</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+    <td></td> <td></td> <td></td> <td></td> <td></td> 
+#end if
+</tr>
+#end for
+
+<tr>
+<td></td>
+<td>$year.outTemp.meanmax.nolabel($Temp,$NONE)</td>
+<td>$year.outTemp.meanmin.nolabel($Temp,$NONE)</td>
+<td>$year.outTemp.avg.nolabel($Temp,$NONE)</td>
+<td>$year.heatdeg.sum.nolabel($Temp,$NONE)</td>
+<td>$year.cooldeg.sum.nolabel($Temp,$NONE)</td>
+<td>$year.outTemp.max.nolabel($Temp,$NONE)</td>
+<td>$year.outTemp.maxtime.format($M,$NODAY)</td>
+<td>$year.outTemp.min.nolabel($Temp,$NONE)</td>
+<td>$year.outTemp.mintime.format($M,$NODAY)</td>
+<td>$year.outTemp.max_ge($Hot).nolabel($Count,$NONE)</td>
+<td>$year.outTemp.max_le($Cold).nolabel($Count,$NONE)</td>
+<td>$year.outTemp.min_le($Cold).nolabel($Count,$NONE)</td>
+<td>$year.outTemp.min_le($VeryCold).nolabel($Count,$NONE)</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+<h3>Precipitaci&oacute;n ($unit.label.rain.strip())</h3>
+
+<table class="table table-striped table-condensed">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th></th>
+<th colspan="3">D&iacute;as de m&aacute;s precipitaci&oacute;n</th>
+</tr>
+
+<tr>
+<th>A&ntilde;o mes</th>
+<th>Total</th>
+<th>Max observe d&iacute;a</th>
+<th>Fecha</th>
+<th>$ShowFloat(Trace)</th>
+<th>$ShowFloat($SomeRain)</th>
+<th>$ShowFloat($Soak)</th>
+</tr>
+</thead>
+
+<tbody>
+#for $month in $year.months
+<tr>
+#if $month.barometer.count.raw
+<td>$month.dateTime.format($YM)</td>
+<td>$month.rain.sum.nolabel($Rain,$NONE)</td>
+<td>$month.rain.maxsum.nolabel($Rain,$NONE)</td>
+<td>$month.rain.maxsumtime.format($D,$NODAY)</td>
+<td>$month.rain.sum_ge($Trace).nolabel($Count,$NONE)</td>
+<td>$month.rain.sum_ge($SomeRain).nolabel($Count,$NONE)</td>
+<td>$month.rain.sum_ge($Soak).nolabel($Count,$NONE)</td>
+#else
+<td>$month.dateTime.format($YM)</td>  <td></td> <td></td> <td></td> <td></td> <td></td> <td></td>
+#end if
+</tr>
+#end for
+
+<tr>
+<td></td>
+<td>$year.rain.sum.nolabel($Rain,$NONE)</td>
+<td>$year.rain.maxsum.nolabel($Rain,$NONE)</td>
+<td>$year.rain.maxsumtime.format($M,$NODAY)</td>
+<td>$year.rain.sum_ge($Trace).nolabel($Count,$NONE)</td>
+<td>$year.rain.sum_ge($SomeRain).nolabel($Count,$NONE)</td>
+<td>$year.rain.sum_ge($Soak).nolabel($Count,$NONE)</td>
+</tr>
+
+</tbody>
+</table>
+
+<h3>Velocidad del viento ($unit.label.windSpeed.strip())</h3>
+
+<table class="table table-striped table-condensed">
+<thead>
+<tr>
+<th>A&ntilde;o mes</th>
+<th>Media</th>
+<th>MAX</th>
+<th>FEcha</th>
+<th>Dom. direcci&oacute;n</th>
+</tr>
+</thead>
+
+<tbody>
+#for $month in $year.months
+<tr>
+#if $month.barometer.count.raw
+<td>$month.dateTime.format($YM)</td>
+<td>$month.wind.avg.nolabel($Wind,$NONE)</td>
+<td>$month.wind.max.nolabel($Wind,$NONE)</td>
+<td>$month.wind.maxtime.format($D,$NODAY)</td>
+<td>$month.wind.vecdir.nolabel($Dir,$NONE)</td>
+#else
+<td>$month.dateTime.format($YM)</td>  <td></td> <td></td> <td></td> <td></td>
+#end if
+</tr>
+#end for
+<tr>
+<td></td>
+<td>$year.wind.avg.nolabel($Wind,$NONE)</td>
+<td>$year.wind.max.nolabel($Wind,$NONE)</td>
+<td>$year.wind.maxtime.format($M,$NODAY)</td>
+<td>$year.wind.vecdir.nolabel($Dir,$NONE)</td>
+</tr>
+</tbody>
+</table>
+
+    </div>
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="/assets/js/jquery.js"></script>
+  </body>
+</html>
+

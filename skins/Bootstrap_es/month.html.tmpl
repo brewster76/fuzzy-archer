@@ -1,0 +1,205 @@
+#errorCatcher Echo
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Juan Antonio Mosquera" >
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/lightbox.css" rel="stylesheet">
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="assets/js/html5shiv.js"></script>
+    <![endif]-->
+
+    <!-- Fav and touch icons -->
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
+      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
+                    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
+                                   <link rel="shortcut icon" href="assets/ico/favicon.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="http://gl.wikipedia.org/wiki/Santa_Cruz_de_Montaos,_Ordes">$station.location</a>   
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+              &Uacute;ltima actualizaci&oacute;n: $current.dateTime
+            </p>
+            <ul class="nav">
+              <li class="active"><a href="#">El Tiempo</a></li>
+              <li><a href="stats.html">Estad&iacute;sticas</a></li>
+              <li><a href="history.html">Hist&oacute;rico</a></li>
+              <li><a href="news.html">Noticias</a></li>
+              <li><a href="about.html">Sobre m&iacute;</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container-fixed"> <!--Main page container -->  
+      <div class="row">
+        <div class="span4">
+        
+          <!-- <ul class="nav nav-pills">
+            <li class="active"><a href="#">Now</a></li>
+          </ul> -->          
+          <ul class="thumbnails">
+            <li class="span2">
+              <img src="outTempGauge.png" alt="">
+              <h5 align="center">Temperatura exterior</h5>
+            </li>
+            <li class="span2">
+              <img src="barometerGauge.png" alt="">
+              <h5 align="center">Presi&oacute;n barom&eacute;trica</h5>
+            </li>
+            <li class="span2">
+              <img src="windDirGauge.png" alt="">
+              <h5 align="center">Direcci&oacute;n del viento</h5>
+            </li>
+            <li class="span2">
+                <img src="outHumidityGauge.png" alt="">
+              <h5 align="center">Humedad exterior</h5>
+            </li>
+
+            <li class="span2">
+              <img src="windSpeedGauge.png" alt="">
+              <h5 align="center">Velocidad del viento</h5>
+            </li>
+            <li class="span2">
+                <img src="windGustGauge.png" alt="">
+              <h5 align="center">Velocidad de ra&aacute;faga</h5>
+            </li>
+          </ul>    
+          
+          <!-- <div class="well"> -->
+            <table class="table table-hover">
+              <tbody>
+	              <tr>
+	                <td>Latituda:</td>
+	                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Longitud:</td>
+	                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+	              </tr>
+	              <tr>
+	                <td>Altitud:</td>
+	                <td>$station.altitude</td>
+	              </tr>
+	              <tr>
+	                <td>Tiempo de actividad de la estaci&oacute;n:</td>
+	                <td>$station.uptime</td>
+	              </tr>
+	              <tr>
+	                <td>Tiempo de actividad del servidor:</td>
+	                <td>$station.os_uptime</td>
+	              </tr>
+	            </tbody>
+            </table>
+
+<!--           </div> -->
+
+          
+        </div><!--/span-->
+        <div class="span8">
+          <ul class="nav nav-pills">
+            <li><a href="index.html">&Uacute;ltimas 24 horas</a></li>
+            <li><a href="week.html">&Uacute;ltima semana</a></li>
+            <li class="active"><a href="#">&Uacute;ltimo mes</a></li>
+            <li><a href="year.html">&Uacute;ltimo a&ntilde;o</a></li>
+          </ul>
+
+          <div class="row">
+          
+            <div class="span4">
+              <a href="big_images/monthtempchill-Bootstrap.png" rel="lightbox" title="Temperatura y sensaci&oacute;n t&eacute;rmica">
+                <img src="monthtempchill-Bootstrap.png" alt="">
+              </a>
+            </div>
+            
+            <div class="span4">
+              <a href="big_images/monthbarometer-Bootstrap.png" rel="lightbox" title="Presi&oacute;n barom&eacute;trica"><img src="monthbarometer-Bootstrap.png" alt=""></a>              
+            </div>
+            
+          </div><!--/row-->
+	          
+          <br>
+          <div class="row">
+            <div class="span4">
+              <a href="big_images/monthrain-Bootstrap.png" rel="lightbox" title="Precipitaci&oacute;n"><img src="monthrain-Bootstrap.png" alt=""></a>              
+            </div>
+            
+            <div class="span4">
+              <a href="big_images/monthhumidity-Bootstrap.png" rel="lightbox" title="Humedad exterior"><img src="monthhumidity-Bootstrap.png" alt=""></a>
+            </div>
+            
+          </div><!--/row-->
+          <br>
+          <div class="row">
+            <div class="span4">
+              <a href="big_images/monthwind-Bootstrap.png" rel="lightbox" title="Velocidad del viento"><img src="monthwind-Bootstrap.png" alt=""></a>
+            </div>
+				
+            <div class="span4">
+              <a href="big_images/monthwinddir-Bootstrap.png" rel="lightbox" title="Direcci&oacute;n del viento"><img src="monthwinddir-Bootstrap.png" alt=""></a>     
+            </div>
+	         
+          </div><!--/row-->
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p><a href="http://www.juanantoniomosquera.com">Juan Antonio Mosquera</a></p>
+      </footer>
+
+    </div><!--/.fluid-container-->      
+   
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery-1.7.2.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/lightbox.js"></script>
+
+  </body>
+</html>
+<span style="font-size: smaller;"></span>

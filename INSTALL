@@ -96,3 +96,11 @@ Add these files to weewx/public_html/assets
     bootstrap-button.js  bootstrap-dropdown.js  bootstrap-modal.js  bootstrap-tab.js        bootstrap-typeahead.js   lightbox.js
 
 You can download these from dajda.net/assets
+
+
+
+Step 4 - (Optional) Translate skins to Spanish Language
+------------------------------------------------------
+
+Rename directories Bootstrap_es and Images_es to Bootstrap and Images.
+
