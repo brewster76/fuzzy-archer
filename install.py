@@ -22,7 +22,7 @@ class BootstrapInstaller(ExtensionInstaller):
                 'StdReport': {
                     'SmallImages': {
                         'skin':'Images',
-                        'HTML_ROOT':'Bootstrap'},
+                        'HTML_ROOT':'Bootstrap/images'},
                     'BigImages': {
                         'skin':'Images',
                         'HTML_ROOT':'Bootstrap/big_images',
