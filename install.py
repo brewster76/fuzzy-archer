@@ -22,16 +22,16 @@ class BootstrapInstaller(ExtensionInstaller):
                 'StdReport': {
                     'SmallImages': {
                         'skin':'Images',
-                        'HTML_ROOT':'public_html/Bootstrap'},
+                        'HTML_ROOT':'Bootstrap'},
                     'BigImages': {
                         'skin':'Images',
-                        'HTML_ROOT':'public_html/Bootstrap/big_images',
+                        'HTML_ROOT':'Bootstrap/big_images',
                         'ImageGenerator' : {
                             'image_width' : '800',
                             'image_height' : '500'}},
                     'HTMLPages': {
                         'skin':'Bootstrap',
-                        'HTML_ROOT':'public_html/Bootstrap'}}},
+                        'HTML_ROOT':'Bootstrap'}}},
 
             files=[('skins/Bootstrap',
                     ['skins/Bootstrap/about.html.tmpl',
