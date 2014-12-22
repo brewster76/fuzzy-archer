@@ -78,110 +78,11 @@ import time
 from operator import itemgetter
 
 from weewx.cheetahgenerator import SearchList
-from weewx.stats import TimeSpanStats
+from weewx.tags import TimespanBinder
 from weewx.units import conversionDict
 import weeutil.weeutil
 
-class googleChart(SearchList):
-    def get_extension(self, valid_timespan, archivedb, statsdb):
-        all_stats = TimeSpanStats(valid_timespan,
-                                  statsdb,
-                                  formatter=self.generator.formatter,
-                                  converter=self.generator.converter)
-
-        recordListRaw = []
-
-        cursor = statsdb.connection.cursor()
-        try:
-            for row in cursor.execute("SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year, strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month, strftime('%d', datetime(dateTime, 'unixepoch', 'localtime')) as Day, SUM(sum) FROM rain GROUP BY Year, Month, Day"):
-                record = (int(row[0]), int(row[1]), int(row[2]), row[3])
-                recordListRaw.append(record)
-        finally:
-            cursor.close()
-
-        rainChartText = "dataTable.addRows([\n"
-
-        for record in recordListRaw:
-            if record[0] >= 2011:
-                rainChartText += "   [ new Date(%d, %d, %d), %0.3f ],\n" % record
-
-        rainChartText += " ]);"
-
-       #dataTable.addRows([
-       #   [ new Date(2012, 3, 13), 37032 ],
-       #   [ new Date(2012, 3, 14), 38024 ],
-       #   [ new Date(2012, 3, 15), 38024 ],
-       #   [ new Date(2012, 3, 16), 38108 ],
-       #   [ new Date(2012, 3, 17), 38229 ],
-       #   // Many rows omitted for brevity.
-       #   [ new Date(2013, 9, 4), 38177 ],
-       #   [ new Date(2013, 9, 5), 38705 ],
-       #   [ new Date(2013, 9, 12), 38210 ],
-       #   [ new Date(2013, 9, 13), 38029 ],
-       #   [ new Date(2013, 9, 19), 38823 ],
-       #   [ new Date(2013, 9, 23), 38345 ],
-       #   [ new Date(2013, 9, 24), 38436 ],
-       #   [ new Date(2013, 9, 30), 38447 ]
-       # ]);
-
-        search_list_extension = {'google_chart': rainChartText}
-
-        return search_list_extension
-
-
-class googleTemperatureChart(SearchList):
-    def get_extension(self, valid_timespan, archivedb, statsdb):
-        all_stats = TimeSpanStats(valid_timespan,
-                                  statsdb,
-                                  formatter=self.generator.formatter,
-                                  converter=self.generator.converter)
-
-        recordListRaw = []
-
-        sqlQuery = "SELECT strftime('%Y', datetime(dateTime, 'unixepoch', 'localtime')) as Year,"
-        sqlQuery += " strftime('%m', datetime(dateTime, 'unixepoch', 'localtime')) as Month,"
-        sqlQuery += " strftime('%d', datetime(dateTime, 'unixepoch', 'localtime')) as Day,"
-        sqlQuery += " strftime('%H', datetime(dateTime, 'unixepoch', 'localtime')) as Hour,"
-        sqlQuery += "avg(outTemp) FROM archive GROUP BY Year, Month, Day, Hour"
-
-        cursor = archivedb.connection.cursor()
-        try:
-            for row in cursor.execute(sqlQuery):
-                record = (int(row[0]), int(row[1]), int(row[2]), int(row[3]), row[4])
-                recordListRaw.append(record)
-        finally:
-            cursor.close()
-
-        tempChartText = "data.addRows([\n"
-
-        for record in recordListRaw:
-            if 2014 == record[0]:
-                tempChartText += "   [ new Date(%d, %d, %d, %d), %.1f, undefined, undefined, undefined, undefined, undefined],\n" % record
-
-        tempChartText += " ]);"
-
-
-        #data.addRows([
-        #  [new DateTime(2314, 2, 15), 12400, undefined, undefined,
-        #                          10645, undefined, undefined],
-        #  [new Date(2314, 2, 16), 24045, 'Lalibertines', 'First encounter',
-        #                          12374, undefined, undefined],
-        #  [new Date(2314, 2, 17), 35022, 'Lalibertines', 'They are very tall',
-        #                          15766, 'Gallantors', 'First Encounter'],
-        #  [new Date(2314, 2, 18), 12284, 'Lalibertines', 'Attack on our crew!',
-        #                          34334, 'Gallantors', 'Statement of shared principles'],
-        #  [new Date(2314, 2, 19), 8476, 'Lalibertines', 'Heavy casualties',
-        #                          66467, 'Gallantors', 'Mysteries revealed'],
-        #  [new Date(2314, 2, 20), 0, 'Lalibertines', 'All crew lost',
-        #                          79463, 'Gallantors', 'Omniscience achieved']
-        #]);
-
-        search_list_extension = {'google_temp_chart': tempChartText}
-
-        return search_list_extension
-
-
-class MyXSearch(SearchList):                                           
+class MyXSearch(SearchList):
     
     def __init__(self, generator):                                     
         SearchList.__init__(self, generator)
@@ -197,23 +98,22 @@ class MyXSearch(SearchList):
             bootstrap_labels = generator.skin_dict['BootstrapLabels']
         except:
             # TODO: Use logger function for this 
-            print "No bootstrap spefic labels found"
+            print "No bootstrap specific labels found"
         else:
             for bootstrap_label in bootstrap_labels:
                 self.search_list_extension['bootstrap_' + bootstrap_label] = \
                     generator.skin_dict['BootstrapLabels'][bootstrap_label]
 
-    def get_extension(self, valid_timespan, archivedb, statsdb):
-        """Returns a search list extension with two additions.
-        
-        Parameters:
-          valid_timespan: An instance of weeutil.weeutil.TimeSpan. This will
-                          hold the start and stop times of the domain of 
-                          valid times.
+    def get_extension_list(self, valid_timespan, db_lookup):
+        """For weewx V3.x extensions. Should return a list
+        of objects whose attributes or keys define the extension.
 
-          archivedb: An instance of weewx.archive.Archive
-          
-          statsdb:   An instance of weewx.stats.StatsDb
+        timespan:  An instance of weeutil.weeutil.TimeSpan. This will hold the
+                   start and stop times of the domain of valid times.
+
+        db_lookup: A function with call signature db_lookup(data_binding), which
+        returns a database manager and where data_binding is an optional binding
+        name. If not given, then a default binding will be used.
         """
 
         # Recalculate when 60 mins passed
@@ -223,7 +123,7 @@ class MyXSearch(SearchList):
             # First, get a TimeSpanStats object for all time. This one is easy
             # because the object valid_timespan already holds all valid times to be
             # used in the report.
-            all_stats = TimeSpanStats(valid_timespan, statsdb, formatter=self.generator.formatter,
+            all_stats = TimespanBinder(valid_timespan, db_lookup, formatter=self.generator.formatter,
                                       converter=self.generator.converter)
 
             # Now create a small dictionary with keys 'alltime' and 'seven_day':
@@ -231,9 +131,9 @@ class MyXSearch(SearchList):
 
             for table in self.table_dict.sections:
                 table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
-                self.search_list_extension[table + '_table'] = self.statsHTMLTable(table, table_options, statsdb)
+                self.search_list_extension[table + '_table'] = self.statsHTMLTable(table_options, db_lookup)
 
-        return self.search_list_extension
+        return [self.search_list_extension]
 
     def colorCell(self, value, units, bgColours):
         cellText = "<td"
@@ -257,21 +157,16 @@ class MyXSearch(SearchList):
 
         return cellText
 
-    def statsHTMLTable(self, table, table_options, statsdb):
-
+    def statsHTMLTable(self, table_options, db_lookup):
         recordListRaw = []
 
         bgColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'])
 
-        cursor = statsdb.connection.cursor()
-        try:
-            for row in cursor.execute(table_options['sqlquery']):
-                record = (int(row[0]), int(row[1]), row[2])
-                recordListRaw.append(record)
-        finally:
-            cursor.close()
+        db_manager = self.generator.db_binder.get_manager()
 
-        #for row in statsdb.genSql(sqlQuery):
+        for row in db_manager.genSql(table_options['sqlquery']):
+            record = (int(row[0]), int(row[1]), row[2])
+            recordListRaw.append(record)
 
         recordListSorted = sorted(recordListRaw, key=itemgetter(0, 1))
 

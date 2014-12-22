@@ -5,8 +5,11 @@
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
-Tested on weewx release 2.5.1
+Tested on Weewx release 3.0.1.
 Tested with sqlite, may not work with other databases.
+
+WILL NOT WORK WITH Weewx prior to release 3.0.
+  -- Use this version for 2.4 - 2.7:  https://github.com/brewster76/fuzzy-archer/releases/tag/v2.0
 
 Directions for use:
 
@@ -18,19 +21,13 @@ Directions for use:
 4) Guage names must match the Weewx field name, e.g. outTemp or barometer
 5) Here is an example [GaugeGenerator] section:
 
-###############################################################################
+############################################################################################
 #
-# Settings for Nick's gauge generator
+# Settings for Gauge Generator
 #
 [GaugeGenerator]
-    image_width = 180
-    image_height = 180
-    labelfontsize = 12
-
-    # This overwrites HTML_ROOT in weewx.conf if you want the images elsewhere
-    HTML_ROOT = public_html/gauges/
-
-    font_path = /usr/share/fonts/truetype/freefont/FreeSans.ttf
+    image_width = 160
+    image_height = 160
 
     # Colors...
     #
@@ -49,8 +46,8 @@ Directions for use:
     # Must be an integer
     dial_arc = 270
 
-    digitfontsize = 15
-    labelfontsize = 16
+    digitfontsize = 13
+    labelfontsize = 14
 
     [[outTemp]]
         minvalue = -20
@@ -100,23 +97,26 @@ Directions for use:
         invert = false
         history = 24
         bins = 16
+        aggregate_type = None
 """
+
+#
+# What's broken in V3
+# 1) Wind rose gauge
+# 2) Everything else OK, but slow? (time to profile)
+#
 
 import time
 import syslog
 import os.path
-
 import Image
 
 import weeutil.weeutil
-import weewx.archive
 import weewx.reportengine
 import weeplot.utilities
 import user.gauges
 
-from weewx.units import ValueTupleDict, Converter
-
-class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
+class GaugeGenerator(weewx.reportengine.ReportGenerator):
     """Class for managing the gauge generator."""
 
     def run(self):
@@ -126,13 +126,19 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
         self.gen_gauges()
 
     def setup(self):
+        self.db_manager = self.db_binder.get_manager()
+
         self.gauge_dict = self.skin_dict['GaugeGenerator']
         self.units_dict = self.skin_dict['Units']
 
         # Lookup the last reading in the archive
-        self.archivedb = self._getArchive(self.skin_dict['archive_database'])
-        rec = self._get_record(self.archivedb, self.archivedb.lastGoodStamp())
-        self.record_dict_vtd = weewx.units.ValueTupleDict(rec)
+        self.lastGoodStamp = self.db_manager.lastGoodStamp()
+        last_reading = self.db_manager.getRecord(self.db_manager.lastGoodStamp())
+
+        # Create a converter to get this into the desired units
+        self.converter = weewx.units.Converter(self.units_dict['Groups'])
+
+        self.record_dict_vtd = self.converter.convertDict(last_reading)
 
     def gen_gauges(self):
         """Generate the gauges."""
@@ -197,9 +203,11 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Create a new gauge instance using the gauges.py library
         if gaugename == 'windRose':
-            digitformat = None
             gauge = user.gauges.WindRoseGaugeDraw(image, background_color=back_color)
+            wind_units = self.converter.getTargetUnit('windSpeed')
         else:
+            wind_units = None
+
             if gaugename == 'windDir':
                 # Need to do some special setup for wind gauges
                 min_value = 0
@@ -220,13 +228,13 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         # Do we have a reading for it?
         try:
-            unit_type = self.units_dict['Groups'][self.record_dict_vtd[columnname][2]]
+            unit_type = weewx.units.obs_group_dict[columnname]
         except:
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gaugename)
             return
 
         # Convert it to units in skin.conf file
-        value_tuple = weewx.units.convert(self.record_dict_vtd[columnname], unit_type)
+        value_tuple = [self.record_dict_vtd[columnname], self.units_dict['Groups'][unit_type]]
 
         syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_tuple[0]))
 
@@ -251,53 +259,49 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
-        aggregate_interval = int(plot_options.get('aggregate_interval', 0))
-        aggregate_type = plot_options.get('aggregate_type', None)
-        if aggregate_type == 'None': aggregate_type = None
-
         try:
             history = int(plot_options.get('history'))
         except:
-            history = None
+            pass
         else:
-            (data_time, data_value) = self.archivedb.getSqlVectors(columnname, self.archivedb.lastGoodStamp() -
-                                                          history * 60 * 60, self.archivedb.lastGoodStamp(), aggregate_interval, aggregate_type)
-
-            num_buckets = int(plot_options.get('bins', 10))
             history_list = []
+            windspeed_history_list = []
 
-            windspeed_history_list = None
-            if gaugename == 'windRose':
-                (speed_time, speed_value) = self.archivedb.getSqlVectors('windSpeed', self.archivedb.lastGoodStamp() -
-                                                          history * 60 * 60, self.archivedb.lastGoodStamp(), aggregate_interval, aggregate_type)
-                windspeed_history_list = []
+            batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - history * 60 * 60, self.lastGoodStamp)
 
-            for i in range(len(data_value[0])):
-                value_tuple = weewx.units.convert((data_value[0][i], data_value[1], data_value[2]), unit_type)
+            for rec in batch_records:
+                history_value = self.converter.convertDict(rec)[columnname]
+
                 try:
-                    hist_value = float(value_tuple[0])
+                    history_list.append(float(history_value))
                 except:
                     syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading of '%s' for gauge '%s'"
-                                 % (value_tuple[0], gaugename))
+                                  % (history_value, gaugename))
                 else:
-                    history_list.append(hist_value)
                     if gaugename == 'windRose':
-                        speed_tuple = weewx.units.convert((speed_value[0][i], speed_value[1], speed_value[2]), 'knot')
+                        speed_value = self.converter.convertDict(rec)['windSpeed']
+
                         try:
-                            value_knot = float(speed_tuple[0])
+                            value_knot = float(weewx.units.convert((speed_value, wind_units[0], None), 'knot')[0])
                         except:
-                            value_knot = 0.0
+                            pass
                         else:
-                            windspeed_history_list.append(value_knot);
+                            windspeed_history_list.append(value_knot)
+
+            print "%s: history_list: %d, windspeed_history_list: %d" % (gaugename, len(history_list), len(windspeed_history_list))
+
+            num_buckets = int(plot_options.get('bins', 10))
 
             if gaugename == 'windRose':
                 rings = []
-                for ring in plot_options.get('rings', [1,3,10]):
+                for ring in plot_options.get('rings', [1, 3, 10]):
                     rings.append(int(ring))
 
                 ring_colors = []
-                for ring_color in plot_options.get('ring_colors', [0x4242b4,0xb482420,0xff0000]):
+                for ring_color in plot_options.get('ring_colors', [0x4242b4, 0xb482420, 0xff0000]):
                     ring_colors.append(weeplot.utilities.tobgr(ring_color))
+
+                print ring_colors
 
                 gauge.add_history(history_list, num_buckets, windspeed_history_list, rings, ring_colors)
             else:
@@ -323,14 +327,6 @@ class GaugeGenerator(weewx.reportengine.CachedReportGenerator):
 
         gauge.render()
         image.save(img_file)
-
-    @staticmethod
-    def _get_record(archivedb, time_ts):
-        """Return a value tuple dictionary which can be used to get current
-        readings in skin units."""
-        record_dict = archivedb.getRecord(time_ts)
-
-        return ValueTupleDict(record_dict)
 
     @staticmethod
     def _int2rgb(x):

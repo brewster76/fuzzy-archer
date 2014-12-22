@@ -133,9 +133,29 @@
               <br>                  
                              
               <div class="row">
-                <div class="col-md-6" align="center" >
-                  <img src="images/daytempchill-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                </div>          
+                <div class="col-md-6" align="center">
+                  <a href="#" id="pop">
+                    <img id="daytempchill" src="images/daytempchill-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
+
+                  <div class="modal fade" id="imagemodal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                     <div class="modal-dialog">
+                       <div class="modal-content">
+                         <div class="modal-header">
+                           <h4 class="modal-title">Temperature and wind chill</h4>
+                         </div>
+                         <div class="modal-body">
+                           <img src="big_images/daytempchill-Bootstrap.png" alt="" class="daytempchill-responsive" style="max-width:100%;">
+                         </div>
+                         <div class="modal-footer">
+                           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                         </div>
+                       </div><!-- /.modal-content -->
+                     </div><!-- /.modal-dialog -->
+                  </div>
+
+
+                </div>
             
                 <div class="col-md-6" align="center">
                   <img src="images/daybarometer-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
@@ -172,7 +192,16 @@
       <p>$bootstrap_footer</p>
     </footer>    
     </div>
-      
+
+### Not really working:
+<script>
+function() {
+		$('.daytempchill').on('click', function() {
+			$('#daytempchill-responsive').modal('show');
+		});
+};
+</script>
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
