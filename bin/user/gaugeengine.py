@@ -101,10 +101,8 @@ Directions for use:
 """
 
 #
-# What's broken in V3
-# 1) Wind rose gauge
-# 2) Everything else OK, but slow? (time to profile)
-#
+# TODO:
+#      1)
 
 import time
 import syslog
@@ -238,6 +236,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_tuple[0]))
 
+        dial_format = None
+
         # Do we have a proper numeric reading?
         try:
             needle_value = float(value_tuple[0])
@@ -246,13 +246,12 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
                                            (gaugename, value_tuple[0]))
             label_text = ''
-            digit_format = None
         else:
             gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
                              needle_fill_color=needle_fill_color)
 
             label_format = self.units_dict['StringFormats'][value_tuple[1]]
-            digit_format = plot_options.get("digitformat", label_format)
+            dial_format = plot_options.get("digitformat", label_format)
 
             label_text = unicode(label_format % value_tuple[0], "utf8")
             label_text += unicode(self.units_dict['Labels'][value_tuple[1]], "utf8")
@@ -270,7 +269,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - history * 60 * 60, self.lastGoodStamp)
 
             for rec in batch_records:
-                history_value = self.converter.convertDict(rec)[columnname]
+                history_value = self.converter.convertDict(rec)[columnname]   # Uses up a lot of time
 
                 try:
                     history_list.append(float(history_value))
@@ -279,7 +278,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                                   % (history_value, gaugename))
                 else:
                     if gaugename == 'windRose':
-                        speed_value = self.converter.convertDict(rec)['windSpeed']
+                        speed_value = self.converter.convertDict(rec)['windSpeed']      # Uses up a lot of time
 
                         try:
                             value_knot = float(weewx.units.convert((speed_value, wind_units[0], None), 'knot')[0])
@@ -287,8 +286,6 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                             pass
                         else:
                             windspeed_history_list.append(value_knot)
-
-            print "%s: history_list: %d, windspeed_history_list: %d" % (gaugename, len(history_list), len(windspeed_history_list))
 
             num_buckets = int(plot_options.get('bins', 10))
 
@@ -301,14 +298,9 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 for ring_color in plot_options.get('ring_colors', [0x4242b4, 0xb482420, 0xff0000]):
                     ring_colors.append(weeplot.utilities.tobgr(ring_color))
 
-                print ring_colors
-
                 gauge.add_history(history_list, num_buckets, windspeed_history_list, rings, ring_colors)
             else:
                 gauge.add_history(history_list, num_buckets, history_color)
-
-        gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_format=digit_format, dial_font_size=digit_font_size,
-                       dial_font=font_path, dial_color=dial_color, dial_label_color=label_color)
 
         if compass_labels:
             # Lookup the labels for the main compass points and add them to the gauge
@@ -324,6 +316,12 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
             gauge.add_dial_labels(dial_labels = dial_labels, dial_label_font_size=digit_font_size,
                                   dial_label_color=label_color, dial_label_font=font_path)
+
+            # Do not add degree numbers to the dial
+            dial_format = None
+
+        gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_format=dial_format,
+                       dial_font_size=digit_font_size, dial_font=font_path, dial_color=dial_color, dial_label_color=label_color)
 
         gauge.render()
         image.save(img_file)
