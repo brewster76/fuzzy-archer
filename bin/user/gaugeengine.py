@@ -100,10 +100,6 @@ Directions for use:
         aggregate_type = None
 """
 
-#
-# TODO:
-#      1)
-
 import time
 import syslog
 import os.path
@@ -113,6 +109,7 @@ import weeutil.weeutil
 import weewx.reportengine
 import weeplot.utilities
 import user.gauges
+
 
 class GaugeGenerator(weewx.reportengine.ReportGenerator):
     """Class for managing the gauge generator."""
@@ -165,7 +162,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         t2 = time.time()
 
         syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Generated %d images for %s in %.2f seconds" %
-                                       (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
+                      (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
 
     def gen_gauge(self, gaugename, plot_options, img_file):
         image_width = int(plot_options.get('image_width', 180))
@@ -179,7 +176,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         dial_color = weeplot.utilities.tobgr(plot_options.get('dial_color', '0x707070'))
         needle_outline_color = weeplot.utilities.tobgr(plot_options.get('needle_outline_color', '0xb48242'))
         needle_fill_color = plot_options.get('needle_fill_color', None)
-        if needle_fill_color == None or needle_fill_color == 'None' or needle_fill_color == 'Opaque':
+        if needle_fill_color is None or needle_fill_color == 'None' or needle_fill_color == 'Opaque':
             needle_fill_color = None
         else:
             needle_fill_color = weeplot.utilities.tobgr(needle_fill_color)
@@ -214,8 +211,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 dial_arc = 360
                 offset_angle = 180
             else:
-                min_value = float(plot_options.get('minvalue')) # Field is mandatory
-                max_value = float(plot_options.get('maxvalue')) # Field is mandatory
+                min_value = float(plot_options.get('minvalue'))  # Field is mandatory
+                max_value = float(plot_options.get('maxvalue'))  # Field is mandatory
                 dial_arc = int(plot_options.get('dial_arc', 270))
                 offset_angle = int(plot_options.get('offset_angle', 0))
 
@@ -245,7 +242,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         except:
             # Log the error, do not draw the needle and display '-'
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
-                                           (gaugename, value_now))
+                          (gaugename, value_now))
             label_text = ''
         else:
             gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
@@ -280,7 +277,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                                   % (history_value, gaugename))
                 else:
                     if gaugename == 'windRose':
-                        speed_value = self.converter.convertDict(rec)['windSpeed']      # Uses up a lot of time
+                        speed_value = self.converter.convertDict(rec)['windSpeed']  # Uses up a lot of time
 
                         try:
                             value_knot = float(weewx.units.convert((speed_value, wind_units[0], None), 'knot')[0])
@@ -316,23 +313,24 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             compass_points = [0, 180, 90, 270]
             dial_labels = dict(zip(compass_points, hemispheres))
 
-            gauge.add_dial_labels(dial_labels = dial_labels, dial_label_font_size=digit_font_size,
+            gauge.add_dial_labels(dial_labels=dial_labels, dial_label_font_size=digit_font_size,
                                   dial_label_color=label_color, dial_label_font=font_path)
 
             # Do not add degree numbers to the dial
             dial_format = None
 
         gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_format=dial_format,
-                       dial_font_size=digit_font_size, dial_font=font_path, dial_color=dial_color, dial_label_color=label_color)
+                       dial_font_size=digit_font_size, dial_font=font_path, dial_color=dial_color,
+                       dial_label_color=label_color)
 
         gauge.render()
         image.save(img_file)
 
     @staticmethod
     def _int2rgb(x):
-    #
-    # Stolen from genploy.py Weewx file
-    #
+        #
+        # Stolen from genploy.py Weewx file
+        #
         if x is None:
             return None
         else:

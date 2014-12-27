@@ -2,15 +2,16 @@ How to install
 ==============
 
 Before we begin...
- 1) This release (v2.1) has been tested on weewx version 2.7.0, on Ubuntu linux 12.04, and on a Raspberry Pi running wheezy.
-    Other versions of weewx may not work.
- 2) Only sqlite databases are currently supported, not mysql.
+ 1) This release (v2.1) has been tested on weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+    wheezy.
+    Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
+ 2) This has been tested on sqlite databases. Mysql may work however this has not been tested.
 
 
 The easy way
 ============
 
-Get hold of v2.1.tar.gz.
+Get hold of the v2.1 archive from github:   https://github.com/brewster76/fuzzy-archer/archive/v2.1.tar.gz
 
 Use the WeeWx extension installer:
 
@@ -92,10 +93,10 @@ and this one to weewx/public_html/css:
     css/bootstrap.min.css
 
 You can use the wget command to download these:
-    wget https://raw.githubusercontent.com/twbs/bootstrap/v3.2.0/dist/js/bootstrap.min.js
-    wget https://raw.githubusercontent.com/twbs/bootstrap/v3.2.0/dist/css/bootstrap.min.css
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.1/public_html/Bootstrap/css/bootstrap.min.css
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.1/public_html/Bootstrap/js/bootstrap.min.js
 
 
 Step 4 - (Optional) Translate skins to Spanish Language
 -------------------------------------------------------
-
+For skins in Spanish please use v2.01. They are in the process of being ported over to v2.1.
