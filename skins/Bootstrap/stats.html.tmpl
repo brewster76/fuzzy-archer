@@ -1,113 +1,98 @@
-#errorCatcher Echo
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>The weather, in Royston</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="Nick" >
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>$bootstrap_title</title>
 
-    <!-- Le styles -->
-    <link href="assets/css/bootstrap.css" rel="stylesheet">
-    <link href="assets/css/lightbox.css" rel="stylesheet">
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
 
-    <style type="text/css">
-      body {
-        padding-top: 60px;
-        padding-bottom: 40px;
-      }
-      .sidebar-nav {
-        padding: 9px 0;
-      }
-
-      @media (max-width: 980px) {
-        /* Enable use of floated navbar text */
-        .navbar-text.pull-right {
-          float: none;
-          padding-left: 5px;
-          padding-right: 5px;
-        }
-      }
-    </style>
-    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
-
-    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
-      <script src="assets/js/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-
-    <!-- Fav and touch icons -->
-    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="assets/ico/apple-touch-icon-144-precomposed.png">
-    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="assets/ico/apple-touch-icon-114-precomposed.png">
-      <link rel="apple-touch-icon-precomposed" sizes="72x72" href="assets/ico/apple-touch-icon-72-precomposed.png">
-                    <link rel="apple-touch-icon-precomposed" href="assets/ico/apple-touch-icon-57-precomposed.png">
-                                   <link rel="shortcut icon" href="assets/ico/favicon.png">
   </head>
 
   <body>
-
-    <div class="navbar navbar-inverse navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container-fluid">
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+    <!-- Menu navbar -->
+    <div class="navbar navbar-inverse" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="brand" href="http://en.wikipedia.org/wiki/Royston,_Hertfordshire">$station.location</a>   
-          <div class="nav-collapse collapse">
-            <p class="navbar-text pull-right">
-              Last Updated: $current.dateTime
-            </p>
-            <ul class="nav">
-              <li><a href="index.html">The Weather</a></li>
-              <li class="active"><a href="#">Stats</a></li>
-              <li><a href="history.html">History</a></li>
-              <li><a href="news.html">News</a></li>
-              <li><a href="about.html">About</a></li>
-            </ul>
-          </div><!--/.nav-collapse -->
+          <a class="navbar-brand" href="$bootstrap_location_href">$station.location</a>
         </div>
-      </div>
-    </div>
-
-    <div class="container-fixed"> <!--Main page container -->  
-      <div class="row">
-        <div class="span4">
-        
-          <!-- <ul class="nav nav-pills">
-            <li class="active"><a href="#">Now</a></li>
-          </ul> -->          
-          <ul class="thumbnails">
-            <li class="span2">
-              <img src="outTempGauge.png" alt="">
-              <h5 align="center">Outside temperature</h5>
-            </li>
-            <li class="span2">
-              <img src="barometerGauge.png" alt="">
-              <h5 align="center">Barometric pressure</h5>
-            </li>
-            <li class="span2">
-              <img src="windDirGauge.png" alt="">
-              <h5 align="center">Wind direction</h5>
-            </li>
-            <li class="span2">
-                <img src="outHumidityGauge.png" alt="">
-              <h5 align="center">Outside humidity</h5>
-            </li>
-
-            <li class="span2">
-              <img src="windSpeedGauge.png" alt="">
-              <h5 align="center">Wind speed</h5>
-            </li>
-            <li class="span2">
-                <img src="windGustGauge.png" alt="">
-              <h5 align="center">Gust speed</h5>
-            </li>
-          </ul>    
+        <div class="navbar-collapse collapse">
+           
+          <ul class="nav navbar-nav">
+            <li><a href="index.html">The Weather</a></li>
+            <li class="active"><a href="#">Stats</a></li>
+            <li><a href="history.html">History</a></li>
+            <li><a href="news.html">News</a></li>
+            <li><a href="about.html">About</a></li>
+          </ul>
           
-          <!-- <div class="well"> -->
+          <p class="navbar-text navbar-right">
+              Last Updated: $current.dateTime
+          </p>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>  
+
+ 
+  
+    <!-- Main container -->  
+    <div class="container">
+      <div class="row">
+      
+      
+        <!-- Gauge panel -->      
+        <div class="col-md-4">
+          <div class="row">
+              <div class="col-md-6" align="center">
+                <img src="outTempGauge.png" alt="">
+                <h5>Outside temperature</h5>
+              </div>          
+          
+              <div class="col-md-6" align="center">
+                <img src="barometerGauge.png" alt="">
+                <h5>Barometric pressure</h5>            
+              </div>          
+          </div>
+          <div class="row">
+              <div class="col-md-6" align="center">
+                <img src="windDirGauge.png" alt="">
+                <h5>Wind direction</h5>
+              </div>          
+          
+              <div class="col-md-6" align="center">
+                <img src="outHumidityGauge.png" alt="">
+                <h5>Outside humidity</h5>            
+              </div>          
+          </div>   
+          <div class="row">
+              <div class="col-md-6" align="center">
+                <img src="windSpeedGauge.png" alt="">
+                <h5>Wind speed</h5>
+              </div>          
+          
+              <div class="col-md-6" align="center">
+                <img src="windSpeedGauge.png" alt="">
+                <h5>Gust speed</h5>            
+              </div>          
+          </div>   
+          
+          <!-- Station info -->
+          <div class="row">
             <table class="table table-hover">
               <tbody>
 	              <tr>
@@ -131,69 +116,70 @@
 	                <td>$station.os_uptime</td>
 	              </tr>
 	            </tbody>
-            </table>
-
-<!--           </div> -->
-
+            </table>  
+          </div>        
           
-        </div><!--/span-->
-        <div class="span8">
+        </div>
+        
+        
+          <!-- Graph panel -->        
+          <div class="col-md-8 main">
 
-          <h3>Temperature</h3>
-		    <table class="table table-hover">
-			    <thead>
-				    <tr>
-				    <th></th>
-				    <th>Since midnight</th>
-				    <th>This week</th>
-				    <th>This month</th>
-				    <th>This year</th>
-				    <th>Since ever</th>
-				    </tr>
-			    </thead>
-			    <tbody>
-				    <tr>
-				    <td>High</td>
-				    <td>$day.outTemp.max<br>$day.outTemp.maxtime</td>
-				    <td>$week.outTemp.max<br>$week.outTemp.maxtime</td>
-				    <td>$month.outTemp.max<br>$month.outTemp.maxtime</td>
-				    <td>$year.outTemp.max<br>$year.outTemp.maxtime</td>
-                                    <td>$alltime.outTemp.max<br>$alltime.outTemp.maxtime</td>
-				    </tr>
-				    <tr>
-				    <td>Low</td>
-				    <td>$day.outTemp.min<br>$day.outTemp.mintime</td>
-				    <td>$week.outTemp.min<br>$week.outTemp.mintime</td>
-				    <td>$month.outTemp.min<br>$month.outTemp.mintime</td>
-				    <td>$year.outTemp.min<br>$year.outTemp.mintime</td>
-				    <td>$alltime.outTemp.min<br>$alltime.outTemp.mintime</td>
-				    </tr>
-			    </tbody>
-		    </table>
+            <h3>Temperature</h3>
+      		    <table class="table table-hover">
+      			    <thead>
+      				    <tr>
+        				    <th></th>
+        				    <th>Since midnight</th>
+        				    <th>This week</th>
+        				    <th>This month</th>
+        				    <th>This year</th>
+        				    <th>Since ever</th>
+      				    </tr>
+      			    </thead>
+      			    <tbody>
+      				    <tr>
+        				    <td>High</td>
+        				    <td>$day.outTemp.max<br>$day.outTemp.maxtime</td>
+        				    <td>$week.outTemp.max<br>$week.outTemp.maxtime</td>
+        				    <td>$month.outTemp.max<br>$month.outTemp.maxtime</td>
+        				    <td>$year.outTemp.max<br>$year.outTemp.maxtime</td>
+  		              <td>$alltime.outTemp.max<br>$alltime.outTemp.maxtime</td>
+  		    		    </tr>
+  		    		    <tr>
+  		      		    <td>Low</td>
+  		      		    <td>$day.outTemp.min<br>$day.outTemp.mintime</td>
+  		      		    <td>$week.outTemp.min<br>$week.outTemp.mintime</td>
+  		      		    <td>$month.outTemp.min<br>$month.outTemp.mintime</td>
+  		      		    <td>$year.outTemp.min<br>$year.outTemp.mintime</td>
+  		      		    <td>$alltime.outTemp.min<br>$alltime.outTemp.mintime</td>
+  		    		    </tr>
+  		     	    </tbody>
+  		        </table>
 
-          <h3>Rainfall</h3>		    
-		    <table class="table table-hover">
-			    <thead>
-		       <tr>
-		          <th></th>
-				    <th>Since midnight</th>
-				    <th>This week</th>
-				    <th>This month</th>
-				    <th>This year</th>
-				    </tr>
-			    </thead>
-			    <tbody>
-				    <tr>
-				    <td></td>
-				    <td>$day.rain.sum</td>
-				    <td>$week.rain.sum</td>
-				    <td>$month.rain.sum</td>
-				    <td>$year.rain.sum</td>
-				    </tr>
-			    </tbody>
-		    </table>
+              <h3>Rainfall</h3>		    
+		            <table class="table table-hover">
+                  <thead>
+		                <tr>
+		                  <th></th>
+          				    <th>Since midnight</th>
+          				    <th>This week</th>
+          				    <th>This month</th>
+          				    <th>This year</th>
+          				    </tr>
+			           </thead>
+			           <tbody>
+                <tr>
+    				      <td></td>
+      				    <td>$day.rain.sum</td>
+      				    <td>$week.rain.sum</td>
+      				    <td>$month.rain.sum</td>
+      				    <td>$year.rain.sum</td>
+    				    </tr>
+	   		    </tbody>
+		      </table>
 
-         <h3>Pressure</h3>
+          <h3>Pressure</h3>
 		    <table class="table table-hover">
 			    <thead>
 				    <tr>
@@ -249,24 +235,19 @@
 			    </tbody>
 		    </table>
 
-        </div><!--/span-->
-      </div><!--/row-->
-
+        </div>          
+      </div>
+    
       <hr>
-
       <footer>
-        <p>&copy; Ampelmann 2013</p>
-      </footer>
-
-    </div><!--/.fluid-container-->      
-   
-
-    <!-- Le javascript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="assets/js/jquery-1.7.2.min.js"></script>
-    <script src="assets/js/bootstrap.min.js"></script>
-
+        <p>$bootstrap_footer</p>
+      </footer>         
+    
+    </div>  
+  
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
   </body>
 </html>
-<span style="font-size: smaller;"></span>

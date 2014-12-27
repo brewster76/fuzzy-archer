@@ -2,19 +2,21 @@ How to install
 ==============
 
 Before we begin...
- 1) This has been tested on weewx versions 2.4.0 - 2.6.2, on Ubuntu linux 12.04, and on a Raspberry Pi running wheezy.
- 2) Only sqlite databases currently supported, not mysql.
+ 1) This release (v2.1) has been tested on weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+    wheezy.
+    Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
+ 2) This has been tested on sqlite databases. Mysql may work however this has not been tested.
 
 
 The easy way
 ============
 
-Get hold of v2.0.tar.gz.
+Get hold of the v2.1 archive from github:   https://github.com/brewster76/fuzzy-archer/archive/v2.1.tar.gz
 
 Use the WeeWx extension installer:
 
    cd /home/weewx
-   setup.py --extension --install [wherever you've put v2.0.tar.gz]
+   setup.py --extension --install [wherever you've put v2.1.tar.gz]
 
 Web content is stored in public_html/Bootstrap.
 
@@ -36,6 +38,7 @@ To get the latest stable(ish) release, point your browser here:
 Move gaugeengine.py, gauges.py and historyengine,py into the bin/user directory.
 Move the Bootstrap and Images directory into the skins directory.
 
+
 Step 2 - Add the skins to weewx.conf
 ------------------------------------
 
@@ -55,14 +58,14 @@ So the [StdReport] section will need to look something like this:
             # Dimensions are set in the Images/skin.conf file
             #
             skin = Images
-            HTML_ROOT = public_html/
+            HTML_ROOT = public_html/Bootstrap
 
         [[BigImages]]
             # These images are used when a small web page image is clicked on.
             # So the skin.conf image_width and image_height are overridden here.
             #
             skin = Images
-            HTML_ROOT = public_html/big_images/
+            HTML_ROOT = public_html/Bootstrap/big_images/
             [[[ImageGenerator]]]
                 image_width = 800
                 image_height = 500
@@ -71,7 +74,7 @@ So the [StdReport] section will need to look something like this:
             # This generates the webpages themselves.
             #
             skin = Bootstrap
-            HTML_ROOT = public_html/
+            HTML_ROOT = public_html/Bootstrap
 
         [[FTP]]
             skin = Ftp
@@ -79,20 +82,21 @@ So the [StdReport] section will need to look something like this:
         [[RSYNC]]
             skin = Rsync
 
+
 Step 3 - Add Bootstrap support files to your website
 ----------------------------------------------------
 
-Add these files to weewx/public_html/assets
+Add this file to weewx/public_html/js:
+    bootstrap.min.js
 
-    assets/css:
-    bootstrap.css  bootstrap.min.css  bootstrap-responsive.css  bootstrap-responsive.min.css  lightbox.css
+and this one to weewx/public_html/css:
+    css/bootstrap.min.css
 
-    assets/img:
-    close.png  glyphicons-halflings.png  glyphicons-halflings-white.png  loading.gif  next.png  prev.png
+You can use the wget command to download these:
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.1/public_html/Bootstrap/css/bootstrap.min.css
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.1/public_html/Bootstrap/js/bootstrap.min.js
 
-    assets/js:
-    bootstrap-affix.js   bootstrap-carousel.js  bootstrap.js        bootstrap-popover.js    bootstrap-tooltip.js     jquery-1.7.2.min.js
-    bootstrap-alert.js   bootstrap-collapse.js  bootstrap.min.js    bootstrap-scrollspy.js  bootstrap-transition.js  jquery.js
-    bootstrap-button.js  bootstrap-dropdown.js  bootstrap-modal.js  bootstrap-tab.js        bootstrap-typeahead.js   lightbox.js
 
-You can download these from dajda.net/assets
+Step 4 - (Optional) Translate skins to Spanish Language
+-------------------------------------------------------
+For skins in Spanish please use v2.01. They are in the process of being ported over to v2.1.
