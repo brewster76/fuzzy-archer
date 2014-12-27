@@ -126,15 +126,23 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         self.gauge_dict = self.skin_dict['GaugeGenerator']
         self.units_dict = self.skin_dict['Units']
 
-        # Lookup the last reading in the archive
-        self.lastGoodStamp = self.db_manager.lastGoodStamp()
-        last_reading = self.db_manager.getRecord(self.db_manager.lastGoodStamp())
-
         # Create a converter to get this into the desired units
         self.converter = weewx.units.Converter(self.units_dict['Groups'])
 
-        self.record_dict_vtd = self.converter.convertDict(last_reading)
-        self.record_dict_vtd['usUnits'] = self.db_manager.std_unit_system
+        # Lookup the last reading in the archive
+        self.lastGoodStamp = self.db_manager.lastGoodStamp()
+
+        self.record_dict_vtd = None
+        batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
+
+        try:
+            for rec in batch_records:
+                print rec
+                if self.record_dict_vtd is None:
+                    self.record_dict_vtd = rec
+
+        except:
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Cannot find the current reading")
 
     def gen_gauges(self):
         """Generate the gauges."""
@@ -232,7 +240,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         # Convert it to units in skin.conf file
         value_now = weewx.units.convert(weewx.units.as_value_tuple(self.record_dict_vtd, columnname), target_unit)[0]
 
-        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_now))
+        syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_now))
 
         dial_format = None
 
