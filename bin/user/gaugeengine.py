@@ -137,6 +137,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         self.converter = weewx.units.Converter(self.units_dict['Groups'])
 
         self.record_dict_vtd = self.converter.convertDict(last_reading)
+        self.record_dict_vtd['usUnits'] = self.db_manager.std_unit_system
 
     def gen_gauges(self):
         """Generate the gauges."""
@@ -226,35 +227,35 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         # Do we have a reading for it?
         try:
-            unit_type = weewx.units.obs_group_dict[columnname]
+            target_unit = self.units_dict['Groups'][weewx.units.obs_group_dict[columnname]]
         except:
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gaugename)
             return
 
         # Convert it to units in skin.conf file
-        value_tuple = [self.record_dict_vtd[columnname], self.units_dict['Groups'][unit_type]]
+        value_now = weewx.units.convert(weewx.units.as_value_tuple(self.record_dict_vtd, columnname), target_unit)[0]
 
-        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_tuple[0]))
+        syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_now))
 
         dial_format = None
 
         # Do we have a proper numeric reading?
         try:
-            needle_value = float(value_tuple[0])
+            needle_value = float(value_now)
         except:
             # Log the error, do not draw the needle and display '-'
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
-                                           (gaugename, value_tuple[0]))
+                                           (gaugename, value_now))
             label_text = ''
         else:
             gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
                              needle_fill_color=needle_fill_color)
 
-            label_format = self.units_dict['StringFormats'][value_tuple[1]]
+            label_format = self.units_dict['StringFormats'][target_unit]
             dial_format = plot_options.get("digitformat", label_format)
 
-            label_text = unicode(label_format % value_tuple[0], "utf8")
-            label_text += unicode(self.units_dict['Labels'][value_tuple[1]], "utf8")
+            label_text = unicode(label_format % value_now, "utf8")
+            label_text += unicode(self.units_dict['Labels'][target_unit], "utf8")
 
         gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
@@ -269,7 +270,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - history * 60 * 60, self.lastGoodStamp)
 
             for rec in batch_records:
-                history_value = self.converter.convertDict(rec)[columnname]   # Uses up a lot of time
+                db_value_tuple = weewx.units.as_value_tuple(rec, columnname)
+                history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
 
                 try:
                     history_list.append(float(history_value))
