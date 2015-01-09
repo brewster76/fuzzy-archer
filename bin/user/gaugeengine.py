@@ -137,12 +137,16 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         try:
             for rec in batch_records:
-                print rec
                 if self.record_dict_vtd is None:
                     self.record_dict_vtd = rec
 
         except:
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Cannot find the current reading")
+
+        # For checking development code deals with 'None' readings correctly
+        if self.gauge_dict.get('test_none_readings', None) is not None:
+            for key, value in self.record_dict_vtd.iteritems():
+                self.record_dict_vtd[key] = None
 
     def gen_gauges(self):
         """Generate the gauges."""
@@ -164,8 +168,10 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             except:
                 pass
 
-            self.gen_gauge(gauge, plot_options, img_file)
-            ngen += 1
+            ret = self.gen_gauge(gauge, plot_options, img_file)
+
+            if ret is not None:
+                ngen += 1
 
         t2 = time.time()
 
@@ -183,6 +189,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         label_color = weeplot.utilities.tobgr(plot_options.get('label_color', '0x000000'))
         dial_color = weeplot.utilities.tobgr(plot_options.get('dial_color', '0x707070'))
         needle_outline_color = weeplot.utilities.tobgr(plot_options.get('needle_outline_color', '0xb48242'))
+
         needle_fill_color = plot_options.get('needle_fill_color', None)
         if needle_fill_color is None or needle_fill_color == 'None' or needle_fill_color == 'Opaque':
             needle_fill_color = None
@@ -197,7 +204,13 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         label_font_size = int(plot_options.get('labelfontsize', 15))
         digit_font_size = int(plot_options.get('digitfontsize', 15))
 
-        major_step = float(plot_options.get('majorstep'))
+        # Must specify this for every gauge
+        try:
+            major_step = float(plot_options.get('majorstep'))
+        except:
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify majorstep for gauge %s in skin.conf ***" % gaugename)
+            return
+
         try:
             minor_step = float(plot_options.get('minorstep'))
         except:
@@ -219,8 +232,20 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 dial_arc = 360
                 offset_angle = 180
             else:
-                min_value = float(plot_options.get('minvalue'))  # Field is mandatory
-                max_value = float(plot_options.get('maxvalue'))  # Field is mandatory
+                try:
+                    min_value = float(plot_options.get('minvalue'))
+                except:
+                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify minvalue for gauge %s in skin.conf ***"
+                                  % gaugename)
+                    return
+
+                try:
+                    max_value = float(plot_options.get('maxvalue'))
+                except:
+                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify maxvalue for gauge %s in skin.conf ***"
+                                  % gaugename)
+                    return
+
                 dial_arc = int(plot_options.get('dial_arc', 270))
                 offset_angle = int(plot_options.get('offset_angle', 0))
 
@@ -230,39 +255,43 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         # contains the data.
         columnname = gaugename if gaugename != 'windRose' else 'windDir'
 
-        # Do we have a reading for it?
+        # Find display unit of measure
         try:
             target_unit = self.units_dict['Groups'][weewx.units.obs_group_dict[columnname]]
         except:
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Could not find reading for gauge '%s'" % gaugename)
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Could not find target unit of measure for gauge '%s' ***" % gaugename)
             return
 
-        # Convert it to units in skin.conf file
-        value_now = weewx.units.convert(weewx.units.as_value_tuple(self.record_dict_vtd, columnname), target_unit)[0]
+        # Deal with None readings / convert to target units
+        if self.record_dict_vtd[columnname] is None:
+            none_value = plot_options.get('none_value', None)
+            if none_value is None:
+                value_now = None
+            else:
+                value_now = float(none_value)
 
-        syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s reading %s = %s" % (gaugename, columnname, value_now))
+            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s has no reading (%s)" % (gaugename,  value_now))
 
-        dial_format = None
-
-        # Do we have a proper numeric reading?
-        try:
-            needle_value = float(value_now)
-        except:
-            # Log the error, do not draw the needle and display '-'
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s, could not plot reading value of = %s" %
-                          (gaugename, value_now))
-            label_text = ''
         else:
-            gauge.add_needle(needle_value, needle_outline_color=needle_outline_color,
-                             needle_fill_color=needle_fill_color)
+            # Convert it to units in skin.conf file
+            value_now = weewx.units.convert(weewx.units.as_value_tuple(self.record_dict_vtd, columnname), target_unit)[0]
+            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading = %s %s" % (gaugename, value_now, target_unit))
 
-            label_format = self.units_dict['StringFormats'][target_unit]
-            dial_format = plot_options.get("digitformat", label_format)
+        label_format = self.units_dict['StringFormats'][target_unit]
+        dial_format = plot_options.get('digitformat', label_format)
 
-            label_text = unicode(label_format % value_now, "utf8")
-            label_text += unicode(self.units_dict['Labels'][target_unit], "utf8")
+        if value_now is None:
+            label_text = '---'
+        else:
+            label_text = unicode(label_format % value_now, 'utf8')
+
+        label_text += unicode(self.units_dict['Labels'][target_unit], 'utf8')
 
         gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
+
+        if value_now is not None:
+            gauge.add_needle(float(value_now), needle_outline_color=needle_outline_color, needle_fill_color=needle_fill_color)
+
 
         try:
             history = int(plot_options.get('history'))
@@ -333,6 +362,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         gauge.render()
         image.save(img_file)
+
+        return 1
 
     @staticmethod
     def _int2rgb(x):
