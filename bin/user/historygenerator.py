@@ -1,12 +1,16 @@
 #
 # Code for creating html historic data tables in a nice colour scheme.
 #
-# Tested with weewx 2.5.1.
-# 
 # Nick Dajda, based on code from the weewx distribution. Nov 2013.
 
 """Extends the search list used by the Cheetah generator, based on weewx example
 code.
+
+Tested on Weewx release 3.0.1.
+Tested with sqlite, may not work with other databases.
+
+WILL NOT WORK WITH Weewx prior to release 3.0.
+  -- Use this version for 2.4 - 2.7:  https://github.com/brewster76/fuzzy-archer/releases/tag/v2.0
 
 To use it, modify the option search_list in your skin.conf configuration file,
 adding the name of this extension. For this example, the name of the extension
@@ -136,24 +140,29 @@ class MyXSearch(SearchList):
         return [self.search_list_extension]
 
     def colorCell(self, value, units, bgColours):
-        cellText = "<td"
 
-        # Temperature needs converting from F to C
-        if 'temperature' == units:
-            value = conversionDict['degree_F']['degree_C'](value)
-        elif 'rain' == units:
-            value = conversionDict['inch']['mm'](value)
-        elif 'pressure' == units:
-            value = conversionDict['inHg']['mbar'](value)
+        if value is not None:
+            cellText = "<td"
 
-        for c in bgColours:
-            if (value >= int(c[0])) and (value <= int(c[1])):
-                cellText += " bgcolor = \"%s\"" % c[2]
+            # Temperature needs converting from F to C
+            if 'temperature' == units:
+                value = conversionDict['degree_F']['degree_C'](value)
+            elif 'rain' == units:
+                value = conversionDict['inch']['mm'](value)
+            elif 'pressure' == units:
+                value = conversionDict['inHg']['mbar'](value)
 
-        if 'temperature' == units:
-            cellText += "> %.1f </td>" % value
+            for c in bgColours:
+                if (value >= int(c[0])) and (value <= int(c[1])):
+                    cellText += " bgcolor = \"%s\"" % c[2]
+
+            if 'temperature' == units:
+                cellText += "> %.1f </td>" % value
+            else:
+                cellText += "> %.2f </td>" % value
+
         else:
-            cellText += "> %.2f </td>" % value
+            cellText = "<td>-</td>\n"
 
         return cellText
 
