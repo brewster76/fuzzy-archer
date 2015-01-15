@@ -2,21 +2,21 @@ How to install
 ==============
 
 Before we begin...
- 1) This release (v2.1) has been tested on weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+ 1) This release (v2.11 beta) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
     wheezy.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
- 2) This has been tested on sqlite databases. Mysql may work however this has not been tested.
+ 2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
 
 The easy way
 ============
 
-Get hold of the v2.1 archive from github:   https://github.com/brewster76/fuzzy-archer/archive/v2.1.tar.gz
+Get hold of the release archive from github:   https://github.com/brewster76/fuzzy-archer/releases
 
-Use the WeeWx extension installer:
+Use the Weewx extension installer:
 
    cd /home/weewx
-   setup.py --extension --install [wherever you've put v2.1.tar.gz]
+   setup.py --extension --install [wherever you've put the .tar.gz archive]
 
 Web content is stored in public_html/Bootstrap.
 
@@ -99,9 +99,10 @@ You can use the wget command to download these:
 
 Step 4 - (Optional) Translate skins to Spanish Language
 -------------------------------------------------------
-For skins in Spanish please use v2.01. They are in the process of being ported over to v2.1.
+For skins in Spanish please use the v2.01 release. They are in the process of being ported over to v2.1.
+
 
 Step 5 - Get in touch!
 ----------------------
 If you enjoy using this Weewx customisation then we'd love to hear from you.
-Just drop us an email at general@dajda.net and we'll add you to the list of sites on http://dajda.net/about.html.
+Just drop us an email at general@dajda.net and we'll add you to the list of happy sites on http://dajda.net/about.html.
