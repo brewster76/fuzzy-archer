@@ -175,7 +175,13 @@ class MyXSearch(SearchList):
             # obs_type
             reading = getattr(getattr(all_stats, obs_type), aggregate_type)
             unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
-            unit_formatted = reading.formatter.unit_label_dict[unit_type]
+
+            try:
+                unit_formatted = reading.formatter.unit_label_dict[unit_type]
+            except:
+                unit_formatted = ""
+
+            # Don't catch error here - we absolutely need the string format
             format_string = reading.formatter.unit_format_dict[unit_type]
 
         htmlText = '<table class="table">'
