@@ -347,6 +347,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
     def draw_needle(self):
         """Draws the needle"""
         if self.gauge_value is not None:
+
+            if self.gauge_value < self.min_value:
+                self.gauge_value = self.min_value
+
+            if self.gauge_value > self.max_value:
+                self.gauge_value = self.max_value
+
             angle = math.radians(self.min_angle + (self.gauge_value - self.min_value) *
                                  (self.max_angle - self.min_angle) / (self.max_value - self.min_value)
                                  + self.offset_angle)
