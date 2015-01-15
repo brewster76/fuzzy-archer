@@ -44,7 +44,7 @@ class BootstrapInstaller(ExtensionInstaller):
                      'skins/Bootstrap/year.html.tmpl',
                      'skins/Bootstrap/skin.conf']),
                    ('skins/Bootstrap/NOAA',
-                    ['skins/Bootstrap/NOAA/NOAA-YYYY.html.tmpl',
+                    ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
                      'skins/Bootstrap/NOAA/NOAA-YYYY-MM.txt.tmpl']),
                    ('skins/Images', 
                     ['skins/Images/skin.conf']),
