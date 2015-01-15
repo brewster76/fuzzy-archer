@@ -285,13 +285,15 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         else:
             label_text = unicode(label_format % value_now, 'utf8')
 
-        label_text += unicode(self.units_dict['Labels'][target_unit], 'utf8')
+        try:
+            label_text += unicode(self.units_dict['Labels'][target_unit], 'utf8')
+        except:
+            pass
 
         gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
         if value_now is not None:
             gauge.add_needle(float(value_now), needle_outline_color=needle_outline_color, needle_fill_color=needle_fill_color)
-
 
         try:
             history = int(plot_options.get('history'))

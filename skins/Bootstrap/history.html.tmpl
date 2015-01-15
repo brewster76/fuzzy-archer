@@ -136,23 +136,8 @@ $max_temp_table
 $rain_table
 
           <h3>NOAA Data</h3>
-             <p>Click on a year below for an annual NOAA summary, the months give summaries for that month.</p>
-             <p>
-             #set $monthnames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]             
-             #set $yearnow = 0             
-             #for $monthYear in $SummaryByMonth
-             #set $yearvalue = $monthYear[:4]             
-             #if $yearnow != $yearvalue
-             #set NOAAfilename = ("NOAA/NOAA-%s.html" % $yearvalue)
-             <br><strong><a href="$NOAAfilename">$yearvalue</a></strong>
-             #set $yearnow = $yearvalue
-             #end if  
-             #set $monthvalue = int($monthYear[5:])
-             #set NOAAfilename = ("NOAA/NOAA-%s.txt" % $monthYear)
-               <a href="$NOAAfilename">$monthnames[$monthvalue-1] </a>
-             #end for
-            </p>  
-  
+$NOAA_table
+
           <h3>Complete history in CSV format</h3>
           <a href="dump.csv.gz">dump.csv.gz</a>               
         

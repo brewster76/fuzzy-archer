@@ -117,6 +117,12 @@ class MyXSearch(SearchList):
         name. If not given, then a default binding will be used.
         """
 
+        # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
+        # section in skin.conf then valid_timespan won't contain enough history data for
+        # the colourful summary tables.
+        alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup().first_timestamp, db_lookup().last_timestamp)
+
+
         # Time to recalculate?
         if (time.time() - (self.refresh_interval * 60)) > self.cache_time:
             self.cache_time = time.time()
@@ -124,7 +130,7 @@ class MyXSearch(SearchList):
             # First, get a TimeSpanStats object for all time. This one is easy
             # because the object valid_timespan already holds all valid times to be
             # used in the report.
-            all_stats = TimespanBinder(valid_timespan, db_lookup, formatter=self.generator.formatter,
+            all_stats = TimespanBinder(alltime_timespan, db_lookup, formatter=self.generator.formatter,
                                       converter=self.generator.converter)
 
             # Now create a small dictionary with keys 'alltime' and 'seven_day':
@@ -137,8 +143,10 @@ class MyXSearch(SearchList):
             ngen = 0
 
             for table in self.table_dict.sections:
+                noaa = True if table == 'NOAA' else False
+
                 table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
-                self.search_list_extension[table + '_table'] = self._statsHTMLTable(table_options, all_stats)
+                self.search_list_extension[table + '_table'] = self._statsHTMLTable(table_options, all_stats, NOAA=noaa)
                 ngen += 1
 
             t2 = time.time()
@@ -148,23 +156,27 @@ class MyXSearch(SearchList):
 
         return [self.search_list_extension]
 
-    def _statsHTMLTable(self, table_options, all_stats):
+    def _statsHTMLTable(self, table_options, all_stats, NOAA=False):
         """
 
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """
+
         bgColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'])
 
-        obs_type = table_options['obs_type']
-        aggregate_type = table_options['aggregate_type']
-        converter = all_stats.converter
+        if NOAA is True:
+            unit_formatted = ""
+        else:
+            obs_type = table_options['obs_type']
+            aggregate_type = table_options['aggregate_type']
+            converter = all_stats.converter
 
-        # obs_type
-        reading = getattr(getattr(all_stats, obs_type), aggregate_type)
-        unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
-        unit_formatted = reading.formatter.unit_label_dict[unit_type]
-        format_string = reading.formatter.unit_format_dict[unit_type]
+            # obs_type
+            reading = getattr(getattr(all_stats, obs_type), aggregate_type)
+            unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+            unit_formatted = reading.formatter.unit_label_dict[unit_type]
+            format_string = reading.formatter.unit_format_dict[unit_type]
 
         htmlText = '<table class="table">'
         htmlText += "    <thead>"
@@ -182,11 +194,26 @@ class MyXSearch(SearchList):
             year_number = datetime.fromtimestamp(year.timespan[0]).year
 
             htmlLine = (' ' * 8) + "<tr>\n"
-            htmlLine += (' ' * 12) + "<td>%d</td>\n" % year_number
+
+            if NOAA is True:
+                htmlLine += (' ' * 12) + "%s\n" % \
+                                         self._NoaaYear(datetime.fromtimestamp(year.timespan[0]), table_options)
+            else:
+                htmlLine += (' ' * 12) + "<td>%d</td>\n" % year_number
 
             for month in year.months():
-                value = converter.convert(getattr(getattr(month, obs_type), aggregate_type).value_t)
-                htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, bgColours)
+                if NOAA is True:
+                    #for property, value in vars(month.dateTime.value_t[0]).iteritems():
+                    #    print property, ": ", value
+
+                    if (month.timespan[1] < all_stats.timespan.start) or (month.timespan[0] > all_stats.timespan.stop):
+                        # print "No data for... %d, %d" % (year_number, datetime.fromtimestamp(month.timespan[0]).month)
+                        htmlLine += "<td>-</td>\n"
+                    else:
+                        htmlLine += self._NoaaCell(datetime.fromtimestamp(month.timespan[0]), table_options)
+                else:
+                    value = converter.convert(getattr(getattr(month, obs_type), aggregate_type).value_t)
+                    htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, bgColours)
 
             htmlLine += (' ' * 8) + "</tr>\n"
 
@@ -218,5 +245,17 @@ class MyXSearch(SearchList):
 
         else:
             cellText = "<td>-</td>\n"
+
+        return cellText
+
+    def _NoaaCell(self, dt, table_options):
+        cellText = '<td> <a href="%s" class="btn btn-default btn-xs active" role="button"> %s </a> </td>' % \
+                   (dt.strftime(table_options['month_filename']), dt.strftime("%m-%y"))
+
+        return cellText
+
+    def _NoaaYear(self, dt, table_options):
+        cellText = '<td> <a href="%s" class="btn btn-primary btn-xs active" role="button"> %s </a> </td>' % \
+                   (dt.strftime(table_options['year_filename']), dt.strftime("%Y"))
 
         return cellText
