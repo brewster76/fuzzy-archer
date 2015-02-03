@@ -182,6 +182,10 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         image_width = int(plot_options.get('image_width', 180))
         image_height = int(plot_options.get('image_height', 180))
 
+        # Need to remember in case image is blown up for anti-aliasing
+        original_width = image_width
+        original_height = image_height
+
         back_color = weeplot.utilities.tobgr(plot_options.get('background_color', '0xffffff'))
         back_color_tuple = self._int2rgb(back_color)
 
@@ -203,6 +207,20 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         label_font_size = int(plot_options.get('labelfontsize', 15))
         digit_font_size = int(plot_options.get('digitfontsize', 15))
+
+        dial_thickness = float(plot_options.get('line_thickness', 1))
+
+        try:
+            anti_alias = int(plot_options.get('anti_alias'))
+        except:
+            anti_alias = None
+        else:
+            # Need to apply this factor to everything that will shrink back down
+            dial_thickness *= anti_alias
+            label_font_size *= anti_alias
+            digit_font_size *= anti_alias
+            image_width *= anti_alias
+            image_height *= anti_alias
 
         # Must specify this for every gauge
         try:
@@ -360,9 +378,12 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         gauge.add_dial(major_ticks=major_step, minor_ticks=minor_step, dial_format=dial_format,
                        dial_font_size=digit_font_size, dial_font=font_path, dial_color=dial_color,
-                       dial_label_color=label_color)
+                       dial_label_color=label_color, dial_thickness=dial_thickness)
 
         gauge.render()
+
+        if anti_alias is not None:
+            image.thumbnail((original_width, original_height), Image.ANTIALIAS)
         image.save(img_file)
 
         return 1

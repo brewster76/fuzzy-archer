@@ -155,7 +155,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
             self.colors['text'] = text_color
 
     def add_dial(self, major_ticks, minor_ticks=None, dial_format="%.1f", dial_font_size=12,
-                dial_font=None, dial_color=None, dial_label_color=None):
+                dial_font=None, dial_color=None, dial_label_color=None, dial_thickness=1):
         """Configures the background dial
         major_ticks and minor_ticks are how often to add a tick mark to the dial.
 
@@ -179,6 +179,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
         if dial_label_color is not None:
             self.colors['dial_label'] = dial_label_color
+
+        self.dial_thickness = dial_thickness
 
         self.draw_dial = True
 
@@ -277,7 +279,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
                 end_point = (self.gauge_origin[0] - self.radius * math.sin(angle),
                             self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                self.line((start_point, end_point), fill=self.colors['dial'])
+                self._thick_line(start_point, end_point, fill=self.colors['dial'], thickness=self.dial_thickness)
 
                 if self.dial_format is not None and self.dial_format != 'None':
                     text = str(self.dial_format % label_value)
@@ -304,13 +306,13 @@ class GaugeDraw(ImageDraw.ImageDraw):
                     end_point = (self.gauge_origin[0] - self.radius * math.sin(angle),
                                 self.gauge_origin[1] + self.radius * math.cos(angle))
 
-                    self.line((start_point, end_point), fill=self.colors['dial'])
+                    self._thick_line(start_point, end_point, fill=self.colors['dial'], thickness=self.dial_thickness)
 
             # The edge of the dial
-            self.arc((self.gauge_origin[0] - int(self.radius), self.gauge_origin[1] - int(self.radius),
+            self._thick_arc((self.gauge_origin[0] - int(self.radius), self.gauge_origin[1] - int(self.radius),
                       self.gauge_origin[0] + int(self.radius), self.gauge_origin[1] + int(self.radius)),
                           self.min_angle + 90 + self.offset_angle, self.max_angle + 90 + self.offset_angle,
-                          self.colors['dial'])
+                          self.colors['dial'], thickness=self.dial_thickness)
 
             # Custom gauge labels?
             if self.dial_labels is not None:
@@ -367,8 +369,8 @@ class GaugeDraw(ImageDraw.ImageDraw):
             mid_point = (self.gauge_origin[0] - self.radius * math.sin(angle + math.pi) * 0.1,
                         self.gauge_origin[1] + self.radius * math.cos(angle + math.pi) * 0.1)
 
-            self.polygon((left_point, end_point, right_point, mid_point), outline=self.colors['needle_outline'],
-                         fill=self.colors['needle_fill'])
+            self._thick_polygon((left_point, end_point, right_point, mid_point), outline=self.colors['needle_outline'],
+                         fill=self.colors['needle_fill'], thickness=self.dial_thickness)
 
     def render(self):
         """Renders the gauge. Call this function last."""
@@ -386,6 +388,84 @@ class GaugeDraw(ImageDraw.ImageDraw):
         for i in range(n):
             l[i] = nm1inv * (start * (nm1 - i) + stop * i)
         return l
+
+    def _thick_polygon(self, points, outline=None, fill=None, thickness=1):
+        """Draws a polygon outline using polygons to give it a thickness"""
+        if thickness == 1:
+            self.polygon(points, outline=outline, fill=fill)
+        else:
+            if fill is not None:
+                # Fill it in before drawing the exterior
+                self.polygon(points, outline=outline, fill=fill)
+
+            # Outline needed?
+            if outline is not None:
+                last_point = None
+
+                for point in points:
+                    if last_point is not None:
+                        self._thick_line(last_point, point, fill=outline, thickness=thickness)
+
+                    last_point = point
+
+                self._thick_line(point, points[0], fill=outline, thickness=thickness)
+
+    def _thick_arc(self, bbox, start, end, fill, thickness):
+        """Draws an arc using polygons to give it a thickness"""
+        num_segments = 50
+
+        if thickness == 1:
+            self.arc(bbox, start, end, fill=fill)
+        else:
+            start *= (math.pi / 180)
+            end *= (math.pi / 180)
+
+            rx = (bbox[2] - bbox[0]) / 2.0
+            ry = (bbox[3] - bbox[1]) / 2.0
+
+            midx = (bbox[2] + bbox[0]) / 2.0
+            midy = (bbox[3] + bbox[1]) / 2.0
+
+            angle_step = (end - start) / num_segments
+
+            for angle in self._frange(start, end, num_segments):
+                end_angle = angle + angle_step
+                if end_angle > end:
+                    end_angle = end
+
+                x1 = midx + rx * math.cos(angle)
+                y1 = midy + ry * math.sin(angle)
+
+                x2 = midx + rx * math.cos(end_angle)
+                y2 = midy + ry * math.sin(end_angle)
+
+                self._thick_line((x1, y1), (x2, y2), fill, thickness)
+
+
+    def _thick_line(self, start_point, end_point, fill, thickness):
+        """Draws a line using polygons to give it a thickness"""
+
+        if thickness == 1:
+            self.line((start_point, end_point), fill=fill)
+        else:
+            # Angle of the line 
+            if end_point[0] == start_point[0]:
+                # Catch a division by zero error
+                a = math.pi / 2
+            else:
+                a = math.atan((end_point[1] - start_point[1]) / (end_point[0] - start_point[0]))
+
+            sin = math.sin(a)
+            cos = math.cos(a)
+            xdelta = sin * thickness / 2.0
+            ydelta = cos * thickness / 2.0
+            
+            points = ((start_point[0] - xdelta, start_point[1] + ydelta), 
+                      (start_point[0] + xdelta, start_point[1] - ydelta),
+                      (end_point[0] + xdelta, end_point[1] - ydelta),
+                      (end_point[0] - xdelta, end_point[1] + ydelta))
+            
+            self.polygon(points, fill=fill)
 
     def _calc_color(self, value, index):
         diff = self.fill_color_tuple[index] - self.back_color_tuple[index]
