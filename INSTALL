@@ -2,7 +2,7 @@ How to install
 ==============
 
 Before we begin...
- 1) This release (v2.2 beta) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+ 1) This release (v2.2) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
     wheezy.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
@@ -35,8 +35,9 @@ To get the latest development code:
 To get the latest stable(ish) release, point your browser here:
    https://github.com/brewster76/fuzzy-archer/releases
 
-Move gaugeengine.py, gauges.py and historyengine,py into the bin/user directory.
+Move gaugeengine.py, gauges.py, historyengine,py and translateengine.py into the bin/user directory.
 Move the Bootstrap and Images directory into the skins directory.
+Move any language specific files you want into skins/languages.
 
 
 Step 2 - Add the skins to weewx.conf
@@ -86,20 +87,24 @@ So the [StdReport] section will need to look something like this:
 Step 3 - Add Bootstrap support files to your website
 ----------------------------------------------------
 
-Add this file to weewx/public_html/js:
+Add these files to weewx/public_html/js:
     bootstrap.min.js
+    ekko-lightbox.min.js
 
 and this one to weewx/public_html/css:
     css/bootstrap.min.css
 
 You can use the wget command to download these:
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.2-beta/public_html/Bootstrap/css/bootstrap.min.css
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.2-beta/public_html/Bootstrap/js/bootstrap.min.js
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.2/public_html/Bootstrap/css/bootstrap.min.css
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.2/public_html/Bootstrap/js/bootstrap.min.js
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.2/public_html/Bootstrap/js/ekko-lightbox.min.js
 
+Step 4 - (Optional) Display skins in Spanish or French Language
+---------------------------------------------------------------
+Just choose your language using the "language" setting in the [Languages] section of skin.conf.
 
-Step 4 - (Optional) Translate skins to Spanish Language
--------------------------------------------------------
-For skins in Spanish please use the v2.01 release. They are in the process of being ported over to v2.2.
+Remember to make changes to both skins/Bootstrap/skin.conf (for the html text) and skins/Images/skin.conf (for
+the graphs).
 
 
 Step 5 - Get in touch!
