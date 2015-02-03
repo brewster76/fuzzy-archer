@@ -96,14 +96,16 @@ class MyXSearch(SearchList):
         self.search_list_extension = {}
 
         # Make bootstrap specific labels in config file available to
-        try:
-            bootstrap_labels = generator.skin_dict['BootstrapLabels']
-        except:
-            syslog.syslog(syslog.LOG_DEBUG, "%s: No bootstrap specific labels found" % os.path.basename(__file__))
+        if 'BootstrapLabels' in generator.skin_dict:
+            self.search_list_extension['BootstrapLabels'] = generator.skin_dict['BootstrapLabels']
         else:
-            for bootstrap_label in bootstrap_labels:
-                self.search_list_extension['bootstrap_' + bootstrap_label] = \
-                    generator.skin_dict['BootstrapLabels'][bootstrap_label]
+            syslog.syslog(syslog.LOG_DEBUG, "%s: No bootstrap specific labels found" % os.path.basename(__file__))
+
+        # Make observation labels available to templates
+        if 'Labels' in generator.skin_dict:
+            self.search_list_extension['Labels'] = generator.skin_dict['Labels']
+        else:
+            syslog.syslog(syslog.LOG_DEBUG, "%s: No observation labels found" % os.path.basename(__file__))
 
     def get_extension_list(self, valid_timespan, db_lookup):
         """For weewx V3.x extensions. Should return a list
@@ -158,7 +160,6 @@ class MyXSearch(SearchList):
 
     def _statsHTMLTable(self, table_options, all_stats, NOAA=False):
         """
-
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """

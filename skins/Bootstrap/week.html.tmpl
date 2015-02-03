@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$bootstrap_title</title>
+    <title>$BootstrapLabels.title</title>
 
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
@@ -29,20 +29,20 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="$bootstrap_location_href">$station.location</a>
+          <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a>
         </div>
         <div class="navbar-collapse collapse">
            
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#">The Weather</a></li>
-            <li><a href="stats.html">Stats</a></li>
-            <li><a href="history.html">History</a></li>
-            <li><a href="news.html">News</a></li>
-            <li><a href="about.html">About</a></li>
+            <li class="active"><a href="#">$BootstrapLabels.headings.front_page</a></li>
+            <li><a href="stats.html">$BootstrapLabels.headings.stats</a></li>
+            <li><a href="history.html">$BootstrapLabels.headings.history</a></li>
+            <li><a href="news.html">$BootstrapLabels.headings.news</a></li>
+            <li><a href="about.html">$BootstrapLabels.headings.about</a></li>
           </ul>
           
           <p class="navbar-text navbar-right">
-              Last Updated: $current.dateTime
+              $BootstrapLabels.headings.last_update $current.dateTime
           </p>
         </div><!--/.nav-collapse -->
       </div>
@@ -60,34 +60,34 @@
           <div class="row">
               <div class="col-md-6" align="center">
                 <img src="outTempGauge.png" alt="">
-                <h5>Outside temperature</h5>
+                <h5>$Labels.Generic.outTemp</h5>
               </div>          
           
               <div class="col-md-6" align="center">
                 <img src="barometerGauge.png" alt="">
-                <h5>Barometric pressure</h5>            
+                <h5>$Labels.Generic.barometer</h5>            
               </div>          
           </div>
           <div class="row">
               <div class="col-md-6" align="center">
                 <img src="windDirGauge.png" alt="">
-                <h5>Wind direction</h5>
+                <h5>$Labels.Generic.windDir</h5>
               </div>          
           
               <div class="col-md-6" align="center">
                 <img src="outHumidityGauge.png" alt="">
-                <h5>Outside humidity</h5>            
+                <h5>$Labels.Generic.outHumidity</h5>            
               </div>          
           </div>   
           <div class="row">
               <div class="col-md-6" align="center">
                 <img src="windSpeedGauge.png" alt="">
-                <h5>Wind speed</h5>
+                <h5>$Labels.Generic.windSpeed</h5>
               </div>          
           
               <div class="col-md-6" align="center">
                 <img src="windGustGauge.png" alt="">
-                <h5>Gust speed</h5>            
+                <h5>$Labels.Generic.windGust</h5>            
               </div>          
           </div>   
           
@@ -96,23 +96,23 @@
             <table class="table table-hover">
               <tbody>
 	              <tr>
-	                <td>Latitude:</td>
+	                <td>$BootstrapLabels.status.latitude</td>
 	                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
 	              </tr>
 	              <tr>
-	                <td>Longitude:</td>
+	                <td>$BootstrapLabels.status.longitude</td>
 	                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
 	              </tr>
 	              <tr>
-	                <td>Altitude:</td>
+	                <td>$BootstrapLabels.status.altitude</td>
 	                <td>$station.altitude</td>
 	              </tr>
 	              <tr>
-	                <td>Station uptime:</td>
+	                <td>$BootstrapLabels.status.station_uptime</td>
 	                <td>$station.uptime</td>
 	              </tr>
 	              <tr>
-	                <td>Server uptime:</td>
+	                <td>$BootstrapLabels.status.server_uptime</td>
 	                <td>$station.os_uptime</td>
 	              </tr>
 	            </tbody>
@@ -125,42 +125,54 @@
           <!-- Graph panel -->        
           <div class="col-md-8 main">
               <ul class="nav nav-pills">
-                <li><a href="index.html">Last 24 hours</a></li>
-                <li class="active"><a href="week.html">Last week</a></li>
-                <li><a href="month.html">Last month</a></li>
-                <li><a href="year.html">Last year</a></li>
+                <li><a href="index.html">$BootstrapLabels.timespans.day</a></li>
+                <li class="active"><a href="week.html">$BootstrapLabels.timespans.week</a></li>
+                <li><a href="month.html">$BootstrapLabels.timespans.month</a></li>
+                <li><a href="year.html">$BootstrapLabels.timespans.year</a></li>
               </ul>          
               <br>                  
                              
               <div class="row">
-                <div class="col-md-6" align="center" >
-                  <img src="images/weektempchill-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                <div class="col-md-6" align="center">
+                  <a href="big_images/weektempchill-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weektempchill-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
             
                 <div class="col-md-6" align="center">
-                  <img src="images/weekbarometer-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  <a href="big_images/weekbarometer-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weekbarometer-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
               </div>
                   
               <br>
               <div class="row">
-                <div class="col-md-6" align="center" >
-                  <img src="images/weekrain-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                <div class="col-md-6" align="center">
+                  <a href="big_images/weekrain-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weekrain-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
             
                 <div class="col-md-6" align="center">
-                  <img src="images/weekhumidity-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  <a href="big_images/weekhumidity-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weekhumidity-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
               </div>
 
               <br>
               <div class="row">
-                <div class="col-md-6" align="center" >
-                  <img src="images/weekwind-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                <div class="col-md-6" align="center">
+                  <a href="big_images/weekwind-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weekwind-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
             
                 <div class="col-md-6" align="center">
-                  <img src="images/weekwinddir-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  <a href="big_images/weekwinddir-Bootstrap.png" data-toggle="lightbox">
+                    <img src="images/weekwinddir-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
+                  </a>
                 </div>          
               </div>
 
@@ -170,13 +182,25 @@
 
     <hr>
     <footer>
-      <p>$bootstrap_footer</p>
+      <p>$BootstrapLabels.footer</p>
     </footer>    
-    </div>  
-  
+    </div>
+
+    <!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
+#raw
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
+    <!-- Lightbox -->
+    <script src="js/ekko-lightbox.min.js"></script>
+	<script type="text/javascript">
+        $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
+            event.preventDefault();
+            $(this).ekkoLightbox();
+        });
+	</script>
+#end raw
+
   </body>
 </html>
