@@ -19,7 +19,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
 
     def __init__(self):
         super(BootstrapInstaller, self).__init__(
-            version="2.2",
+            version="2.21",
             name='bootstrap',
             description='A skin based around the bootstrap 3.2.0 framework',
             author="Nick Dajda",
