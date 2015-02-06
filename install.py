@@ -33,8 +33,13 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                         'skin':'Images',
                         'HTML_ROOT':'Bootstrap/big_images',
                         'ImageGenerator' : {
-                            'image_width' : '800',
-                            'image_height' : '500'}},
+                            'image_width'            : '900',
+                            'image_height'           : '600',
+                            'anti_alias'             : '2',
+                            'top_label_font_size'    : '18',
+                            'unit_label_font_size'   : '18',
+                            'bottom_label_font_size' : '14',
+                            'axis_label_font_size'   : '14'}},
                     'HTMLPages': {
                         'skin':'Bootstrap',
                         'HTML_ROOT':'Bootstrap'}}},
@@ -48,6 +53,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                      'skins/Bootstrap/stats.html.tmpl',
                      'skins/Bootstrap/week.html.tmpl',
                      'skins/Bootstrap/year.html.tmpl',
+                     'skins/Bootstrap/gauges.html.tmpl',
                      'skins/Bootstrap/skin.conf']),
                    ('skins/Bootstrap/NOAA',
                     ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
@@ -59,14 +65,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                      'bin/user/gauges.py',
                      'bin/user/historygenerator.py',
                      'bin/user/translategenerator.py']),
-                   ('public_html/Bootstrap/css',
-                    ['public_html/Bootstrap/css/bootstrap.min.css']),
-                   ('public_html/Bootstrap/js',
-                    ['public_html/Bootstrap/js/bootstrap.min.js',
-                     'public_html/Bootstrap/js/ekko-lightbox.min.js']),
+                   ('skins/Bootstrap/css',
+                    ['skins/Bootstrap/css/bootstrap.min.css']),
+                   ('skins/Bootstrap/js',
+                    ['skins/Bootstrap/js/bootstrap.min.js',
+                     'skins/Bootstrap/js/ekko-lightbox.min.js']),
                    ('skins/languages',
                     ['skins/languages/espanol.conf',
-                      'skins/languages/francais.conf'])
+                      'skins/languages/francais.conf',
+                      'skins/languages/italian.conf',
+                      'skins/languages/german.conf'])
                    ]
             )
 
@@ -77,7 +85,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
         for f in self.files:
             if f[0] == 'skins/languages':
                 for language in f[1]:
-                    print "   %s" % language.strip('.conf').split('/')[-1]
+                    l = language.strip('conf').split('/')[-1]
+                    print "   %s" % l[:-1]
 
         print ""
         print "Would you like to use one of these? (y/n)"
