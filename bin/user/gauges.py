@@ -117,7 +117,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         if dial_label_font is None:
             dial_label_font = DEFAULT_FONT
 
-        self.dial_label_font = ImageFont.truetype(dial_label_font, dial_label_font_size)
+        self.dial_label_font = get_font(dial_label_font, dial_label_font_size)
 
         if dial_label_color is not None:
             self.colors['dial_label'] = dial_label_color
@@ -148,7 +148,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         if text_font is None:
             text_font = DEFAULT_FONT
 
-        self.text_font = ImageFont.truetype(text_font, text_font_size)
+        self.text_font = get_font(text_font, text_font_size)
         self.text_font_size = text_font_size
 
         if text_color is not None:
@@ -172,7 +172,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
         if dial_font is None:
             dial_font = DEFAULT_FONT
 
-        self.dial_font = ImageFont.truetype(dial_font, dial_font_size)
+        self.dial_font = get_font(dial_font, dial_font_size)
 
         if dial_color is not None:
             self.colors['dial'] = dial_color
@@ -579,7 +579,16 @@ class WindRoseGaugeDraw(GaugeDraw):
                                        outline=self.colors["dial"],
                                        fill=self.ring_colors[i])
                 angle += angle_step
-           
+
+
+def get_font(font_path, font_size):
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except IOError:
+        font = ImageFont.load_default()
+
+    return font
+
 def get_ring(value, rings):
     for i in range(len(rings)):
         if value < rings[i]:
