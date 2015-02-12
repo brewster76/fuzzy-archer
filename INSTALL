@@ -1,5 +1,5 @@
-How to install
-==============
+Installation
+============
 
 Before we begin...
  1) This release (v2.21) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
@@ -8,23 +8,59 @@ Before we begin...
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
 
-The easy way
-============
+Installation - The easy way
+===========================
 
-Get hold of the release archive from github:   https://github.com/brewster76/fuzzy-archer/releases
+1) Get hold of the release archive from github:   https://github.com/brewster76/fuzzy-archer/releases
 
-Use the Weewx extension installer:
+2) Install it using the Weewx extension installer.
 
-   cd /home/weewx
-   setup.py --extension --install [wherever you've put the .tar.gz archive]
+  a) If you have installed weewx yourself:
+       cd /home/weewx [or where your base install is]
+       ./setup.py install --extension [wherever you've put the .tar.gz archive]
 
-Web content is stored in public_html/Bootstrap. The installer will ask which language you want.
+  b) If you used the Debian installer:
+       sudo wee_setup install --extension [wherever you've put the .tar.gz archive]
 
-Enjoy.
+The installer will ask if you want to switch the themes to another language. You can change this later on
+via the [Language] section in skins/Bootstrap/skin.conf and skins/Images/skin.conf.
+
+Web content is stored in public_html/Bootstrap.
+
+3) Set the page title and page footer through the [BootstrapLabels] section in skins/Bootstrap/skin.conf.
+
+   [BootstrapLabels]
+
+       # Labels specific to the Bootstrap template
+
+       title = "The weather, [where you are]"
+       location_href = ["#" for nothing, or a hyperlink to some more information on your location] 
+       footer = "&copy; [who you are]"
+
+4) Enjoy.... And let us know how you get on! 
+   Just drop us an email at general@dajda.net and we'll add you to the list of happy sites at dajda.net/about.html.
 
 
-The involved way
-================
+Frequently Asked Questions
+==========================
+
+1) I've installed the new skin but I only see the original Weewx pages.
+     This template does not overwrite any existing templates which are generated in weewx.conf. For a new Weewwx
+     installation, both the standard Weewx and the Bootstrap reports will be generated:
+         Standard template:  http://[wherever your site is]
+         Bootstrap template: http://[wherever your site is]/Bootstrap
+
+     If you no longer want to generate the standard weewx template, comment out this section in weewx.conf:
+         [StdReport]
+             # [[StandardReport]]
+             # skin = Standard
+
+    Remember to leave in the [[SmallImages]], [[BigImages]] and [[HTMLPages]] sections which generate the 
+    Bootstrap template content.
+
+
+Installation - The involved way
+===============================
 
 Step 1 - Download from github:
 ------------------------------
@@ -39,11 +75,9 @@ Move gaugeengine.py, gauges.py, historyengine,py and translateengine.py into the
 Move the Bootstrap and Images directory into the skins directory.
 Move any language specific files you want into skins/languages.
 
-
 Step 2 - Add the skins to weewx.conf
 ------------------------------------
-
-So the [StdReport] section will need to look something like this:
+The [StdReport] section will need to look something like this:
 
     [StdReport]
         # This section specifies what reports, using which skins, to generate.
@@ -86,7 +120,6 @@ So the [StdReport] section will need to look something like this:
 
 Step 3 - Add Bootstrap support files to your website
 ----------------------------------------------------
-
 Add these files to weewx/public_html/js:
     bootstrap.min.js
     ekko-lightbox.min.js
@@ -99,15 +132,10 @@ You can use the wget command to download these:
     wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.21/public_html/Bootstrap/js/bootstrap.min.js
     wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.21/public_html/Bootstrap/js/ekko-lightbox.min.js
 
-Step 4 - (Optional) Display skins in Spanish or French Language
----------------------------------------------------------------
+
+Step 4 - (Optional) Display skins in another language
+-----------------------------------------------------
 Just choose your language using the "language" setting in the [Languages] section of skin.conf.
 
 Remember to make changes to both skins/Bootstrap/skin.conf (for the html text) and skins/Images/skin.conf (for
 the graphs).
-
-
-Step 5 - Get in touch!
-----------------------
-If you enjoy using this Weewx customisation then we'd love to hear from you.
-Just drop us an email at general@dajda.net and we'll add you to the list of happy sites on http://dajda.net/about.html.
