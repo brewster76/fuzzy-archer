@@ -82,6 +82,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
         print "The following alternative languages are available:"
         self.language = None
 
+        self.html_files = None
+
         for f in self.files:
             if f[0] == 'skins/languages':
                 for language in f[1]:
@@ -105,26 +107,37 @@ class BootstrapInstaller(setup.ExtensionInstaller):
 
         super(BootstrapInstaller, self).merge_config_options()
 
-        if self.language is None or len(self.language) is 0:
-            # Don't bother
-            return
-
-        self.log("Setting language to %s" % self.language, level=1)
-
         fn = os.path.join(self.layout['CONFIG_ROOT'], 'weewx.conf')
         config = configobj.ConfigObj(fn)
         skin_dir = setup.get_skin_dir(config)
 
-        for conf_file in self._skin_conf_files:
-            skin_file = os.path.join(skin_dir, conf_file)
-            skin_dict = configobj.ConfigObj(skin_file)
+        if self.language is None or len(self.language) is 0:
+            pass
 
-            if 'Language' not in skin_dict:
-                skin_dict['Language'] = {}
+        else:
+            self.log("Setting language to %s" % self.language, level=1)
 
-            skin_dict['Language']['language'] = self.language
-            skin_dict.write()
+            for conf_file in self._skin_conf_files:
+                skin_file = os.path.join(skin_dir, conf_file)
+                skin_dict = configobj.ConfigObj(skin_file)
 
-        
+                if 'Language' not in skin_dict:
+                    skin_dict['Language'] = {}
+
+                skin_dict['Language']['language'] = self.language
+                skin_dict.write()
 
 
+    def install(self):
+        super(BootstrapInstaller, self).install()
+
+        web_page_text = "HTML and image files will be stored here: %s" % \
+              os.path.join(self.layout['CONFIG_ROOT'], self.config['StdReport']['HTMLPages']['HTML_ROOT'])
+
+        wl = len(web_page_text)
+
+        print ""
+        print "+%s+" % ('-' * (wl + 2))
+        print "| %s |" % web_page_text
+        print "+%s+" % ('-' * (wl + 2))
+        print ""
