@@ -82,8 +82,6 @@ class BootstrapInstaller(setup.ExtensionInstaller):
         print "The following alternative languages are available:"
         self.language = None
 
-        self.html_files = None
-
         for f in self.files:
             if f[0] == 'skins/languages':
                 for language in f[1]:
