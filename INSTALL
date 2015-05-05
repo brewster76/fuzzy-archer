@@ -58,6 +58,16 @@ Frequently Asked Questions
     Remember to leave in the [[SmallImages]], [[BigImages]] and [[HTMLPages]] sections which generate the 
     Bootstrap template content.
 
+2) I've changed the units in skin.conf, but the original units persist on the webpage.
+     The skin has two skin.conf files:
+       skins/Bootstrap/skin.conf - This creates the gauges and the html files.
+       skins/Images/skin.conf    - This creates the (daily, weekly, ...) history graphs.
+
+      Make sure you've changed the units in both files.
+
+      The reason for splitting the config files out is Images/skin.conf is run twice. Once to create the images for the
+      webpage, and a second time for the expanded images which are shown when clicking on the webpage history graph.
+
 
 Installation - The involved way
 ===============================
