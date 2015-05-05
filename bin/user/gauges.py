@@ -205,7 +205,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
                 bucket = int((data - self.min_value) / bucket_span)
 
                 if bucket >= num_buckets:
-                    raise Exeption("Value %f gives bucket higher than num_buckets (%d)" % (data, num_buckets))
+                    raise Exception("Value %f gives bucket higher than num_buckets (%d)" % (data, num_buckets))
                 else:
                     self.buckets[bucket] += 1.0
                     num_points += 1
@@ -541,7 +541,7 @@ class WindRoseGaugeDraw(GaugeDraw):
                 bucket = int((data - self.min_value) / bucket_span)
 
                 if bucket >= num_buckets:
-                    raise Exeption("Value %f gives bucket higher than num_buckets (%d)" % (data, num_buckets))
+                    raise Exception("Value %f gives bucket higher than num_buckets (%d)" % (data, num_buckets))
                 else:
                     self.buckets[bucket][0] += 1.0
                     if ring_vals is not None:
