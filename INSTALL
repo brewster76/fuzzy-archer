@@ -2,7 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v2.21) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+ 1) This release (v2.22) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
     wheezy.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
@@ -138,9 +138,9 @@ and this one to weewx/public_html/css:
     css/bootstrap.min.css
 
 You can use the wget command to download these:
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.21/public_html/Bootstrap/css/bootstrap.min.css
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.21/public_html/Bootstrap/js/bootstrap.min.js
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.21/public_html/Bootstrap/js/ekko-lightbox.min.js
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/css/bootstrap.min.css
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/js/bootstrap.min.js
+    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/js/ekko-lightbox.min.js
 
 
 Step 4 - (Optional) Display skins in another language
