@@ -549,14 +549,15 @@ class WindRoseGaugeDraw(GaugeDraw):
                         self.buckets[bucket][1][ring] += 1.0
 
         bucket_max = max(self.buckets)[0]
-        for bucket in self.buckets:
-            bucket[0] /= bucket_max
-            ring_sum = max(1.0, sum(bucket[1][1:]))
-            ring = 0.0
-            for k in range(1,len(bucket[1])):
-                if bucket[1][k] != 0:
-                    ring += bucket[1][k] / ring_sum
-                    bucket[1][k] = ring
+        if abs(bucket_max) > 0:
+            for bucket in self.buckets:
+                bucket[0] /= bucket_max
+                ring_sum = max(1.0, sum(bucket[1][1:]))
+                ring = 0.0
+                for k in range(1,len(bucket[1])):
+                    if bucket[1][k] != 0:
+                        ring += bucket[1][k] / ring_sum
+                        bucket[1][k] = ring
 
     def draw_buckets(self):
         """Draw the wind rose. 
