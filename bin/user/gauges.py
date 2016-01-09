@@ -19,8 +19,8 @@
 
 import math
 
-import ImageDraw
-import ImageFont
+from PIL import ImageDraw
+from PIL import ImageFont
 
 DEFAULT_FONT = "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 
