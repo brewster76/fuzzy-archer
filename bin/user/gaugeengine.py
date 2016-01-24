@@ -103,7 +103,7 @@ Directions for use:
 import time
 import syslog
 import os.path
-import Image
+from PIL import Image
 
 import weeutil.weeutil
 import weewx.reportengine
