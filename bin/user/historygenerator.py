@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2015  Nick Dajda <nick.dajda@gmail.com>
+# Copyright (c) 2013-2016  Nick Dajda <nick.dajda@gmail.com>
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
@@ -174,16 +174,30 @@ class MyXSearch(SearchList):
             converter = all_stats.converter
 
             # obs_type
-            reading = getattr(getattr(all_stats, obs_type), aggregate_type)
-            unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+            readingBinder = getattr(all_stats, obs_type)
+
+            # Some aggregate come with an argument
+            if aggregate_type in ['max_ge', 'max_le', 'min_le', 'sum_ge']:
+                threshold_value = float(table_options['aggregate_threshold'][0])
+                threshold_units = table_options['aggregate_threshold'][1]
+                reading = getattr(readingBinder, aggregate_type)((threshold_value, threshold_units))
+            else:
+                reading = getattr(readingBinder, aggregate_type)
 
             try:
                 unit_formatted = reading.formatter.unit_label_dict[unit_type]
             except:
                 unit_formatted = ""
 
+            unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+
+            # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
+
             # Don't catch error here - we absolutely need the string format
-            format_string = reading.formatter.unit_format_dict[unit_type]
+            if unit_type == 'count':
+                format_string = '%d'
+            else:
+                format_string = reading.formatter.unit_format_dict[unit_type]
 
         htmlText = '<table class="table">'
         htmlText += "    <thead>"
@@ -219,7 +233,14 @@ class MyXSearch(SearchList):
                     else:
                         htmlLine += self._NoaaCell(datetime.fromtimestamp(month.timespan[0]), table_options)
                 else:
-                    value = converter.convert(getattr(getattr(month, obs_type), aggregate_type).value_t)
+                    if unit_type == 'count':
+                        try:
+                            value = getattr(getattr(month, obs_type), aggregate_type)((threshold_value, threshold_units)).value_t
+                        except:
+                            value = [0, 'count']
+                    else:
+                        value = converter.convert(getattr(getattr(month, obs_type), aggregate_type).value_t)
+
                     htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, bgColours)
 
             htmlLine += (' ' * 8) + "</tr>\n"
