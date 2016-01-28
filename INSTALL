@@ -2,7 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v2.22) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
+ 1) This release (v2.23) has been tested on Weewx version 3.0.1, on Ubuntu linux 14.04 and on a Raspberry Pi running
     wheezy.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
@@ -17,10 +17,10 @@ Installation - The easy way
 
   a) If you have installed weewx yourself:
        cd /home/weewx [or where your base install is]
-       ./setup.py install --extension [wherever you've put the .tar.gz archive]
+       bin/wee_extension --install=[wherever you've put the .tar.gz archive]
 
   b) If you used the Debian installer:
-       sudo wee_setup install --extension [wherever you've put the .tar.gz archive]
+       sudo wee_extension --install=[wherever you've put the .tar.gz archive]
 
 The installer will ask if you want to switch the themes to another language. You can change this later on
 via the [Language] section in skins/Bootstrap/skin.conf and skins/Images/skin.conf.
@@ -149,3 +149,9 @@ Just choose your language using the "language" setting in the [Languages] sectio
 
 Remember to make changes to both skins/Bootstrap/skin.conf (for the html text) and skins/Images/skin.conf (for
 the graphs).
+
+
+Step 5 - Get in touch!
+----------------------
+If you enjoy using this Weewx customisation then we'd love to hear from you.
+Just drop us an email at general@dajda.net and we'll add you to the list of happy sites on http://dajda.net/about.html.
