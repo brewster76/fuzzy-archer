@@ -148,7 +148,9 @@ class MyXSearch(SearchList):
                 noaa = True if table == 'NOAA' else False
 
                 table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
-                self.search_list_extension[table + '_table'] = self._statsHTMLTable(table_options, all_stats, NOAA=noaa)
+                table_name = table + '_table'
+                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, all_stats, table_name,
+                                                                              NOAA=noaa)
                 ngen += 1
 
             t2 = time.time()
@@ -158,7 +160,7 @@ class MyXSearch(SearchList):
 
         return [self.search_list_extension]
 
-    def _statsHTMLTable(self, table_options, all_stats, NOAA=False):
+    def _statsHTMLTable(self, table_options, all_stats, table_name, NOAA=False):
         """
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
@@ -178,18 +180,38 @@ class MyXSearch(SearchList):
 
             # Some aggregate come with an argument
             if aggregate_type in ['max_ge', 'max_le', 'min_le', 'sum_ge']:
-                threshold_value = float(table_options['aggregate_threshold'][0])
-                threshold_units = table_options['aggregate_threshold'][1]
-                reading = getattr(readingBinder, aggregate_type)((threshold_value, threshold_units))
-            else:
-                reading = getattr(readingBinder, aggregate_type)
 
-            try:
-                unit_formatted = reading.formatter.unit_label_dict[unit_type]
-            except:
-                unit_formatted = ""
+                try:
+                    threshold_value = float(table_options['aggregate_threshold'][0])
+                except KeyError:
+                    syslog.syslog(syslog.LOG_INFO, "%s: Problem with aggregate_threshold. Should be in the format: [value], [units]" %
+                                  (os.path.basename(__file__)))
+                    return "Could not generate table %s" % table_name
+
+                threshold_units = table_options['aggregate_threshold'][1]
+
+                try:
+                    reading = getattr(readingBinder, aggregate_type)((threshold_value, threshold_units))
+                except IndexError:
+                    syslog.syslog(syslog.LOG_INFO, "%s: Problem with aggregate_threshold units: %s" % (os.path.basename(__file__),
+                                                                                                       str(threshold_units)))
+                    return "Could not generate table %s" % table_name
+            else:
+                try:
+                    reading = getattr(readingBinder, aggregate_type)
+                except KeyError:
+                    syslog.syslog(syslog.LOG_INFO, "%s: aggregate_type %s not found" % (os.path.basename(__file__),
+                                                                                        aggregate_type))
+                    return "Could not generate table %s" % table_name
 
             unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+
+            if (unit_type == 'count'):
+                unit_formatted = "Days"
+            else:
+                unit_formatted = reading.formatter.unit_label_dict[unit_type]
+
+            unit_formatted = table_options.get('units', unit_formatted)
 
             # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
 

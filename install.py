@@ -51,7 +51,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
               'skins/languages/german.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="2.22",
+            version="2.23",
             name='bootstrap',
             description='A skin based around the bootstrap 3.2.0 framework',
             author="Nick Dajda",
