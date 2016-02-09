@@ -119,15 +119,19 @@ class MyXSearch(SearchList):
         name. If not given, then a default binding will be used.
         """
 
-        # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
-        # section in skin.conf then valid_timespan won't contain enough history data for
-        # the colourful summary tables.
-        alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup().first_timestamp, db_lookup().last_timestamp)
-
-
         # Time to recalculate?
         if (time.time() - (self.refresh_interval * 60)) > self.cache_time:
             self.cache_time = time.time()
+
+            #
+            # The all time statistics
+            #
+
+            # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
+            # section in skin.conf then valid_timespan won't contain enough history data for
+            # the colourful summary tables.
+            alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup().first_timestamp, db_lookup().last_timestamp)
+
 
             # First, get a TimeSpanStats object for all time. This one is easy
             # because the object valid_timespan already holds all valid times to be
@@ -148,8 +152,18 @@ class MyXSearch(SearchList):
                 noaa = True if table == 'NOAA' else False
 
                 table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
+
+                # Show all time unless starting date specified
+                startdate = table_options.get('startdate', None)
+                if startdate is not None:
+                    table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup().last_timestamp)
+                    table_stats = TimespanBinder(table_timespan, db_lookup, formatter=self.generator.formatter,
+                                      converter=self.generator.converter)
+                else:
+                    table_stats = all_stats
+
                 table_name = table + '_table'
-                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, all_stats, table_name,
+                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, table_stats, table_name,
                                                                               NOAA=noaa)
                 ngen += 1
 
@@ -160,7 +174,7 @@ class MyXSearch(SearchList):
 
         return [self.search_list_extension]
 
-    def _statsHTMLTable(self, table_options, all_stats, table_name, NOAA=False):
+    def _statsHTMLTable(self, table_options, table_stats, table_name, NOAA=False):
         """
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
@@ -173,10 +187,10 @@ class MyXSearch(SearchList):
         else:
             obs_type = table_options['obs_type']
             aggregate_type = table_options['aggregate_type']
-            converter = all_stats.converter
+            converter = table_stats.converter
 
             # obs_type
-            readingBinder = getattr(all_stats, obs_type)
+            readingBinder = getattr(table_stats, obs_type)
 
             # Some aggregate come with an argument
             if aggregate_type in ['max_ge', 'max_le', 'min_le', 'sum_ge']:
@@ -233,7 +247,7 @@ class MyXSearch(SearchList):
         htmlText += "    </thead>"
         htmlText += "    <tbody>"
 
-        for year in all_stats.years():
+        for year in table_stats.years():
             year_number = datetime.fromtimestamp(year.timespan[0]).year
 
             htmlLine = (' ' * 8) + "<tr>\n"
@@ -249,7 +263,7 @@ class MyXSearch(SearchList):
                     #for property, value in vars(month.dateTime.value_t[0]).iteritems():
                     #    print property, ": ", value
 
-                    if (month.timespan[1] < all_stats.timespan.start) or (month.timespan[0] > all_stats.timespan.stop):
+                    if (month.timespan[1] < table_stats.timespan.start) or (month.timespan[0] > table_stats.timespan.stop):
                         # print "No data for... %d, %d" % (year_number, datetime.fromtimestamp(month.timespan[0]).month)
                         htmlLine += "<td>-</td>\n"
                     else:
