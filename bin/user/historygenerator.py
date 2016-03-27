@@ -220,12 +220,17 @@ class MyXSearch(SearchList):
 
             unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
 
-            if (unit_type == 'count'):
-                unit_formatted = "Days"
-            else:
-                unit_formatted = reading.formatter.unit_label_dict[unit_type]
+            unit_formatted = ''
 
-            unit_formatted = table_options.get('units', unit_formatted)
+            # 'units' option in skin.conf?
+            if 'units' in table_options:
+                unit_formatted = table_options['units']
+            else:
+                if (unit_type == 'count'):
+                    unit_formatted = "Days"
+                else:
+                    if unit_type in reading.formatter.unit_label_dict:
+                        unit_formatted = reading.formatter.unit_label_dict[unit_type]
 
             # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
 
