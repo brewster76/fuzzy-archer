@@ -138,10 +138,9 @@ and this one to weewx/public_html/css:
     css/bootstrap.min.css
 
 You can use the wget command to download these:
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/css/bootstrap.min.css
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/js/bootstrap.min.js
-    wget https://raw.githubusercontent.com/brewster76/fuzzy-archer/v2.22/public_html/Bootstrap/js/ekko-lightbox.min.js
-
+    wget https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
+    wget https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js
+    wget https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/4.0.1/ekko-lightbox.min.js
 
 Step 4 - (Optional) Display skins in another language
 -----------------------------------------------------
