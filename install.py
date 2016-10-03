@@ -45,13 +45,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             ['skins/Bootstrap/js/bootstrap.min.js',
              'skins/Bootstrap/js/ekko-lightbox.min.js']),
            ('skins/languages',
-            ['skins/languages/espanol.conf',
-              'skins/languages/francais.conf',
-              'skins/languages/italian.conf',
-              'skins/languages/german.conf'])]
+            ['skins/languages/catala.conf',
+             'skins/languages/dutch.conf',
+             'skins/languages/espanol.conf',
+             'skins/languages/finnish.conf',
+             'skins/languages/francais.conf',
+             'skins/languages/german.conf',
+             'skins/languages/italian.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="2.23",
+            version="2.24",
             name='bootstrap',
             description='A skin based around the bootstrap 3.2.0 framework',
             author="Nick Dajda",
