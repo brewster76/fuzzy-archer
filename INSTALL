@@ -68,6 +68,10 @@ Frequently Asked Questions
       The reason for splitting the config files out is Images/skin.conf is run twice. Once to create the images for the
       webpage, and a second time for the expanded images which are shown when clicking on the webpage history graph.
 
+3) Text in graphs looks very small
+    Make sure you have fonts installed that support truetype scaling:
+      apt-get install ttf-freefont
+
 
 Installation - The involved way
 ===============================
