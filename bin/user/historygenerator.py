@@ -46,6 +46,7 @@ Adding the section below to your skins.conf file will create these new tags:
     minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
     maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
     colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2, "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+    fontColours =   "#FFFFFF", "#FFFFFF", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"
     monthnames = Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
     # The Raspberry Pi typically takes 15+ seconds to calculate all the summaries with a few years of weather date.
@@ -67,6 +68,7 @@ Adding the section below to your skins.conf file will create these new tags:
     [[rain]]
         obs_type = rain
         aggregate_type = sum
+        data_binding = alternative_binding
 
         # Override default temperature colour scheme with rain specific scale
         minvalues = 0, 25, 50, 75, 100, 150
@@ -92,7 +94,7 @@ class MyXSearch(SearchList):
         # Calculate the tables once every refresh_interval mins
         self.refresh_interval = int(self.table_dict.get('refresh_interval', 5))
         self.cache_time = 0
-
+        
         self.search_list_extension = {}
 
         # Make bootstrap specific labels in config file available to
@@ -122,29 +124,11 @@ class MyXSearch(SearchList):
         # Time to recalculate?
         if (time.time() - (self.refresh_interval * 60)) > self.cache_time:
             self.cache_time = time.time()
-
-            #
-            # The all time statistics
-            #
-
-            # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
-            # section in skin.conf then valid_timespan won't contain enough history data for
-            # the colourful summary tables.
-            alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup().first_timestamp, db_lookup().last_timestamp)
-
-
-            # First, get a TimeSpanStats object for all time. This one is easy
-            # because the object valid_timespan already holds all valid times to be
-            # used in the report.
-            all_stats = TimespanBinder(alltime_timespan, db_lookup, formatter=self.generator.formatter,
-                                      converter=self.generator.converter)
-
-            # Now create a small dictionary with keys 'alltime' and 'seven_day':
-            self.search_list_extension['alltime'] = all_stats
-
+            
             #
             #  The html history tables
             #
+            
             t1 = time.time()
             ngen = 0
 
@@ -153,18 +137,40 @@ class MyXSearch(SearchList):
 
                 table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
 
+                
+                # Get the binding where the data is allocated
+                binding = table_options.get('data_binding', 'wx_binding')
+
+                #
+                # The all time statistics
+                #
+
+                # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
+                # section in skin.conf then valid_timespan won't contain enough history data for
+                # the colourful summary tables. Use the data binding provided as table option.
+                alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup(data_binding=binding).first_timestamp, db_lookup(data_binding=binding).last_timestamp)
+
+
+                # First, get a TimeSpanStats object for all time. This one is easy
+                # because the object valid_timespan already holds all valid times to be
+                # used in the report. se the data binding provided as table option.
+                all_stats = TimespanBinder(alltime_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
+                                          converter=self.generator.converter)
+
+                # Now create a small dictionary with keys 'alltime' and 'seven_day':
+                self.search_list_extension['alltime'] = all_stats
+                          
                 # Show all time unless starting date specified
                 startdate = table_options.get('startdate', None)
                 if startdate is not None:
-                    table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup().last_timestamp)
-                    table_stats = TimespanBinder(table_timespan, db_lookup, formatter=self.generator.formatter,
+                    table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup(binding).last_timestamp)
+                    table_stats = TimespanBinder(table_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
                                       converter=self.generator.converter)
                 else:
                     table_stats = all_stats
-
+                
                 table_name = table + '_table'
-                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, table_stats, table_name,
-                                                                              NOAA=noaa)
+                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, table_stats, table_name, binding, NOAA=noaa)
                 ngen += 1
 
             t2 = time.time()
@@ -174,24 +180,24 @@ class MyXSearch(SearchList):
 
         return [self.search_list_extension]
 
-    def _statsHTMLTable(self, table_options, table_stats, table_name, NOAA=False):
+    def _statsHTMLTable(self, table_options, table_stats, table_name, binding, NOAA=False):
         """
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """
 
-        bgColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'])
+        cellColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], table_options['fontColours'] )
 
         if NOAA is True:
             unit_formatted = ""
         else:
-            obs_type = table_options['obs_type']
-            aggregate_type = table_options['aggregate_type']
-            converter = table_stats.converter
-
+            obs_type = table_options['obs_type']                                  
+            aggregate_type = table_options['aggregate_type']                      
+            converter = table_stats.converter      
+             
             # obs_type
-            readingBinder = getattr(table_stats, obs_type)
-
+            readingBinder = getattr(table_stats, obs_type) 
+            
             # Some aggregate come with an argument
             if aggregate_type in ['max_ge', 'max_le', 'min_le', 'sum_ge']:
 
@@ -217,9 +223,12 @@ class MyXSearch(SearchList):
                     syslog.syslog(syslog.LOG_INFO, "%s: aggregate_type %s not found" % (os.path.basename(__file__),
                                                                                         aggregate_type))
                     return "Could not generate table %s" % table_name
-
-            unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
-
+            
+            try:        
+                unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+            except KeyError:
+                syslog.syslog(syslog.LOG_INFO, "%s: obs_type %s no unit found" % (os.path.basename(__file__),
+                                                                                        obs_type))
             unit_formatted = ''
 
             # 'units' option in skin.conf?
@@ -274,39 +283,44 @@ class MyXSearch(SearchList):
                     else:
                         htmlLine += self._NoaaCell(datetime.fromtimestamp(month.timespan[0]), table_options)
                 else:
+                    # update the binding to access the right DB
+                    obsMonth = getattr(month, obs_type)
+                    obsMonth.data_binding = binding;
                     if unit_type == 'count':
                         try:
-                            value = getattr(getattr(month, obs_type), aggregate_type)((threshold_value, threshold_units)).value_t
+                            value = getattr(obsMonth, aggregate_type)((threshold_value, threshold_units)).value_t
                         except:
                             value = [0, 'count']
-                    else:
-                        value = converter.convert(getattr(getattr(month, obs_type), aggregate_type).value_t)
-
-                    htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, bgColours)
+                    else:      
+                        
+                        value = converter.convert(getattr(obsMonth, aggregate_type).value_t)
+                        
+                    htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, cellColours)
 
             htmlLine += (' ' * 8) + "</tr>\n"
 
             htmlText += htmlLine
 
+        htmlText += (' ' * 8) + "</tr>\n"
         htmlText += (' ' * 4) + "</tbody>\n"
         htmlText += "</table>\n"
 
         return htmlText
 
-    def _colorCell(self, value, format_string, bgColours):
-        """Returns a '<td> bgcolor = xxx y.yy </td>' html table entry string.
+    def _colorCell(self, value, format_string, cellColours):
+        """Returns a '<td style= background-color: XX; color: YY"> z.zz </td>' html table entry string.
 
         value: Numeric value for the observation
         format_string: How the numberic value should be represented in the table cell.
-        bgColours: An array containing 3 lists. [minvalues], [maxvalues], [html colour code]
+        cellColours: An array containing 3 lists. [minvalues], [maxvalues], [html colour code]
         """
 
         if value is not None:
             cellText = "<td"
 
-            for c in bgColours:
+            for c in cellColours:
                 if (value >= int(c[0])) and (value <= int(c[1])):
-                    cellText += " style=\"background-color: %s\"" % c[2]
+                    cellText += " style=\"background-color:%s; color:%s\"" % (c[2], c[3])
 
             formatted_value = format_string % value
             cellText += "> %s </td>" % formatted_value
