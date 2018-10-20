@@ -338,14 +338,14 @@ class MyXSearch(SearchList):
 
         value: Numeric value for the observation
         format_string: How the numberic value should be represented in the table cell.
-        cellColours: An array containing 3 lists. [minvalues], [maxvalues], [html colour code]
+        cellColours: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
 
         if value is not None:
             cellText = "<td"
 
             for c in cellColours:
-                if (value >= int(c[0])) and (value <= int(c[1])):
+                if (value >= float(c[0])) and (value <= float(c[1])):
                     cellText += " style=\"background-color:%s; color:%s\"" % (c[2], c[3])
 
             formatted_value = format_string % value
