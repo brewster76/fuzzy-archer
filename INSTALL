@@ -2,8 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v2.24) has been tested on Weewx version 3.5.0, on Ubuntu linux 14.04 and on a Raspberry Pi running
-    wheezy.
+ 1) This release (v2.25) has been tested on Weewx version 3.8.2 on Ubuntu linux 16.04 LTS.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 

@@ -5,7 +5,7 @@
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
-Tested on Weewx release 3.0.1.
+Tested on Weewx release 3.8.2.
 Tested with sqlite, may not work with other databases.
 
 WILL NOT WORK WITH Weewx prior to release 3.0.
