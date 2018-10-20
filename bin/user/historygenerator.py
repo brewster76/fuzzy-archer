@@ -41,6 +41,9 @@ Adding the section below to your skins.conf file will create these new tags:
     # For example,  the [min_temp] example below, if the minimum temperature measured in
     # a month is between -50 and -10 (degC) then the cell will be shaded in html colour code #0029E5.
     #
+    # colours = background colour
+    # fontColours = foreground colour [optional, defaults to black if omitted]
+
 
     # Default is temperature scale
     minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
@@ -74,6 +77,7 @@ Adding the section below to your skins.conf file will create these new tags:
         minvalues = 0, 25, 50, 75, 100, 150
         maxvalues = 25, 50, 75, 100, 150, 1000
         colours = "#E0F8E0", "#A9F5A9", "#58FA58", "#2EFE2E", "#01DF01", "#01DF01"
+        fontColours = "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"
 """
 
 from datetime import datetime
@@ -180,13 +184,35 @@ class MyXSearch(SearchList):
 
         return [self.search_list_extension]
 
+    def _parseTableOptions(self, table_options, table_name):
+        """Create an orderly list containing lower and upper thresholds, cell background and foreground colors
+        """
+
+        # Check everything's the same length
+        l = len(table_options['minvalues'])
+
+        for i in [table_options['maxvalues'], table_options['colours']]:
+            if len(i) != l:
+                syslog.syslog(syslog.LOG_INFO, "%s: minvalues, maxvalues and colours must have the same number of elements in table: %s"
+                              % (os.path.basename(__file__), table_name))
+                return None
+
+        font_color_list = table_options['fontColours'] if 'fontColours' in table_options else ['#000000'] * l
+
+        return zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], font_color_list)
+
+
     def _statsHTMLTable(self, table_options, table_stats, table_name, binding, NOAA=False):
         """
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """
 
-        cellColours = zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], table_options['fontColours'] )
+        cellColours = self._parseTableOptions(table_options, table_name)
+
+        if None is cellColours:
+            # Give up
+            return None
 
         if NOAA is True:
             unit_formatted = ""
