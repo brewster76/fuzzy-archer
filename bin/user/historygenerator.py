@@ -210,6 +210,8 @@ class MyXSearch(SearchList):
 
         cellColours = self._parseTableOptions(table_options, table_name)
 
+        summary_column = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
+
         if None is cellColours:
             # Give up
             return None
@@ -283,6 +285,11 @@ class MyXSearch(SearchList):
         for mon in table_options.get('monthnames', ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']):
             htmlText += "        <th>%s</th>" % mon
 
+        if summary_column:
+            if 'summary_heading' in table_options:
+                htmlText += "        <th></th>"
+                htmlText += "        <th align=\"center\">%s</th>\n" % table_options['summary_heading']
+
         htmlText += "    </tr>"
         htmlText += "    </thead>"
         htmlText += "    <tbody>"
@@ -318,10 +325,25 @@ class MyXSearch(SearchList):
                         except:
                             value = [0, 'count']
                     else:      
-                        
                         value = converter.convert(getattr(obsMonth, aggregate_type).value_t)
-                        
+
                     htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, cellColours)
+
+            if summary_column:
+                obsYear = getattr(year, obs_type)
+                obsYear.data_binding = binding;
+
+                if unit_type == 'count':
+                    try:
+                        value = getattr(obsYear, aggregate_type)((threshold_value, threshold_units)).value_t
+                    except:
+                        value = [0, 'count']
+                else:
+                    value = converter.convert(getattr(obsYear, aggregate_type).value_t)
+
+
+                htmlLine += (' ' * 12) + "<td></td>\n"
+                htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, cellColours, center=True)
 
             htmlLine += (' ' * 8) + "</tr>\n"
 
@@ -333,7 +355,7 @@ class MyXSearch(SearchList):
 
         return htmlText
 
-    def _colorCell(self, value, format_string, cellColours):
+    def _colorCell(self, value, format_string, cellColours, center=False):
         """Returns a '<td style= background-color: XX; color: YY"> z.zz </td>' html table entry string.
 
         value: Numeric value for the observation
@@ -341,18 +363,23 @@ class MyXSearch(SearchList):
         cellColours: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
 
+        cellText = "<td"
+
+        if center:
+            cellText += " align=\"center\""
+
         if value is not None:
-            cellText = "<td"
+
 
             for c in cellColours:
                 if (value >= float(c[0])) and (value <= float(c[1])):
                     cellText += " style=\"background-color:%s; color:%s\"" % (c[2], c[3])
 
             formatted_value = format_string % value
-            cellText += "> %s </td>" % formatted_value
+            cellText += "> %s </td>\n" % formatted_value
 
         else:
-            cellText = "<td>-</td>\n"
+            cellText += ">-</td>\n"
 
         return cellText
 
