@@ -28,6 +28,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
              'skins/Bootstrap/gauges.html.tmpl',
+             'skins/Bootstrap/almanac.html.tmpl',
              'skins/Bootstrap/skin.conf']),
            ('skins/Bootstrap/NOAA',
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
