@@ -28,6 +28,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
              'skins/Bootstrap/gauges.html.tmpl',
+             'skins/Bootstrap/almanac.html.tmpl',
              'skins/Bootstrap/skin.conf']),
            ('skins/Bootstrap/NOAA',
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
@@ -51,11 +52,10 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/languages/finnish.conf',
              'skins/languages/francais.conf',
              'skins/languages/german.conf',
-             'skins/languages/italian.conf',
-             'skins/languages/korean.conf'])]
+             'skins/languages/italian.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="2.25",
+            version="2.24",
             name='bootstrap',
             description='A skin based around the bootstrap 3.2.0 framework',
             author="Nick Dajda",
