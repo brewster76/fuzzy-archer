@@ -5,7 +5,7 @@
 #
 """Nick's custom generator for creating visual gauge image files from weewx.
 
-Tested on Weewx release 3.8.2.
+Tested on Weewx release 4.0.0.
 Tested with sqlite, may not work with other databases.
 
 WILL NOT WORK WITH Weewx prior to release 3.0.
@@ -145,7 +145,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         # For checking development code deals with 'None' readings correctly
         if self.gauge_dict.get('test_none_readings', None) is not None:
-            for key, value in self.record_dict_vtd.iteritems():
+            for key, value in list(self.record_dict_vtd.items()):
                 self.record_dict_vtd[key] = None
 
     def gen_gauges(self):
@@ -301,12 +301,10 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         if value_now is None:
             label_text = '---'
         else:
-            label_text = unicode(label_format % value_now, 'utf8')
+            label_text = label_format % value_now
 
-        try:
-            label_text += unicode(self.units_dict['Labels'][target_unit], 'utf8')
-        except:
-            pass
+
+        label_text += self.units_dict['Labels'][target_unit]
 
         gauge.add_text(label_text, text_font_size=label_font_size, text_font=font_path, text_color=text_color)
 
@@ -368,7 +366,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 hemispheres = labels_dict.get("hemispheres", ['N', 'S', 'E', 'W'])
 
             compass_points = [0, 180, 90, 270]
-            dial_labels = dict(zip(compass_points, hemispheres))
+            dial_labels = dict(list(zip(compass_points, hemispheres)))
 
             gauge.add_dial_labels(dial_labels=dial_labels, dial_label_font_size=digit_font_size,
                                   dial_label_color=label_color, dial_label_font=font_path)

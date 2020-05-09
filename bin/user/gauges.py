@@ -316,7 +316,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
 
             # Custom gauge labels?
             if self.dial_labels is not None:
-                for k in self.dial_labels.keys():
+                for k in list(self.dial_labels.keys()):
                     angle = (k - self.min_value) / (self.max_value - self.min_value)
                     if (angle >= 0.0) and (angle <= 1):
                         angle = math.radians(self.min_angle + angle * (self.max_angle - self.min_angle)
@@ -338,8 +338,7 @@ class GaugeDraw(ImageDraw.ImageDraw):
             vstep = self.text_font_size * 1.3
             vpos = self.gauge_origin[1] + self.radius * 0.42 - (vstep * len(self.text_labels)) / 2
 
-            for l in self.text_labels:
-                text = unicode(l.encode("utf-8"), 'utf8')
+            for text in self.text_labels:
                 textsize = self.text_font.getsize(text)
 
                 self.text((self.gauge_origin[0] - (textsize[0] / 2), vpos), text,
@@ -569,7 +568,7 @@ class WindRoseGaugeDraw(GaugeDraw):
             bucket_angle_offset = angle_step / float(2)
 
             for bucket in self.buckets:
-                for i in reversed(range(1, len(bucket[1]))):
+                for i in reversed(list(range(1, len(bucket[1])))):
                     ring = bucket[1][i]
                     radius = self.radius * bucket[0] * ring
                     if radius > 0:

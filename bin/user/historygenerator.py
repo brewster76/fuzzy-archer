@@ -5,7 +5,7 @@
 #
 """Extends the Cheetah generator search list to add html historic data tables in a nice colour scheme.
 
-Tested on Weewx release 3.8.2.
+Tested on Weewx release 4.0.0.
 Works with all databases.
 Observes the units of measure and display formats specified in skin.conf.
 
@@ -199,7 +199,7 @@ class MyXSearch(SearchList):
 
         font_color_list = table_options['fontColours'] if 'fontColours' in table_options else ['#000000'] * l
 
-        return zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], font_color_list)
+        return list(zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], font_color_list))
 
 
     def _statsHTMLTable(self, table_options, table_stats, table_name, binding, NOAA=False):
