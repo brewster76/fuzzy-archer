@@ -55,7 +55,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/languages/korean.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="2.25",
+            version="2.26",
             name='bootstrap',
             description='A skin based around the bootstrap 3.2.0 framework',
             author="Nick Dajda",

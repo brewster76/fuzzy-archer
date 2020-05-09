@@ -2,7 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v2.25) has been tested on Weewx version 3.8.2 on Ubuntu linux 16.04 LTS.
+ 1) This release (v2.26) has been tested on Weewx version 4.0.0 on Ubuntu linux 16.04 LTS and Python 3.6.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
@@ -57,7 +57,7 @@ Frequently Asked Questions
     Remember to leave in the [[SmallImages]], [[BigImages]] and [[HTMLPages]] sections which generate the 
     Bootstrap template content.
 
-2) I've changed the units in skin.conf, but the original units persist on the webpage.
+2) I've changed the units in skin.conf, but the original units persist on the webpage. [Pre weewx 4.0.0]
      The skin has two skin.conf files:
        skins/Bootstrap/skin.conf - This creates the gauges and the html files.
        skins/Images/skin.conf    - This creates the (daily, weekly, ...) history graphs.
