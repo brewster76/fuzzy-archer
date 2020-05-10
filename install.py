@@ -2,7 +2,7 @@
 #
 # Based on installer for xstats
 #
-# Configured by Nick to install bootstrap skin, 2014-2015.
+# Configured by Nick to install bootstrap skin, 2014-2020
 
 import os.path
 import configobj
@@ -81,20 +81,20 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                         'HTML_ROOT':'Bootstrap'}}},
             files=files)
 
-        print ""
-        print "The following alternative languages are available:"
+        print("")
+        print("The following alternative languages are available:")
         self.language = None
 
         for f in files:
             if f[0] == 'skins/languages':
                 for language in f[1]:
                     l = language.strip('conf').split('/')[-1]
-                    print "   %s" % l[:-1]
+                    print(("   %s" % l[:-1]))
 
-        print ""
-        print "Language changes can be made in skins/Bootstrap/skin.conf"
+        print("")
+        print("Language changes can be made in skins/Bootstrap/skin.conf")
 
-        print ""
-        print "Default location for HTML and image files is public_html/Bootstrap"
-        print "*** POINT YOUR BROWSER TO: public_html/Bootstrap/index.html ***"
-        print ""
+        print("")
+        print("Default location for HTML and image files is public_html/Bootstrap")
+        print("*** POINT YOUR BROWSER TO: public_html/Bootstrap/index.html ***")
+        print("")
