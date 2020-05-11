@@ -52,7 +52,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/languages/francais.conf',
              'skins/languages/german.conf',
              'skins/languages/italian.conf',
-             'skins/languages/korean.conf'])]
+             'skins/languages/korean.conf',
+             'skins/languages/norwegian.conf'])]
 
         super(BootstrapInstaller, self).__init__(
             version="2.26",
