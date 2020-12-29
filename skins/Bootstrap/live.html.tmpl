@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="generator"
+    content="HTML Tidy for HTML5 (experimental) for Windows https://github.com/w3c/tidy-html5/tree/c63cc39" />
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>$BootstrapLabels.title</title>
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+  <!-- Menu navbar -->
+  <div class="navbar navbar-inverse" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+      </button> 
+      <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a></div>
+      <div class="navbar-collapse collapse">
+        <ul class="nav navbar-nav">
+          <li class="active">
+            <a href="#">$BootstrapLabels.headings.front_page</a>
+          </li>
+          <li>
+            <a href="stats.html">$BootstrapLabels.headings.stats</a>
+          </li>
+          <li>
+            <a href="history.html">$BootstrapLabels.headings.history</a>
+          </li>
+          <li>
+            <a href="news.html">$BootstrapLabels.headings.news</a>
+          </li>
+          <li>
+            <a href="about.html">$BootstrapLabels.headings.about</a>
+          </li>
+        </ul>
+        <p class="navbar-text navbar-right">$BootstrapLabels.headings.last_update <span id="lastUpdate">$current.dateTime</span></p>
+      </div>
+      <!--/.nav-collapse -->
+    </div>
+  </div>
+  <!-- Main container -->
+  <div class="container" style="width:90%;">
+    <div class="row">
+      <!-- Gauge panel -->
+      #include "livegauges.html.tmpl"
+      <!-- Graph panel -->
+      <div class="col-md-8 main">
+        <ul class="nav nav-pills">
+          <li class="active"><a href="live.html">Live!</a></li>
+          <li>
+            <a href="index.html">$BootstrapLabels.timespans.day</a>
+          </li>
+          <li>
+            <a href="week.html">$BootstrapLabels.timespans.week</a>
+          </li>
+          <li>
+            <a href="month.html">$BootstrapLabels.timespans.month</a>
+          </li>
+          <li>
+            <a href="year.html">$BootstrapLabels.timespans.year</a>
+          </li>
+        </ul>
+        <br />
+        <div class="row">
+          <div style="float: left; margin: 2px;">
+            <div id="outTempChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left; margin: 2px;">
+            <div id="barometerChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left; margin: 2px;">
+            <div id="rainChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left; margin: 2px;">
+            <div id="outHumidityChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left; margin: 2px;">
+            <div id="windChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left; margin: 2px;">
+            <div id="windDirChart" style="width: 400px;height:250px;"></div>
+          </div>
+          <div style="float: left;">
+          </div>
+          <div style="float: left;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <hr />
+    <footer>
+      <p>$BootstrapLabels.footer</p>
+    </footer>
+  </div>
+  <!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
+  #raw 
+  <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+   
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> 
+  <!-- Include all compiled plugins (below), or include individual files as needed -->
+   
+  <script src="js/bootstrap.min.js"></script> 
+  <!-- Lightbox -->
+   
+  <script src="js/ekko-lightbox.min.js"></script>
+  <script src="js/moment-with-locales.js"></script>
+  <script src="js/mqtt.min.js"></script>
+  <script src="js/site.js"></script>
+  <script src="js/echarts.min.js"></script>
+  <script src="js/gauges.js"></script>
+  <script src="js/charts.js"></script>
+  <script type="text/javascript">
+        $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
+            event.preventDefault();
+            $(this).ekkoLightbox();
+        });
+        
+</script>#end raw</body>
+</html>
