@@ -102,6 +102,7 @@ Directions for use:
 
 import time
 import syslog
+import json
 import os.path
 from PIL import Image
 
@@ -152,6 +153,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         """Generate the gauges."""
         t1 = time.time()
         ngen = 0
+        history = {}
 
         # Loop over each time span class (day, week, month, etc.):
         for gauge in self.gauge_dict.sections:
@@ -168,10 +170,17 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             except:
                 pass
 
-            ret = self.gen_gauge(gauge, plot_options, img_file)
+            ret, gauge_history = self.gen_gauge(gauge, plot_options, img_file)
 
             if ret is not None:
                 ngen += 1
+                history[gauge] = gauge_history
+
+        # Write JSON history output if a filename is specified
+        history_filename = plot_options.get('gauge_history_json', None)
+
+        if history_filename is not None:
+            self.write_json(os.path.join(image_root, history_filename), history)
 
         t2 = time.time()
 
@@ -227,7 +236,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             major_step = float(plot_options.get('majorstep'))
         except:
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify majorstep for gauge %s in skin.conf ***" % gaugename)
-            return
+            return 0, None
 
         try:
             minor_step = float(plot_options.get('minorstep'))
@@ -255,14 +264,14 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 except:
                     syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify minvalue for gauge %s in skin.conf ***"
                                   % gaugename)
-                    return
+                    return 0, None
 
                 try:
                     max_value = float(plot_options.get('maxvalue'))
                 except:
                     syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify maxvalue for gauge %s in skin.conf ***"
                                   % gaugename)
-                    return
+                    return 0, None
 
                 dial_arc = int(plot_options.get('dial_arc', 270))
                 offset_angle = int(plot_options.get('offset_angle', 0))
@@ -278,7 +287,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             target_unit = self.units_dict['Groups'][weewx.units.obs_group_dict[columnname]]
         except:
             syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Could not find target unit of measure for gauge '%s' ***" % gaugename)
-            return
+            return 0, None
 
         # Deal with None readings / convert to target units
         if self.record_dict_vtd[columnname] is None:
@@ -317,6 +326,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             pass
         else:
             history_list = []
+            time_list = []
             windspeed_history_list = []
 
             batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - history * 60 * 60, self.lastGoodStamp)
@@ -327,6 +337,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
                 try:
                     history_list.append(float(history_value))
+                    time_list.append(rec['dateTime'])
                 except:
                     syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading of '%s' for gauge '%s'"
                                   % (history_value, gaugename))
@@ -384,7 +395,18 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             image.thumbnail((original_width, original_height), Image.ANTIALIAS)
         image.save(img_file)
 
-        return 1
+        return 1, list(zip(time_list, history_list))
+
+    def write_json(self, history_filename, history):
+
+        try:
+            fp = open(history_filename, 'w')
+        except IOError:
+            syslog.syslog(syslog.LOG_ERR, 'GaugeGenerator: Could not open %s for writing' % history_filename)
+        else:
+            with fp:
+                json_string = "let weewxData = " + json.dumps(history, indent=4)
+                fp.write(json_string)
 
     @staticmethod
     def _int2rgb(x):
