@@ -1,0 +1,19 @@
+.gauge {
+  width: 160px;
+  height:160px;
+}
+.gaugecol {
+  min-width: 160px;
+  min-height:160px;
+}
+.chart {
+  width: 400px;
+  height:250px;
+  margin: 3px;
+  float: left;
+}
+.stationInfo {
+   color: #777;
+   font-family: sans-serif;
+   padding: 5%;
+}

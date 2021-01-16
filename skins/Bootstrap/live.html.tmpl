@@ -9,6 +9,7 @@
     <title>$BootstrapLabels.title</title>
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/live.css" rel="stylesheet">
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -23,6 +24,10 @@
       <div class="navbar-header">
       <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
         <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
       </button> 
       <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a></div>
       <div class="navbar-collapse collapse">
@@ -49,12 +54,12 @@
     </div>
   </div>
   <!-- Main container -->
-  <div class="container" style="width:90%;">
+  <div class="container" style="width:100%;">
     <div class="row">
       <!-- Gauge panel -->
       #include "livegauges.html.tmpl"
       <!-- Graph panel -->
-      <div class="col-md-8 main">
+      <div class="col-md-9 main">
         <ul class="nav nav-pills">
           <li class="active"><a href="live.html">Live!</a></li>
           <li>
@@ -72,28 +77,13 @@
         </ul>
         <br />
         <div class="row">
-          <div style="float: left; margin: 2px;">
-            <div id="outTempChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left; margin: 2px;">
-            <div id="barometerChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left; margin: 2px;">
-            <div id="rainChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left; margin: 2px;">
-            <div id="outHumidityChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left; margin: 2px;">
-            <div id="windChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left; margin: 2px;">
-            <div id="windDirChart" style="width: 400px;height:250px;"></div>
-          </div>
-          <div style="float: left;">
-          </div>
-          <div style="float: left;">
-          </div>
+          <div id="outTempChart" class="chart"></div>
+          <div id="barometerChart" class="chart"></div>
+          <div id="rainChart" class="chart"></div>
+          <div id="outHumidityChart" class="chart"></div>
+          <div id="windChart" class="chart"></div>
+          <div id="windDirChart" class="chart"></div>
+          <div id="pvOutputChart" class="chart"></div>
         </div>
       </div>
     </div>
@@ -117,6 +107,7 @@
   <script src="js/mqtt.min.js"></script>
   <script src="js/site.js"></script>
   <script src="js/echarts.min.js"></script>
+  <script src="weewxData.js"></script>
   <script src="js/gauges.js"></script>
   <script src="js/charts.js"></script>
   <script type="text/javascript">

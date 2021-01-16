@@ -1,11 +1,15 @@
+let gauges = [];
 let outTempGauge = echarts.init(document.getElementById('outTempGauge'));
-outTempGauge.setOption(getGaugeOption('Temperatur', -20, 40, 6, [[0.333, '#428bca'], [1, '#b44242']], '°C', 1));
+gauges.push(outTempGauge);
+outTempGauge.setOption(getGaugeOption('Temperatur', -20, 40, 6, [[0.333, '#428bca'], [1, '#b44242']], '°C', 1, weewxData["outTemp"]));
 
 let barometerGauge = echarts.init(document.getElementById('barometerGauge'));
-barometerGauge.setOption(getGaugeOption('Luftdruck', 970, 1050, 4, [[0.54, '#428bca'], [1, '#b44242']], 'mbar', 1));
+gauges.push(barometerGauge);
+barometerGauge.setOption(getGaugeOption('Luftdruck', 970, 1050, 4, [[0.54, '#428bca'], [1, '#b44242']], 'mbar', 1, weewxData["barometer"]));
 
 let windDirGauge = echarts.init(document.getElementById('windDirGauge'));
-let windDirOption = getGaugeOption('Windrichtung', 0, 360, 4, [[0.25, '#428bca'], [0.5, '#b44242'], [0.75, '#b44242'], [1, '#428bca']], '°');
+gauges.push(windDirGauge);
+let windDirOption = getGaugeOption('Windrichtung', 0, 360, 4, [[0.25, '#428bca'], [0.5, '#b44242'], [0.75, '#b44242'], [1, '#428bca']], '°', 0, weewxData["windDir"]);
 windDirOption.series[0].startAngle = 90;
 windDirOption.series[0].endAngle = -270;
 windDirOption.series[0].axisLabel.distance = 10;
@@ -27,15 +31,23 @@ windDirOption.series[0].detail.offsetCenter = ['0', '30%'];
 windDirGauge.setOption(windDirOption);
 
 let outHumidityGauge = echarts.init(document.getElementById('outHumidityGauge'));
-outHumidityGauge.setOption(getGaugeOption('Luffeuchte', 0, 100, 5, [[1, '#428bca']], '%', 0));
+gauges.push(outHumidityGauge);
+outHumidityGauge.setOption(getGaugeOption('Luffeuchte', 0, 100, 5, [[1, '#428bca']], '%', 0, weewxData["outHumidity"]));
 
 let windSpeedGauge = echarts.init(document.getElementById('windSpeedGauge'));
-windSpeedGauge.setOption(getGaugeOption('Wind', 0, 100, 5, [[0.75, '#428bca'], [1, '#b44242']], 'km/h', 0));
+gauges.push(windSpeedGauge);
+windSpeedGauge.setOption(getGaugeOption('Wind', 0, 100, 5, [[0.75, '#428bca'], [1, '#b44242']], 'km/h', 0, weewxData["windSpeed"]));
 
 let windGustGauge = echarts.init(document.getElementById('windGustGauge'));
-windGustGauge.setOption(getGaugeOption('Böen', 0, 160, 8, [[0.47, '#428bca'], [1, '#b44242']], 'km/h', 0));
+gauges.push(windGustGauge);
+windGustGauge.setOption(getGaugeOption('Böen', 0, 160, 8, [[0.47, '#428bca'], [1, '#b44242']], 'km/h', 0, weewxData["windGust"]));
 
-function getGaugeOption(name, min, max, splitNumber, lineColor, unit, decimals) {
+function getGaugeOption(name, min, max, splitNumber, lineColor, unit, decimals, data) {
+    if(data === undefined || data.length < 1) {
+      data = 0;
+    } else {
+      data = data.slice(-1)[0][1];
+    }
     return {
         series: [{
                 name: name,
@@ -95,7 +107,7 @@ function getGaugeOption(name, min, max, splitNumber, lineColor, unit, decimals) 
                     offsetCenter: ['0', '70%']
                 },
                 data: [{
-                        value: 0,
+                        value: data,
                         name: name
                     }
                 ]
@@ -103,3 +115,10 @@ function getGaugeOption(name, min, max, splitNumber, lineColor, unit, decimals) 
         ]
     };
 }
+$(window).on('resize', function(){
+   for(let gauge of gauges) {
+        if(gauge != null && gauge != undefined){
+            gauge.resize();
+        }
+    }
+});

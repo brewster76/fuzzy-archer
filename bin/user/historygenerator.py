@@ -48,7 +48,7 @@ Adding the section below to your skins.conf file will create these new tags:
     # Default is temperature scale
     minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
     maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
-    colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2, "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+    colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2", "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
     fontColours =   "#FFFFFF", "#FFFFFF", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"
     monthnames = Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
@@ -82,12 +82,14 @@ Adding the section below to your skins.conf file will create these new tags:
 
 from datetime import datetime
 import time
-import syslog
+import logging
 import os.path
 
 from weewx.cheetahgenerator import SearchList
 from weewx.tags import TimespanBinder
 import weeutil.weeutil
+
+log = logging.getLogger(__name__)
 
 class MyXSearch(SearchList):
     def __init__(self, generator):
@@ -105,13 +107,13 @@ class MyXSearch(SearchList):
         if 'BootstrapLabels' in generator.skin_dict:
             self.search_list_extension['BootstrapLabels'] = generator.skin_dict['BootstrapLabels']
         else:
-            syslog.syslog(syslog.LOG_DEBUG, "%s: No bootstrap specific labels found" % os.path.basename(__file__))
+            log.debug("%s: No bootstrap specific labels found" % os.path.basename(__file__))
 
         # Make observation labels available to templates
         if 'Labels' in generator.skin_dict:
             self.search_list_extension['Labels'] = generator.skin_dict['Labels']
         else:
-            syslog.syslog(syslog.LOG_DEBUG, "%s: No observation labels found" % os.path.basename(__file__))
+            log.debug("%s: No observation labels found" % os.path.basename(__file__))
 
     def get_extension_list(self, valid_timespan, db_lookup):
         """For weewx V3.x extensions. Should return a list
@@ -179,7 +181,7 @@ class MyXSearch(SearchList):
 
             t2 = time.time()
 
-            syslog.syslog(syslog.LOG_INFO, "%s: Generated %d tables in %.2f seconds" %
+            log.info("%s: Generated %d tables in %.2f seconds" %
                           (os.path.basename(__file__), ngen, t2 - t1))
 
         return [self.search_list_extension]
@@ -193,7 +195,7 @@ class MyXSearch(SearchList):
 
         for i in [table_options['maxvalues'], table_options['colours']]:
             if len(i) != l:
-                syslog.syslog(syslog.LOG_INFO, "%s: minvalues, maxvalues and colours must have the same number of elements in table: %s"
+                log.info("%s: minvalues, maxvalues and colours must have the same number of elements in table: %s"
                               % (os.path.basename(__file__), table_name))
                 return None
 
@@ -232,7 +234,7 @@ class MyXSearch(SearchList):
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
                 except KeyError:
-                    syslog.syslog(syslog.LOG_INFO, "%s: Problem with aggregate_threshold. Should be in the format: [value], [units]" %
+                    log.info("%s: Problem with aggregate_threshold. Should be in the format: [value], [units]" %
                                   (os.path.basename(__file__)))
                     return "Could not generate table %s" % table_name
 
@@ -241,21 +243,21 @@ class MyXSearch(SearchList):
                 try:
                     reading = getattr(readingBinder, aggregate_type)((threshold_value, threshold_units))
                 except IndexError:
-                    syslog.syslog(syslog.LOG_INFO, "%s: Problem with aggregate_threshold units: %s" % (os.path.basename(__file__),
+                    log.info("%s: Problem with aggregate_threshold units: %s" % (os.path.basename(__file__),
                                                                                                        str(threshold_units)))
                     return "Could not generate table %s" % table_name
             else:
                 try:
                     reading = getattr(readingBinder, aggregate_type)
                 except KeyError:
-                    syslog.syslog(syslog.LOG_INFO, "%s: aggregate_type %s not found" % (os.path.basename(__file__),
+                    log.info("%s: aggregate_type %s not found" % (os.path.basename(__file__),
                                                                                         aggregate_type))
                     return "Could not generate table %s" % table_name
             
             try:        
                 unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
             except KeyError:
-                syslog.syslog(syslog.LOG_INFO, "%s: obs_type %s no unit found" % (os.path.basename(__file__),
+                log.info("%s: obs_type %s no unit found" % (os.path.basename(__file__),
                                                                                         obs_type))
             unit_formatted = ''
 
