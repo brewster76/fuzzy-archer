@@ -1,8 +1,8 @@
 let archiveIntervalMinutes = 5;
 let rainAggregateIntervalMinutes = 10;
-let mqttConnection = "wss://mqtt.flespi.io:443";
-let mqttUsername = "i29R5vj2zIMVKQlXvvGeJYQntKBreHVkxU1sd8jCHVohCz2VTx0qjGDBg4QizBtX";
-let mqttPassword;//= "i29R5vj2zIMVKQlXvvGeJYQntKBreHVkxU1sd8jCHVohCz2VTx0qjGDBg4QizBtX";
+let mqttConnection = weewxData.config.MQTT.broker_connection;
+let mqttUsername = weewxData.config.MQTT.mqtt_username;
+let mqttPassword = weewxData.config.MQTT.mqtt_password;
 let locale ="de_AT";
 let intervalData = {};
 
@@ -22,18 +22,8 @@ if(mqttCredentials === undefined) {
 
 moment.locale(locale.split("_")[0]);
 
+let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 
-let maxAgeHoursMS = 24 * 3600000;
-
-/*let mqttOptions = {
-            connectTimeout: 5000,
-            hostname: 'broker.hivemq.com',
-            port: 8000,
-            path: '/mqtt',
-            useSSL: true
-        };
-let client = mqtt.connect(mqttOptions);
-client.subscribe('AT/Salzburg/Hallein/Rif/weather/#');*/
 client.subscribe('weather/#');
 
 client.on("message", function (topic, payload) {
@@ -46,30 +36,32 @@ client.on("message", function (topic, payload) {
     } else {
       timestamp = Date.now();
     }
-    if(topic.endsWith('weather/loop')) {
-      setGaugeValue(outTempGauge, jPayload.outTemp_C);
+    //if(topic.endsWith('weather/loop')) {
+      /*setGaugeValue(outTempGauge, jPayload.outTemp_C);
       setGaugeValue(barometerGauge, jPayload.altimeter_mbar);
       setGaugeValue(windDirGauge, jPayload.windDir);
-      //setGaugeValue(outHumidityGauge, jPayload.outHumidity);
+      setGaugeValue(outHumidityGauge, jPayload.outHumidity);
       setGaugeValue(outHumidityGauge, jPayload.extraHumid1);
       setGaugeValue(windSpeedGauge, jPayload.windSpeed_mps * 3.6);
-      setGaugeValue(windGustGauge, jPayload.windGust_mps * 3.6);
-      
-      addValue("outTemp", outTempChart, 0, jPayload.outTemp_C, timestamp);
-      addValue("dewPoint", outTempChart, 1, calculateDewpoint(jPayload.extraTemp1_C, jPayload.extraHumid1), timestamp);
-      addValue("barometer", barometerChart, 0, jPayload.altimeter_mbar, timestamp);
-      //addValue(outHumidityChart, 0, jPayload.outHumidity, timestamp);
-      addValue("outHumidity", outHumidityChart, 0, jPayload.extraHumid1, timestamp);
-      addValue("windSpeed", windChart, 0, jPayload.windSpeed_mps * 3.6, timestamp);
-      addValue("windGust", windChart, 1, jPayload.windGust_mps * 3.6, timestamp);
-      addValue("windDir", windDirChart, 0, jPayload.windDir, timestamp);
-      //addAggregatedChartValue("rain", rainChart, 0, 0.1, timestamp, rainAggregateIntervalMinutes);
-      addAggregatedChartValue("rain", rainChart, 0, jPayload.rain_mm, timestamp, rainAggregateIntervalMinutes);
-    }
+      setGaugeValue(windGustGauge, jPayload.windGust_mps * 3.6);*/
+      for(let gaugeId of Object.keys(gauges)) {
+          let gauge = gauges[gaugeId];
+          setGaugeValue(gauge, jPayload[gauge.weewxData.payload_key]);
+      }
+
+      for(let chartId of Object.keys(charts)) {
+          let chart = charts[chartId];
+          if(chart.weewxData.aggregate_interval_minutes !== undefined) {
+              addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
+          } else {
+              addValues(chart, jPayload, timestamp);
+          }
+      }
+    /*}
     else if(topic.endsWith('weather/pvPrivate')) {
       let installedWPeak = 3000;
       addValue("pvOutput", pvOutputChart, 0, jPayload["values"][0].value/installedWPeak, jPayload.timestamp);
-    }
+    }*/
     let lastUpdate = document.getElementById("lastUpdate");
     lastUpdate.innerHTML =  moment(timestamp).format("L") + " um " + moment(timestamp).format("LTS");
     
@@ -84,14 +76,30 @@ function setGaugeValue(gauge, value) {
   gauge.setOption(option);
 }
 
-function addValue(type, chart, datasetIndex, value, timestamp) {
+function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
+    let option = chart.getOption();
+    for(let dataset of option.series) {
+        addAggregatedChartValue(dataset, jPayload[dataset.payloadKey], timestamp, aggregateIntervalMinutes);
+        chart.setOption(option);
+    }
+}
+
+function addValues(chart, jPayload, timestamp) {
+    let option = chart.getOption();
+    for(let dataset of option.series) {
+        addValue(dataset, jPayload[dataset.payloadKey], timestamp);
+        chart.setOption(option);
+    }
+}
+
+function addValue(dataset, value, timestamp) {
   if(isNaN(value)) {
     return;
   }
+  let type = dataset.weewxColumn;
   value = Number.parseFloat(value);
-  let option = chart.getOption();
   let intervalStart = getIntervalStart(timestamp, archiveIntervalMinutes * 60000);
-  let data = option.series[datasetIndex].data;
+  let data = dataset.data;
 
   let currentIntervalData = getIntervalData(type, intervalStart);
   currentIntervalData.values.push(value);
@@ -100,11 +108,7 @@ function addValue(type, chart, datasetIndex, value, timestamp) {
     value = getIntervalValue(type, currentIntervalData, value);
   }
   data.push([timestamp, value]);
-
-  for(let dataset of option.series) {
-    rotateData(dataset.data);
-  }
-  chart.setOption(option);  
+  rotateData(dataset.data);
 }
 
 function getIntervalData(type,  intervalStart) {
@@ -145,21 +149,18 @@ function getAverageIntervalValue(currentIntervalData, value) {
     return value / (currentIntervalData.values.length + 1);
 }
 
-
-function addAggregatedChartValue(type, chart, datasetIndex, value, timestamp, intervalMinutes) {
+function addAggregatedChartValue(dataset, value, timestamp, intervalMinutes) {
     if(isNaN(value)) {
       value = 0;
     }
     value = Number.parseFloat(value);
-    let duration = intervalMinutes * 60000;
-    let intervalStart = getIntervalStart(timestamp, duration);
-    let option = chart.getOption();
-    setAggregatedChartEntry(value, intervalStart + duration/2, option.series[0].data);
-    rotateData(option.series[0].data);
-    chart.setOption(option);
+    setAggregatedChartEntry(value, timestamp, intervalMinutes, dataset.data);
+    rotateData(dataset.data);
 }
 
-function setAggregatedChartEntry(value, intervalStart, data) {
+function setAggregatedChartEntry(value, timestamp, intervalMinutes, data) {
+  let duration = intervalMinutes * 60000;
+  let intervalStart = getIntervalStart(timestamp, duration) + duration/2;
   if(data.length > 0 && data[data.length-1][0] === intervalStart) {
     let intervalSum = Number.parseFloat(data[data.length-1][1]) + value;
     data[data.length-1][1] = intervalSum;

@@ -35,12 +35,24 @@ these translation classes:
 
 import logging
 import os.path
+
 from configobj import ConfigObj
 
 from weewx.imagegenerator import ImageGenerator
 from weewx.cheetahgenerator import CheetahGenerator
+from user.jsonengine import JSONGenerator
 
 log = logging.getLogger(__name__)
+
+class JSONGeneratorTranslated(JSONGenerator):
+    """Overwrite skin.conf dictionary with language specific entries"""
+
+    def setup(self):
+        language_dict = _get_language_dict(self.skin_dict, self.config_dict)
+        if language_dict is not None:
+            self.skin_dict.merge(language_dict)
+
+        JSONGenerator.setup(self)
 
 class ImageGeneratorTranslated(ImageGenerator):
     """Overwrite skin.conf dictionary with language specific entries"""
@@ -89,7 +101,7 @@ def _get_language_dict(skin_dict, config_dict):
                 language_dict = ConfigObj(language_config_path)
             except:
                 log.info("%s: Could not import lanuguage dictionary %s" %
-                              os.path.basename(__file__), language_config_path)
+                         os.path.basename(__file__), language_config_path)
 
                 language_dict = None
 

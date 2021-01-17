@@ -1,151 +1,74 @@
 let charts = {};
-let outTempChart = echarts.init(document.getElementById('outTempChart'));
-charts['outTempChart'] = outTempChart;
-let outTempChartSeriesConfigs =
-    [{
-        name: 'Temperatur',
-        decimals: 1,
-        showMaxMarkPoint: true,
-        showMinMarkPoint: true,
-        showAvgMarkLine: true,
-        data: weewxData["outTemp"],
-        unit: "°C"
-    }, {
-        name: 'Taupunkt',
-        decimals: 1,
-        showMaxMarkPoint: false,
-        showMinMarkPoint: false,
-        showAvgMarkLine: false,
-        data: calculateDewpoints(weewxData["outTemp"], weewxData["outHumidity"]),
-        unit: "°C"
+for(let chartId of Object.keys(weewxData.charts)) {
+    let documentChartId = chartId + "Chart";
+    let chart = echarts.init(document.getElementById(documentChartId));
+    chart.weewxData = weewxData.charts[chartId];
+    charts[documentChartId] = chart;
+    let chartSeriesConfigs = [];
+    for(let categoryId of Object.keys(weewxData.charts[chartId])) {
+        let category = weewxData.charts[chartId][categoryId];
+        if(typeof category !== 'object' || category === null) {
+            continue;
+        }
+        var obs_group = category.obs_group;
+        let chartSeriesConfig = {
+            name: weewxData.labels.Generic[categoryId],
+            payloadKey: category.payload_key,
+            weewxColumn: categoryId,
+            decimals: Number(category.decimals),
+            showMaxMarkPoint: category.showMaxMarkPoint.toLowerCase() === 'true',
+            showMinMarkPoint: category.showMinMarkPoint.toLowerCase() === 'true',
+            showAvgMarkLine: category.showAvgMarkLine.toLowerCase() === 'true',
+            lineColor: category.lineColor,
+            data: weewxData[categoryId],
+            unit: weewxData.units.Labels[category.target_unit],
+            symbol: category.symbol,
+            symbolSize: category.symbolSize,
+        }
+        if(category.lineWidth !== undefined) {
+            chartSeriesConfig.lineStyle = {
+                width: category.lineWidth,
+            };
+        }
+        chartSeriesConfigs.push(chartSeriesConfig);
     }
-];
-outTempChart.setOption(getLineChartOption('°C', outTempChartSeriesConfigs));
-
-let barometerChart = echarts.init(document.getElementById('barometerChart'));
-charts['barometerChart'] = barometerChart;
-let barometerChartSeriesConfigs =
-    [{
-        name: 'Luftdruck',
-        decimals: 1,
-        showMaxMarkPoint: true,
-        showMinMarkPoint: true,
-        showAvgMarkLine: false,
-        data: weewxData["barometer"],
-        unit: "mbar"
+    let chartOption;
+    if(chart.weewxData.aggregate_interval_minutes !== undefined) {
+        chartOption = getBarChartOption(chartSeriesConfigs, chart.weewxData.aggregate_interval_minutes);
+    } else {
+        chartOption = getLineChartOption(chartSeriesConfigs);
     }
-];
-barometerChart.setOption(getLineChartOption('mbar', barometerChartSeriesConfigs));
 
-let rainChart = echarts.init(document.getElementById('rainChart'));
-charts['rainChart'] = rainChart;
-let rainChartSeriesConfigs =
-    [{
-        name: 'Niederschlag',
-        decimals: 0,
-        showMaxMarkPoint: false,
-        showMinMarkPoint: false,
-        showAvgMarkLine: false,
-        data: weewxData["rain_mm"],
-        unit: "mm"
+    if(obs_group === "group_speed") {
+        chartOption.yAxis.min = 0;
     }
-];
-let rainChartOption = getBarChartOption("mm", rainChartSeriesConfigs, rainAggregateIntervalMinutes);
-rainChart.setOption(rainChartOption);
-
-let outHumidityChart = echarts.init(document.getElementById('outHumidityChart'));
-charts['outHumidityChart'] = outHumidityChart;
-let outHumidityChartSeriesConfigs =
-    [{
-        name: 'Luftfeuchte',
-        decimals: 0,
-        showMaxMarkPoint: true,
-        showMinMarkPoint: true,
-        showAvgMarkLine: false,
-        data: weewxData["outHumidity"],
-        unit: "%"
+    if(obs_group === "group_percent") {
+        chartOption.yAxis.min = 0;
+        chartOption.yAxis.max = 100;
     }
-];
-let outHumidityChartOption = getLineChartOption('%', outHumidityChartSeriesConfigs);
-outHumidityChartOption.yAxis.min = 0;
-outHumidityChartOption.yAxis.max = 100;
-outHumidityChart.setOption(outHumidityChartOption);
-
-let windChart = echarts.init(document.getElementById('windChart'));
-charts['windChart'] = windChart;
-let windChartSeriesConfigs =
-    [{
-        name: 'Wind',
-        decimals: 0,
-        showMaxMarkPoint: false,
-        showMinMarkPoint: false,
-        showAvgMarkLine: false,
-        data: weewxData["windSpeed"],
-        unit: "km/h"
-    }, {
-        name: 'Böen',
-        decimals: 0,
-        showMaxMarkPoint: true,
-        showMinMarkPoint: false,
-        showAvgMarkLine: false,
-        data: weewxData["windGust"],
-        unit: "km/h"
+    if(obs_group === "group_direction") {
+        chartOption.yAxis.min = 0;
+        chartOption.yAxis.max = 360;
+        chartOption.yAxis.minInterval = 90;
+        chartOption.yAxis.maxInterval = 90;
     }
-];
-let windChartOption = getLineChartOption('km/h', windChartSeriesConfigs);
-windChartOption.yAxis.min = 0;
-windChart.setOption(windChartOption);
 
-let windDirChart = echarts.init(document.getElementById('windDirChart'));
-charts['windDirChart'] = windDirChart;
-let windDirChartSeriesConfigs =
-    [{
-        name: 'Windrichtung',
-        decimals: 1,
-        showMaxMarkPoint: false,
-        showMinMarkPoint: false,
-        showAvgMarkLine: false,
-        symbol: 'circle',
-        symbolSize: 1,
-        lineStyle: {
-            width: 0,
-        },
-        data: weewxData["windDir"],
-        unit: "°"
-    }
-];
-let windDirChartOption = getLineChartOption('°', windDirChartSeriesConfigs);
-windDirChartOption.yAxis.min = 0;
-windDirChartOption.yAxis.max = 360;
-windDirChartOption.yAxis.minInterval = 90;
-windDirChartOption.yAxis.maxInterval = 90;
-windDirChart.setOption(windDirChartOption);
+    chart.setOption(chartOption);
+}
 
-let pvOutputChart = echarts.init(document.getElementById('pvOutputChart'));
-charts['pvOutputChart'] = pvOutputChart;
-let pvOutputChartSeriesConfigs =
-    [{
-        name: 'PV Output',
-        decimals: 3,
-        showMaxMarkPoint: true,
-        showMinMarkPoint: true,
-        showAvgMarkLine: false,
-        unit: "kW/kWp"
-    }
-];
-let pvOutputOption = getLineChartOption('kw/kwP', pvOutputChartSeriesConfigs);
-pvOutputOption.yAxis.min = 0;
-pvOutputOption.yAxis.minInterval = 0.05;
-pvOutputChart.setOption(pvOutputOption);
-
-function getLineChartOption(yAxisName, seriesConfigs) {
+function getLineChartOption(seriesConfigs) {
+    let yAxisName = seriesConfigs[0].unit;
     let series = [];
+    let colors = [];
     for (let seriesConfig of seriesConfigs) {
+        colors.push(seriesConfig.lineColor);
         if (seriesConfig.data === undefined) {
             seriesConfig.data = [];
         }
         let serie = {
             name: seriesConfig.name,
+            payloadKey: seriesConfig.payloadKey,
+            weewxColumn: seriesConfig.weewxColumn,
             type: "line",
             symbol: seriesConfig.symbol === undefined ? 'none' : seriesConfig.symbol,
             lineStyle: {
@@ -212,7 +135,7 @@ function getLineChartOption(yAxisName, seriesConfigs) {
         textStyle: {
             fontSize: 10,
         },
-        color: ['#428bca', '#b44242', '#c23531'],
+        color: colors,
         backgroundColor: '#1111110a',
         toolbox: {
             show: true,
@@ -274,17 +197,22 @@ function getLineChartOption(yAxisName, seriesConfigs) {
     }
 }
 
-function getBarChartOption(yAxisName, seriesConfigs, aggregateIntervalMinutes) {
+function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
+    let yAxisName = seriesConfigs[0].unit;
     let series = [];
+    let colors = [];
     for (let seriesConfig of seriesConfigs) {
+        colors.push(seriesConfig.lineColor);
         if (seriesConfig.data === undefined) {
             seriesConfig.data = [];
         }
         let serie = {
             name: seriesConfig.name,
+            payloadKey: seriesConfig.payloadKey,
+            weewxColumn: seriesConfig.weewxColumn,
             type: "bar",
             barWidth: '100%',
-            data: seriesConfig.data,
+            data: aggregate(seriesConfig.data, aggregateIntervalMinutes),
             decimals: seriesConfig.decimals,
             unitLabel: seriesConfig.unit
         };
@@ -346,7 +274,7 @@ function getBarChartOption(yAxisName, seriesConfigs, aggregateIntervalMinutes) {
         textStyle: {
             fontSize: 10,
         },
-        color: ['#428bca'],
+        color: colors,
         backgroundColor: '#1111110a',
         toolbox: {
             show: true,
@@ -437,4 +365,12 @@ function getDecimalSeparator(locale) {
     let n = 1.1;
     n = n.toLocaleString(locale).substring(1, 2);
     return n;
+}
+
+function aggregate(data, aggregateIntervalMinutes) {
+    let aggregatedData = [];
+    for(let entry of data) {
+        setAggregatedChartEntry(entry[1], entry[0], aggregateIntervalMinutes, aggregatedData);
+    }
+    return aggregatedData;
 }

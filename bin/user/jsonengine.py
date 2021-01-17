@@ -50,6 +50,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.gauge_dict = self.skin_dict['LiveGauges']
         self.chart_dict = self.skin_dict['LiveCharts']
         self.units_dict = self.skin_dict['Units']
+        self.labels_dict = self.skin_dict['Labels']
         self.frontend_data = {}
 
         # Create a converter to get this into the desired units
@@ -78,23 +79,26 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         """Generate data."""
         startTime = time.time()
         ngen = 0
-
         self.frontend_data['config'] = self.json_dict
         self.frontend_data['gauges'] = self.gauge_dict
         self.frontend_data['charts'] = self.chart_dict
         self.frontend_data['units'] = self.units_dict
-
+        self.frontend_data['labels'] = self.labels_dict
         live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)
 
         for gauge in self.gauge_dict.sections:
             ret, gauge_history = self.gen_history_data(gauge, live_options)
+            self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
+            self.frontend_data['gauges'][gauge]['obs_group'] = weewx.units.obs_group_dict[gauge]
 
             if ret is not None:
                 ngen += 1
                 self.frontend_data[gauge] = gauge_history
         for chart in self.chart_dict.sections:
-            for category in self.chart_dict[chart]:
+            for category in self.chart_dict[chart].sections:
                 ret, category_history = self.gen_history_data(category, live_options)
+                self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
+                self.frontend_data['charts'][chart][category]['obs_group'] = weewx.units.obs_group_dict[category]
 
                 if ret is not None:
                     ngen += 1
@@ -110,6 +114,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         log.info("JSONGenerator: Generated %d data items for %s in %.2f seconds" %
                  (ngen, self.skin_dict['REPORT_NAME'], finishTime - startTime))
+
+    def get_target_unit(self, column_name):
+        return self.units_dict['Groups'][weewx.units.obs_group_dict[column_name]]
 
     def gen_history_data(self, column_name, live_options):
         if column_name in self.frontend_data:
@@ -145,7 +152,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         try:
             fp = open(data_filename, 'w')
         except IOError:
-            log.error("JSONGenerator: Could not open %s for writing' % data_filename")
+            log.error("JSONGenerator: Could not open %s for writing" % data_filename)
         else:
             with fp:
                 json_string = "let weewxData = " + json.dumps(self.frontend_data, indent=None)
