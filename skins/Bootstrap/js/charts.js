@@ -10,6 +10,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
         if(typeof category !== 'object' || category === null) {
             continue;
         }
+        chart.weewxData[categoryId].observationType = categoryId;
         var obs_group = category.obs_group;
         let chartSeriesConfig = {
             name: weewxData.labels.Generic[categoryId],

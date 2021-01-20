@@ -23,8 +23,9 @@ if(mqttCredentials === undefined) {
 moment.locale(locale.split("_")[0]);
 
 let maxAgeHoursMS = weewxData.config.timespan * 3600000;
-
-client.subscribe('weather/#');
+for(let topic of weewxData.config.MQTT.topics) {
+    client.subscribe(topic);
+}
 
 client.on("message", function (topic, payload) {
     console.log(topic);
@@ -36,17 +37,12 @@ client.on("message", function (topic, payload) {
     } else {
       timestamp = Date.now();
     }
-    //if(topic.endsWith('weather/loop')) {
-      /*setGaugeValue(outTempGauge, jPayload.outTemp_C);
-      setGaugeValue(barometerGauge, jPayload.altimeter_mbar);
-      setGaugeValue(windDirGauge, jPayload.windDir);
-      setGaugeValue(outHumidityGauge, jPayload.outHumidity);
-      setGaugeValue(outHumidityGauge, jPayload.extraHumid1);
-      setGaugeValue(windSpeedGauge, jPayload.windSpeed_mps * 3.6);
-      setGaugeValue(windGustGauge, jPayload.windGust_mps * 3.6);*/
       for(let gaugeId of Object.keys(gauges)) {
           let gauge = gauges[gaugeId];
-          setGaugeValue(gauge, jPayload[gauge.weewxData.payload_key]);
+          let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
+          if(!isNaN(value)) {
+              setGaugeValue(gauge, value);
+          }
       }
 
       for(let chartId of Object.keys(charts)) {
@@ -68,9 +64,6 @@ client.on("message", function (topic, payload) {
 });
 
 function setGaugeValue(gauge, value) {
-  if(isNaN(value)) {
-    return;
-  }
   let option = gauge.getOption();
   option.series[0].data[0].value = value;
   gauge.setOption(option);
@@ -79,25 +72,27 @@ function setGaugeValue(gauge, value) {
 function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
     let option = chart.getOption();
     for(let dataset of option.series) {
-        addAggregatedChartValue(dataset, jPayload[dataset.payloadKey], timestamp, aggregateIntervalMinutes);
-        chart.setOption(option);
+        let value = convert(chart.weewxData[dataset.weewxColumn], jPayload[dataset.payloadKey]);
+        if(!isNaN(value)) {
+            addAggregatedChartValue(dataset, value, timestamp, aggregateIntervalMinutes);
+            chart.setOption(option);
+        }
     }
 }
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     for(let dataset of option.series) {
-        addValue(dataset, jPayload[dataset.payloadKey], timestamp);
-        chart.setOption(option);
+        let value = convert(chart.weewxData[dataset.weewxColumn], jPayload[dataset.payloadKey]);
+        if(!isNaN(value)) {
+            addValue(dataset, value, timestamp);
+            chart.setOption(option);
+        }
     }
 }
 
 function addValue(dataset, value, timestamp) {
-  if(isNaN(value)) {
-    return;
-  }
   let type = dataset.weewxColumn;
-  value = Number.parseFloat(value);
   let intervalStart = getIntervalStart(timestamp, archiveIntervalMinutes * 60000);
   let data = dataset.data;
 
@@ -150,10 +145,6 @@ function getAverageIntervalValue(currentIntervalData, value) {
 }
 
 function addAggregatedChartValue(dataset, value, timestamp, intervalMinutes) {
-    if(isNaN(value)) {
-      value = 0;
-    }
-    value = Number.parseFloat(value);
     setAggregatedChartEntry(value, timestamp, intervalMinutes, dataset.data);
     rotateData(dataset.data);
 }
