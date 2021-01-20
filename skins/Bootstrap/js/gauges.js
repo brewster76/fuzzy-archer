@@ -3,6 +3,7 @@ for(let gaugeId of Object.keys(weewxData.gauges)) {
     let documentGaugeId = gaugeId + "Gauge";
     let gauge = echarts.init(document.getElementById(documentGaugeId));
     gauge.weewxData = weewxData.gauges[gaugeId];
+    gauge.weewxData.observationType= gaugeId;
     gauges[documentGaugeId] = gauge;
     let colors = [];
     let minvalue = gauge.weewxData.minvalue;
