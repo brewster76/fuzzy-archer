@@ -80,6 +80,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         startTime = time.time()
         ngen = 0
         self.frontend_data['config'] = self.json_dict
+        self.frontend_data['config']['archive_interval'] = self.config_dict['StdArchive']['archive_interval']
         self.frontend_data['gauges'] = self.gauge_dict
         self.frontend_data['charts'] = self.chart_dict
         self.frontend_data['units'] = self.units_dict
