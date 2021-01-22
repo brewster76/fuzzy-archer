@@ -1,68 +1,75 @@
-let archiveIntervalMinutes = 5;
-let rainAggregateIntervalMinutes = 10;
-let mqttConnection = weewxData.config.MQTT.broker_connection;
-let mqttUsername = weewxData.config.MQTT.mqtt_username;
-let mqttPassword = weewxData.config.MQTT.mqtt_password;
-let locale ="de_AT";
+let archiveIntervalSeconds = weewxData.config.archive_interval;
+let locale = weewxData.config.locale;
+moment.locale(locale.split("_")[0]);
+let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
 
-let mqttCredentials;
-if(mqttUsername !== undefined) {
-    mqttCredentials = {username: mqttUsername};
-    if(mqttPassword !== undefined) {
-        mqttCredentials["password"] = mqttPassword;
+let clients = [];
+for(let connectionId of Object.keys(weewxData.config.MQTT.connections)) {
+    let connection = weewxData.config.MQTT.connections[connectionId];
+    let mqttConnection = connection.broker_connection;
+    let mqttUsername = connection.mqtt_username;
+    let mqttPassword = connection.mqtt_password;
+    let intervalData = {};
+
+    let mqttCredentials;
+    if(mqttUsername !== undefined) {
+        mqttCredentials = {username: mqttUsername};
+        if(mqttPassword !== undefined) {
+            mqttCredentials["password"] = mqttPassword;
+        }
     }
-}
-let client;
-if(mqttCredentials === undefined) {
-    client = mqtt.connect(mqttConnection);
-} else {
-    client = mqtt.connect(mqttConnection, mqttCredentials);
-}
-
-moment.locale(locale.split("_")[0]);
-
-let maxAgeHoursMS = weewxData.config.timespan * 3600000;
-for(let topic of weewxData.config.MQTT.topics) {
-    client.subscribe(topic);
-}
-
-client.on("message", function (topic, payload) {
-    console.log(topic);
-
-    let jPayload = JSON.parse(payload);
-    let timestamp;
-    if (jPayload.dateTime !== undefined) {
-      timestamp = parseInt(jPayload.dateTime) * 1000;
+    if(mqttCredentials === undefined) {
+        client = mqtt.connect(mqttConnection);
     } else {
-      timestamp = Date.now();
+        client = mqtt.connect(mqttConnection, mqttCredentials);
     }
-      for(let gaugeId of Object.keys(gauges)) {
-          let gauge = gauges[gaugeId];
-          let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
-          if(!isNaN(value)) {
-              setGaugeValue(gauge, value);
-          }
-      }
+    client.topics = connection.topics;
+    clients.push(client);
 
-      for(let chartId of Object.keys(charts)) {
-          let chart = charts[chartId];
-          if(chart.weewxData.aggregate_interval_minutes !== undefined) {
-              addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
-          } else {
-              addValues(chart, jPayload, timestamp);
-          }
-      }
-    /*}
-    else if(topic.endsWith('weather/pvPrivate')) {
-      let installedWPeak = 3000;
-      addValue("pvOutput", pvOutputChart, 0, jPayload["values"][0].value/installedWPeak, jPayload.timestamp);
-    }*/
-    let lastUpdate = document.getElementById("lastUpdate");
-    lastUpdate.innerHTML =  moment(timestamp).format("L") + " um " + moment(timestamp).format("LTS");
-    
-});
+    for(let topic of Object.keys(connection.topics)) {
+        client.subscribe(topic);
+    }
 
+    client.on("message", function (topic, payload) {
+        console.log(topic);
+        let jPayload = {};
+        let topicConfig = this.topics[topic];
+        if(topicConfig.type.toUpperCase() === "JSON") {
+            jPayload = JSON.parse(payload);
+        } else if (topicConfig.type.toLowerCase() === "plain" && topicConfig.payload_key !== undefined) {
+            jPayload[topicConfig.payload_key] = parseFloat(payload);
+        } else {
+            return;
+        }
+
+        let timestamp;
+        if (jPayload.dateTime !== undefined) {
+          timestamp = parseInt(jPayload.dateTime) * 1000;
+        } else {
+          timestamp = Date.now();
+        }
+          for(let gaugeId of Object.keys(gauges)) {
+              let gauge = gauges[gaugeId];
+              let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
+              if(!isNaN(value)) {
+                  setGaugeValue(gauge, value);
+              }
+          }
+
+          for(let chartId of Object.keys(charts)) {
+              let chart = charts[chartId];
+              if(chart.weewxData.aggregate_interval_minutes !== undefined) {
+                  addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
+              } else {
+                  addValues(chart, jPayload, timestamp);
+              }
+          }
+        let lastUpdate = document.getElementById("lastUpdate");
+        lastUpdate.innerHTML =  moment(timestamp).format("L") + " um " + moment(timestamp).format("LTS");
+
+    });
+}
 function setGaugeValue(gauge, value) {
   let option = gauge.getOption();
   option.series[0].data[0].value = value;
@@ -93,7 +100,7 @@ function addValues(chart, jPayload, timestamp) {
 
 function addValue(dataset, value, timestamp) {
   let type = dataset.weewxColumn;
-  let intervalStart = getIntervalStart(timestamp, archiveIntervalMinutes * 60000);
+  let intervalStart = getIntervalStart(timestamp, archiveIntervalSeconds * 1000);
   let data = dataset.data;
 
   let currentIntervalData = getIntervalData(type, intervalStart);
