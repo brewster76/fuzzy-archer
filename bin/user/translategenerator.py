@@ -101,7 +101,7 @@ def _get_language_dict(skin_dict, config_dict):
                 language_dict = ConfigObj(language_config_path)
             except:
                 log.info("%s: Could not import lanuguage dictionary %s" %
-                         os.path.basename(__file__), language_config_path)
+                              os.path.basename(__file__), language_config_path)
 
                 language_dict = None
 

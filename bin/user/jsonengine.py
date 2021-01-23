@@ -39,17 +39,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
     """Class for managing the gauge generator."""
 
     def run(self):
-        enabled = False
-        try:
-            enabled = self.skin_dict['JSONGenerator']['enabled'].lower() == 'true'
-        except KeyError:
-            log.info("JSONGenerator failed to read config or config missing")
-        else:
-            if enabled:
-                self.setup()
-                self.gen_data()
-            else:
-                log.info("JSONGenerator is not enabled")
+        if self.skin_dict['JSONGenerator']['enabled'].lower() == 'true':
+            self.setup()
+            self.gen_data()
+
     def setup(self):
         self.db_manager = self.db_binder.get_manager()
 
