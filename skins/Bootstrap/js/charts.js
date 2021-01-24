@@ -344,7 +344,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
 
 }
 
-let noReadingString = "--";
+var noReadingString = "--";
 function format(number, digits) {
     if (number === noReadingString) {
         return number;

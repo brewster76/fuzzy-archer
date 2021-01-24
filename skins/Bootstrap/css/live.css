@@ -1,3 +1,9 @@
+.currentConditions {
+  color: #777;
+  font-family: sans-serif;
+  padding: 3% 0;
+}
+
 .gauge {
   width: 160px;
   height:160px;
@@ -12,8 +18,19 @@
   margin: 3px;
   float: left;
 }
-.stationInfo {
+.stationInfo td {
    color: #777;
    font-family: sans-serif;
-   padding: 5%;
+   font-size: smaller;
+}
+.primaryLive {
+  background-color: #428bca;
+  border-color: #428bca;
+}
+.primaryLive:hover {
+  background-color: #539cdb;
+  border-color: #539cdb;
+}
+.primaryLight {
+  color: #428bca;
 }
