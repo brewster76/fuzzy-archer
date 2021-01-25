@@ -304,7 +304,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                 params.forEach(item => {
                     let decimals = option.series[item.seriesIndex].decimals;
-                    let unitLabel = option.series[item.seriesIndex].unitLabel;
+                    let unitLabel = option.series[item.seriesIndex].unitLabel === undefined ? "" : option.series[item.seriesIndex].unitLabel;
                     tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], decimals) + unitLabel + '</td></tr>');
                 });
                 return tooltipHTML + '</table>';

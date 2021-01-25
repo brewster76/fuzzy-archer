@@ -18,7 +18,7 @@ Directions for use:
 
 ############################################################################################
 #
-# Settings for Gauge Generator
+# Settings for JSON Generator
 #
 TODO: example
 """
@@ -36,7 +36,7 @@ import user.gauges
 log = logging.getLogger(__name__)
 
 class JSONGenerator(weewx.reportengine.ReportGenerator):
-    """Class for managing the gauge generator."""
+    """Class for managing the JSON generator."""
 
     def run(self):
         enabled = False
@@ -97,7 +97,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         for gauge in self.gauge_dict.sections:
             ret, gauge_history = self.gen_history_data(gauge, live_options)
             self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
-            self.frontend_data['gauges'][gauge]['obs_group'] = weewx.units.obs_group_dict[gauge]
+            self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
 
             if ret is not None:
                 ngen += 1
@@ -106,7 +106,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             for category in self.chart_dict[chart].sections:
                 ret, category_history = self.gen_history_data(category, live_options)
                 self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
-                self.frontend_data['charts'][chart][category]['obs_group'] = weewx.units.obs_group_dict[category]
+                self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
 
                 if ret is not None:
                     ngen += 1
@@ -124,16 +124,28 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                  (ngen, self.skin_dict['REPORT_NAME'], finishTime - startTime))
 
     def get_target_unit(self, column_name):
-        return self.units_dict['Groups'][weewx.units.obs_group_dict[column_name]]
+        try:
+            return self.units_dict['Groups'][weewx.units.obs_group_dict[column_name]]
+        except KeyError:
+            log.info("JSONGenerator: self.units_dict['Groups'][weewx.units.obs_group_dict['%s']] is not present, using the empty string." % column_name)
+            return ""
+
+    def get_obs_group(self, column_name):
+        try:
+            return weewx.units.obs_group_dict[column_name]
+        except KeyError:
+            log.info("JSONGenerator: weewx.units.obs_group_dict['%s'] is not present, using the empty string." % column_name)
+            return ""
+
 
     def gen_history_data(self, column_name, live_options):
         if column_name in self.frontend_data:
             return None, None
         # Find display unit of measure
         try:
-            target_unit = self.units_dict['Groups'][weewx.units.obs_group_dict[column_name]]
+            target_unit = self.get_target_unit(column_name)
         except:
-            log.info("GaugeGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
+            log.info("JSONGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
             return 0, None
         try:
             timespan = int(live_options.get('timespan'))
@@ -146,12 +158,15 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
             for rec in batch_records:
                 db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
-                history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
+                if target_unit == "":
+                    history_value = rec[column_name]
+                else:
+                    history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
                 try:
                     history_list.append(float(history_value))
                     time_list.append(rec['dateTime'] * 1000)
                 except:
-                    log.debug("GaugeGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
+                    log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
 
         return 1, list(zip(time_list, history_list))
 
