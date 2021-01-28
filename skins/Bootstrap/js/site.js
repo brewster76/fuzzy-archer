@@ -74,7 +74,9 @@ if(weewxData !== undefined && weewxData.config !== undefined && weewxData.config
 }
 function setGaugeValue(gauge, value) {
   let option = gauge.getOption();
-  option.series[0].data[0].value = value;
+  let valueSeries = option.series[0];
+  valueSeries.data[0].value = value;
+  option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, weewxData[gauge.weewxData.observationType]);
   gauge.setOption(option);
 }
 
