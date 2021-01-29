@@ -5,6 +5,8 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
     let gauge = echarts.init(document.getElementById(documentGaugeId));
     gauge.weewxData = weewxData.gauges[gaugeId];
     gauge.weewxData.observationType = gaugeId;
+    gauge.weewxData.dataset = { weewxColumn: gaugeId};
+    gauge.weewxData.dataset.data = JSON.parse(JSON.stringify(weewxData[gaugeId]));
     gauges[documentGaugeId] = gauge;
     let colors = [];
     let minvalue = gauge.weewxData.minvalue;
@@ -34,7 +36,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
             colors.push([(untilValue - minvalue) / range, lineColors[i]]);
         }
     }
-    let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, 5, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData.decimals, weewxData[gaugeId]);
+    let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, 5, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData.decimals, gauge.weewxData.dataset.data);
     if (gauge.weewxData.obs_group === "group_direction") {
         gaugeOption.series[0].startAngle = 90;
         gaugeOption.series[0].endAngle = -270;
