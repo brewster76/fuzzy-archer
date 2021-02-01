@@ -38,6 +38,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
     }
     let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, 5, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData.decimals, gauge.weewxData.dataset.data);
     if (gauge.weewxData.obs_group === "group_direction") {
+        gaugeOption.animation = false; //TODO: make configurable
         gaugeOption.series[0].startAngle = 90;
         gaugeOption.series[0].endAngle = -270;
         gaugeOption.series[1].startAngle = 90;
