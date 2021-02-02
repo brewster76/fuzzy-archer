@@ -112,15 +112,11 @@ function addValue(dataset, value, timestamp) {
 
     let currentIntervalData = getIntervalData(type, intervalStart);
     if (type === "windSpeed") {
-        //some stations update windSpeed more often than gust: if current speed > gust, update gust
-        let windGustIntervalData = getIntervalData("windGust", intervalStart);
-        let maxGust = getMaxIntervalValue(windGustIntervalData, 0);
-        if(value > maxGust) {
-            windGustIntervalData.values.push(value);
-            let windGustGauge = gauges.windGustGauge;
-            if(windGustGauge !== undefined) {
-                setGaugeValue(windGustGauge, value, timestamp);
-            }
+        //some stations update windSpeed more often than gust: if current speed > gust, update gust, but only for current gauge value
+        //other values will be updated when regular message arrives
+        let windGustGauge = gauges.windGustGauge;
+        if(windGustGauge !== undefined && value > windGustGauge.getOption().series[0].data[0].value) {
+            setGaugeValue(windGustGauge, value, timestamp);
         }
     }
     currentIntervalData.values.push(value);

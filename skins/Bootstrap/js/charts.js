@@ -53,7 +53,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
         chartOption.yAxis.minInterval = 90;
         chartOption.yAxis.maxInterval = 90;
     }
-
+    chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
     chart.setOption(chartOption);
 }
 
