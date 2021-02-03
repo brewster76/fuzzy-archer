@@ -369,7 +369,7 @@ function getDecimalSeparator(locale) {
 function aggregate(data, aggregateIntervalMinutes) {
     let aggregatedData = [];
     for(let entry of data) {
-        setAggregatedChartEntry(entry[1], entry[0], aggregateIntervalMinutes, aggregatedData);
+        setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
     }
     return aggregatedData;
 }
