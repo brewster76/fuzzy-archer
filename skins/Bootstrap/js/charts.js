@@ -61,6 +61,7 @@ function getLineChartOption(seriesConfigs) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
     let colors = [];
+    let configs = seriesConfigs;
     for (let seriesConfig of seriesConfigs) {
         colors.push(seriesConfig.lineColor);
         if (seriesConfig.data === undefined) {
@@ -76,8 +77,6 @@ function getLineChartOption(seriesConfigs) {
                 width: seriesConfig.lineStyle === undefined || seriesConfig.lineStyle.width === undefined ? 1 : seriesConfig.lineStyle.width,
             },
             data: seriesConfig.data,
-            decimals: seriesConfig.decimals,
-            unitLabel: seriesConfig.unit
         };
 
         if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
@@ -157,12 +156,9 @@ function getLineChartOption(seriesConfigs) {
                 return [pt[0], 200];
             },
             formatter: function (params, ticket, callback) {
-                let elements = document.querySelectorAll(":hover");
-                let option = charts[elements.item(elements.length - 1).parentElement.parentElement.id].getOption();
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + moment(params[0].axisValue).format("D.M.YYYY, H:mm:ss") + '</td></tr>';
                 params.forEach(item => {
-                    let decimals = option.series[item.seriesIndex].decimals;
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], decimals) + getUnitLabel(item, option) + '</td></tr>');
+                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
                 });
                 return tooltipHTML + '</table>';
             }
@@ -201,6 +197,8 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
     let colors = [];
+    let configs = seriesConfigs;
+    let aggregateInterval = aggregateIntervalMinutes
     for (let seriesConfig of seriesConfigs) {
         colors.push(seriesConfig.lineColor);
         if (seriesConfig.data === undefined) {
@@ -213,8 +211,6 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             type: "bar",
             barWidth: '100%',
             data: aggregate(seriesConfig.data, aggregateIntervalMinutes),
-            decimals: seriesConfig.decimals,
-            unitLabel: seriesConfig.unit
         };
 
         if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
@@ -295,15 +291,12 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
                 return [pt[0], 200];
             },
             formatter: function (params, ticket, callback) {
-                let elements = document.querySelectorAll(":hover");
-                let option = charts[elements.item(elements.length - 1).parentElement.parentElement.id].getOption();
-                let halfAggregateInterval = option.aggregateIntervalMinutes * 60000 / 2;
+                let halfAggregateInterval = aggregateInterval * 60000 / 2;
                 let from = moment(params[0].axisValue - halfAggregateInterval).format("D.M.YYYY, H:mm:ss");
                 let to = moment(params[0].axisValue + halfAggregateInterval).format("H:mm:ss");
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                 params.forEach(item => {
-                    let decimals = option.series[item.seriesIndex].decimals;
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], decimals) + getUnitLabel(item, option) + '</td></tr>');
+                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
                 });
                 return tooltipHTML + '</table>';
             }
@@ -373,10 +366,6 @@ function aggregate(data, aggregateIntervalMinutes) {
         setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
     }
     return aggregatedData;
-}
-
-function getUnitLabel(item, option) {
-    return option.series[item.seriesIndex].unitLabel === undefined ? "" : option.series[item.seriesIndex].unitLabel;
 }
 
 function getXMinInterval() {
