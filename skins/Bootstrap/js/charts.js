@@ -369,6 +369,7 @@ function getDecimalSeparator(locale) {
 function aggregate(data, aggregateIntervalMinutes) {
     let aggregatedData = [];
     for(let entry of data) {
+        //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
         setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
     }
     return aggregatedData;

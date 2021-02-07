@@ -63,7 +63,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
 }
 
 function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineColor, unit, weewxData) {
-    decimals = Number(weewxData.decimals);
+    let decimals = Number(weewxData.decimals);
     let value;
     let data = weewxData.dataset.data;
     if (data === undefined || data.length < 1) {

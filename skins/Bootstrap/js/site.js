@@ -194,15 +194,6 @@ function rotateData(data) {
     }
 }
 
-function calculateDewpoints(tempData, humidityData) {
-    let dewpointData = [];
-    let index = 0;
-    for (let temp of tempData) {
-        dewpointData.push([temp[0], calculateDewpoint(temp[1], humidityData[index++][1])]);
-    }
-    return dewpointData;
-}
-
 function calculateDewpoint(temp, humidity) {
     humidity = Number.parseFloat(humidity) / 100;
     temp = Number.parseFloat(temp);
