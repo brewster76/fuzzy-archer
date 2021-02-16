@@ -151,10 +151,7 @@ function getLineChartOption(seriesConfigs) {
                 type: "line"
             },
             show: true,
-
-            position: function (pt) {
-                return [pt[0], 200];
-            },
+            position: "inside",
             formatter: function (params, ticket, callback) {
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + moment(params[0].axisValue).format("D.M.YYYY, H:mm:ss") + '</td></tr>';
                 params.forEach(item => {
