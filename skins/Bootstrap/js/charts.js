@@ -1,4 +1,3 @@
-let charts = {};
 for(let chartId of Object.keys(weewxData.charts)) {
     let documentChartId = chartId + "Chart";
     let chart = echarts.init(document.getElementById(documentChartId));

@@ -279,33 +279,36 @@ class MyXSearch(SearchList):
             else:
                 format_string = reading.formatter.unit_format_dict[unit_type]
 
-        htmlText = '<table class="table table-sm">'
-        htmlText += "    <thead>"
-        htmlText += "        <tr>"
-        htmlText += "        <th>%s</th>" % unit_formatted
+        htmlText = '<div class="mb-4 historyTable">\n'
+        htmlText += '    <div class="d-flex flex-row font-weight-bold text-center">\n'
+        htmlText += '        <div class="'
+        if NOAA is False:
+            htmlText += " border-right "
+        htmlText += 'media-body">%s</div>\n' % unit_formatted
 
         for mon in table_options.get('monthnames', ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']):
-            htmlText += "        <th>%s</th>" % mon
+            htmlText += '        <div class="'
+            if NOAA is False:
+                htmlText += "border-right"
+            htmlText += ' media-body">%s</div>\n' % mon
+
 
         if summary_column:
             if 'summary_heading' in table_options:
-                htmlText += "        <th></th>"
-                htmlText += "        <th align=\"center\">%s</th>\n" % table_options['summary_heading']
+                htmlText += '        <div class="ml-1 border-left media-body">%s</div>\n' % table_options['summary_heading']
 
-        htmlText += "    </tr>"
-        htmlText += "    </thead>"
-        htmlText += "    <tbody>"
+        htmlText += "    </div>\n"
 
         for year in table_stats.years():
             year_number = datetime.fromtimestamp(year.timespan[0]).year
 
-            htmlLine = (' ' * 8) + "<tr>\n"
+            htmlLine = (' ' * 8) + '<div class="d-flex flex-row text-center">\n'
 
             if NOAA is True:
                 htmlLine += (' ' * 12) + "%s\n" % \
                             self._NoaaYear(datetime.fromtimestamp(year.timespan[0]), table_options)
             else:
-                htmlLine += (' ' * 12) + "<td>%d</td>\n" % year_number
+                htmlLine += (' ' * 12) + '<div class="border-right border-top media-body">%d</div>\n' % year_number
 
             for month in year.months():
                 if NOAA is True:
@@ -314,7 +317,7 @@ class MyXSearch(SearchList):
 
                     if (month.timespan[1] < table_stats.timespan.start) or (month.timespan[0] > table_stats.timespan.stop):
                         # print "No data for... %d, %d" % (year_number, datetime.fromtimestamp(month.timespan[0]).month)
-                        htmlLine += "<td>-</td>\n"
+                        htmlLine += '<div class="border-top media-body">-</div>\n'
                     else:
                         htmlLine += self._NoaaCell(datetime.fromtimestamp(month.timespan[0]), table_options)
                 else:
@@ -343,56 +346,53 @@ class MyXSearch(SearchList):
                 else:
                     value = converter.convert(getattr(obsYear, aggregate_type).value_t)
 
+                htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, cellColours, summary=True, noaa=NOAA)
 
-                htmlLine += (' ' * 12) + "<td></td>\n"
-                htmlLine += (' ' * 12) + self._colorCell(value[0], format_string, cellColours, center=True)
-
-            htmlLine += (' ' * 8) + "</tr>\n"
+            htmlLine += (' ' * 8) + "</div>\n"
 
             htmlText += htmlLine
 
-        htmlText += (' ' * 8) + "</tr>\n"
-        htmlText += (' ' * 4) + "</tbody>\n"
-        htmlText += "</table>\n"
+        htmlText += "</div>\n"
 
         return htmlText
 
-    def _colorCell(self, value, format_string, cellColours, center=False):
-        """Returns a '<td style= background-color: XX; color: YY"> z.zz </td>' html table entry string.
+    def _colorCell(self, value, format_string, cellColours, summary=False, noaa=False):
+        """Returns a '<div style= background-color: XX; color: YY"> z.zz </div>' html table entry string.
 
         value: Numeric value for the observation
         format_string: How the numberic value should be represented in the table cell.
         cellColours: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
 
-        cellText = "<td"
+        cellText = '<div class="border-top media-body'
 
-        if center:
-            cellText += " align=\"center\""
+        if summary is False:
+            if noaa is False:
+                cellText += " border-right"
+        else:
+            cellText += " ml-1 border-left"
 
         if value is not None:
-
-
             for c in cellColours:
                 if (value >= float(c[0])) and (value <= float(c[1])):
-                    cellText += " style=\"background-color:%s; color:%s\"" % (c[2], c[3])
+                    cellText += '" style="background-color:%s; color:%s"' % (c[2], c[3])
 
             formatted_value = format_string % value
-            cellText += "> %s </td>\n" % formatted_value
+            cellText += '> %s </div>\n' % formatted_value
 
         else:
-            cellText += ">-</td>\n"
+            cellText += '">-</div>\n'
 
         return cellText
 
     def _NoaaCell(self, dt, table_options):
-        cellText = '<td> <a href="%s" class="btn btn-sm btn-light primaryLight"> %s </a> </td>' % \
+        cellText = '<div class="border-top media-body"><a href="%s" class="btn btn-sm btn-light primaryLight btnNOAA"> %s </a> </div>\n' % \
                    (dt.strftime(table_options['month_filename']), dt.strftime("%m-%y"))
 
         return cellText
 
     def _NoaaYear(self, dt, table_options):
-        cellText = '<td> <a href="%s" class="btn btn-sm btn-primary primaryLive"> %s </a> </td>' % \
+        cellText = '<div class="border-top media-body"><a href="%s" class="btn btn-sm btn-primary primaryLive btnNOAA"> %s </a></div>\n' % \
                    (dt.strftime(table_options['year_filename']), dt.strftime("%Y"))
 
         return cellText

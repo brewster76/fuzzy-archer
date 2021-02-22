@@ -34,3 +34,17 @@
 .primaryLight {
   color: #428bca;
 }
+.btnNOAA {
+  font-size: calc(5px + 0.5vw);
+  padding: 2px 4px;  
+}
+.historyHeader, .statsHeader {
+  font-weight: bold;
+  font-size: calc(14px + 0.3vw);
+}
+.historyTable {
+  font-size: calc(5px + 0.5vw);
+}
+.statsTable {
+  font-size: calc(9px + 0.4vw);
+}

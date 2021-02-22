@@ -33,112 +33,98 @@
         #include "livegauges.html.tmpl"
         <!-- Graph panel -->     
         <div class="col-md-9 main">
-            <h3>$Labels.Generic.outTemp</h3>
-            <table class="table table-sm table-hover">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>$BootstrapLabels.timespans.today</th>
-                  <th>$BootstrapLabels.timespans.week</th>
-                  <th>$BootstrapLabels.timespans.month</th>
-                  <th>$BootstrapLabels.timespans.year</th>
-                  <th>$BootstrapLabels.timespans.ever</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>$BootstrapLabels.minmax.max</td>
-                  <td>$day.outTemp.max<br>$day.outTemp.maxtime</td>
-                  <td>$week.outTemp.max<br>$week.outTemp.maxtime</td>
-                  <td>$month.outTemp.max<br>$month.outTemp.maxtime</td>
-                  <td>$year.outTemp.max<br>$year.outTemp.maxtime</td>
-                  <td>$alltime.outTemp.max<br>$alltime.outTemp.maxtime</td>
-                </tr>
-                <tr>
-                  <td>$BootstrapLabels.minmax.min</td>
-                  <td>$day.outTemp.min<br>$day.outTemp.mintime</td>
-                  <td>$week.outTemp.min<br>$week.outTemp.mintime</td>
-                  <td>$month.outTemp.min<br>$month.outTemp.mintime</td>
-                  <td>$year.outTemp.min<br>$year.outTemp.mintime</td>
-                  <td>$alltime.outTemp.min<br>$alltime.outTemp.mintime</td>
-                </tr>
-              </tbody>
-            </table>
-            <h3>$Labels.Generic.rain</h3>
-		        <table class="table table-sm table-hover">
-              <thead>
-		            <tr>
-                  <th></th>
-                  <th>$BootstrapLabels.timespans.today</th>
-                  <th>$BootstrapLabels.timespans.week</th>
-                  <th>$BootstrapLabels.timespans.month</th>
-                  <th>$BootstrapLabels.timespans.year</th>
-                </tr>
-			        </thead>
-			        <tbody>
-                <tr>
-    				      <td></td>
-      				    <td>$day.rain.sum</td>
-      				    <td>$week.rain.sum</td>
-      				    <td>$month.rain.sum</td>
-      				    <td>$year.rain.sum</td>
-    				    </tr>
-	   		      </tbody>
-		        </table>
-            <h3>$Labels.Generic.barometer</h3>
-		        <table class="table table-sm table-hover">
-            <thead>
-              <tr>
-              <th></th>
-              <th>$BootstrapLabels.timespans.today</th>
-              <th>$BootstrapLabels.timespans.week</th>
-              <th>$BootstrapLabels.timespans.month</th>
-              <th>$BootstrapLabels.timespans.year</th>
-              <th>$BootstrapLabels.timespans.ever</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-              <td>$BootstrapLabels.minmax.max</td>
-              <td>$day.barometer.max<br>$day.barometer.maxtime</td>
-              <td>$week.barometer.max<br>$week.barometer.maxtime</td>
-              <td>$month.barometer.max<br>$month.barometer.maxtime</td>
-              <td>$year.barometer.max<br>$year.barometer.maxtime</td>
-                                      <td>$alltime.barometer.max<br>$alltime.barometer.maxtime</td>
-              </tr>
-              <tr>
-              <td>$BootstrapLabels.minmax.min</td>
-              <td>$day.barometer.min<br>$day.barometer.mintime</td>
-              <td>$week.barometer.min<br>$week.barometer.mintime</td>
-              <td>$month.barometer.min<br>$month.barometer.mintime</td>
-              <td>$year.barometer.min<br>$year.barometer.mintime</td>
-              <td>$alltime.barometer.min<br>$alltime.barometer.mintime</td>
-              </tr>
-            </tbody>
-          </table>
-          <h3>$Labels.Generic.windSpeed</h3>
-		      <table class="table table-hover">
-            <thead>
-              <tr>
-              <th></th>
-              <th>$BootstrapLabels.timespans.today</th>
-              <th>$BootstrapLabels.timespans.week</th>
-              <th>$BootstrapLabels.timespans.month</th>
-              <th>$BootstrapLabels.timespans.year</th>
-              <th>$BootstrapLabels.timespans.ever</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-              <td>$BootstrapLabels.minmax.max</td>
-              <td>$day.wind.max<br>$day.wind.maxtime</td>
-              <td>$week.wind.max<br>$week.wind.maxtime</td>
-              <td>$month.wind.max<br>$month.wind.maxtime</td>
-              <td>$year.wind.max<br>$year.wind.maxtime</td>
-                      <td>$alltime.wind.max<br>$alltime.wind.maxtime</td>
-              </tr>
-            </tbody>
-          </table>
+          <h3 class="statsHeader">$Labels.Generic.outTemp</h3>
+            <div class="mb-4 statsTable">
+                <div class="d-flex flex-row font-weight-bold">
+                  <div class="border-bottom media-body">&nbsp;</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.today</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.week</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.month</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.year</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.ever</div>
+                </div>
+                <div class="d-flex flex-row">
+                  <div class="border-top media-body">$BootstrapLabels.minmax.max</div>
+                  <div class="border-top media-body">$day.outTemp.max<br>$day.outTemp.maxtime</div>
+                  <div class="border-top media-body">$week.outTemp.max<br>$week.outTemp.maxtime</div>
+                  <div class="border-top media-body">$month.outTemp.max<br>$month.outTemp.maxtime</div>
+                  <div class="border-top media-body">$year.outTemp.max<br>$year.outTemp.maxtime</div>
+                  <div class="border-top media-body">$alltime.outTemp.max<br>$alltime.outTemp.maxtime</div>
+                </div>
+                <div class="d-flex flex-row">
+                  <div class="border-top media-body">$BootstrapLabels.minmax.min</div>
+                  <div class="border-top media-body">$day.outTemp.min<br>$day.outTemp.mintime</div>
+                  <div class="border-top media-body">$week.outTemp.min<br>$week.outTemp.mintime</div>
+                  <div class="border-top media-body">$month.outTemp.min<br>$month.outTemp.mintime</div>
+                  <div class="border-top media-body">$year.outTemp.min<br>$year.outTemp.mintime</div>
+                  <div class="border-top media-body">$alltime.outTemp.min<br>$alltime.outTemp.mintime</div>
+                </div>
+            </div>
+            <h3 class="statsHeader">$Labels.Generic.rain</h3>
+		    <div class="mb-4 statsTable">
+              <div class="d-flex flex-row font-weight-bold">
+                  <div class="border-bottom media-body">&nbsp;</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.today</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.week</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.month</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.year</div>
+                  <div class="border-bottom media-body">&nbsp;</div>
+              </div>
+              <div class="d-flex flex-row">
+                <div class="border-top media-body">&nbsp;</div>
+                <div class="border-top media-body>$day.rain.sum</div>
+                <div class="border-top media-body>$week.rain.sum</div>
+                <div class="border-top media-body>$month.rain.sum</div>
+                <div class="border-top media-body>$year.rain.sum</div>
+                <div class="border-top media-body">&nbsp;</div>
+              </div>
+		    </div>
+            <h3 class="statsHeader">$Labels.Generic.barometer</h3>
+            <div class="mb-4 statsTable">
+                <div class="d-flex flex-row font-weight-bold">
+                  <div class="border-bottom media-body">&nbsp;</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.today</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.week</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.month</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.year</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.ever</div>
+                </div>
+                <div class="d-flex flex-row">
+                  <div class="border-top media-body">$BootstrapLabels.minmax.max</div>
+                  <div class="border-top media-body">$day.barometer.max<br>$day.barometer.maxtime</div>
+                  <div class="border-top media-body">$week.barometer.max<br>$week.barometer.maxtime</div>
+                  <div class="border-top media-body">$month.barometer.max<br>$month.barometer.maxtime</div>
+                  <div class="border-top media-body">$year.barometer.max<br>$year.barometer.maxtime</div>
+                  <div class="border-top media-body">$alltime.barometer.max<br>$alltime.barometer.maxtime</div>
+                </div>
+                <div class="d-flex flex-row">
+                  <div class="border-top media-body">$BootstrapLabels.minmax.min</div>
+                  <div class="border-top media-body">$day.barometer.min<br>$day.barometer.mintime</div>
+                  <div class="border-top media-body">$week.barometer.min<br>$week.barometer.mintime</div>
+                  <div class="border-top media-body">$month.barometer.min<br>$month.barometer.mintime</div>
+                  <div class="border-top media-body">$year.barometer.min<br>$year.barometer.mintime</div>
+                  <div class="border-top media-body">$alltime.barometer.min<br>$alltime.barometer.mintime</div>
+                </div>
+            </div>
+            <h3 class="statsHeader">$Labels.Generic.windSpeed</h3>
+            <div class="mb-4 statsTable">
+                <div class="d-flex flex-row font-weight-bold">
+                  <div class="border-bottom media-body">&nbsp;</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.today</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.week</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.month</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.year</div>
+                  <div class="border-bottom media-body">$BootstrapLabels.timespans.ever</div>
+                </div>
+                <div class="d-flex flex-row">
+                  <div class="border-top media-body">$BootstrapLabels.minmax.max</div>
+                  <div class="border-top media-body">$day.wind.max<br>$day.wind.maxtime</div>
+                  <div class="border-top media-body">$week.wind.max<br>$week.wind.maxtime</div>
+                  <div class="border-top media-body">$month.wind.max<br>$month.wind.maxtime</div>
+                  <div class="border-top media-body">$year.wind.max<br>$year.wind.maxtime</div>
+                  <div class="border-top media-body">$alltime.wind.max<br>$alltime.wind.maxtime</div>
+                </div>
+            </div>
         </div>          
       </div>
       <hr>
@@ -159,7 +145,6 @@
     <script src="js/site.js"></script>
     <script src="js/echarts.min.js"></script>
     <script src="js/gauges.js"></script>
-    <script src="js/charts.js"></script>
     <script type="text/javascript">
           $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
               event.preventDefault();

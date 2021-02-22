@@ -3,6 +3,8 @@ let locale = weewxData.config.locale;
 moment.locale(locale.split("_")[0]);
 let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
+let gauges = {};
+let charts = {};
 
 let clients = [];
 if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
@@ -59,7 +61,6 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
                     setGaugeValue(gauge, value, timestamp);
                 }
             }
-
             for (let chartId of Object.keys(charts)) {
                 let chart = charts[chartId];
                 if (chart.weewxData.aggregate_interval_minutes !== undefined) {

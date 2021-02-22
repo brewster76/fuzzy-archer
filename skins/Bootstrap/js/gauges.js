@@ -1,4 +1,3 @@
-let gauges = {};
 let maxOpacity = 255 * 0.55;
 for (let gaugeId of Object.keys(weewxData.gauges)) {
     let documentGaugeId = gaugeId + "Gauge";
