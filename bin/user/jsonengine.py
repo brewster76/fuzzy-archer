@@ -94,8 +94,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)
 
         for gauge in self.gauge_dict.sections:
-            obs_type = self.gauge_dict[gauge].get('obs_type', gauge)
-            ret, gauge_history = self.gen_history_data(gauge, obs_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
+            data_type = self.gauge_dict[gauge].get('data_type', gauge)
+            ret, gauge_history = self.gen_history_data(gauge, data_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
             self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
             self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
 
@@ -105,8 +105,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 self.frontend_data[gauge] = gauge_history
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
-                obs_type = self.chart_dict[chart][category].get('obs_type', category)
-                ret, category_history = self.gen_history_data(category, obs_type, live_options, self.chart_dict[chart][category].get('data_binding'))
+                data_type = self.chart_dict[chart][category].get('data_type', category)
+                ret, category_history = self.gen_history_data(category, data_type, live_options, self.chart_dict[chart][category].get('data_binding'))
                 self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
                 self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
 
