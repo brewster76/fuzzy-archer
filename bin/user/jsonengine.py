@@ -95,22 +95,24 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         for gauge in self.gauge_dict.sections:
             obs_type = self.gauge_dict[gauge].get('obs_type', gauge)
-            ret, gauge_history = self.gen_history_data(obs_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
+            ret, gauge_history = self.gen_history_data(gauge, obs_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
             self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
             self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
 
             if ret is not None:
                 ngen += 1
+                log.debug("Adding %s to frontend_data." % gauge)
                 self.frontend_data[gauge] = gauge_history
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
                 obs_type = self.chart_dict[chart][category].get('obs_type', category)
-                ret, category_history = self.gen_history_data(obs_type, live_options, self.chart_dict[chart][category].get('data_binding'))
+                ret, category_history = self.gen_history_data(category, obs_type, live_options, self.chart_dict[chart][category].get('data_binding'))
                 self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
                 self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
 
                 if ret is not None:
                     ngen += 1
+                    log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
 
         # Write JSON self.frontend_data output if a filename is specified
@@ -138,8 +140,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.info("JSONGenerator: weewx.units.obs_group_dict['%s'] is not present, using the empty string." % column_name)
             return ""
 
-    def gen_history_data(self, column_name, live_options, binding_name):
-        if column_name in self.frontend_data:
+    def gen_history_data(self, obs_name, column_name, live_options, binding_name):
+        log.debug("Generating history for obs_name %s and column_name %s with binding %s" % (obs_name, column_name, binding_name))
+        if obs_name in self.frontend_data:
+            log.debug("Data for observation %s has already been collected." % obs_name)
             return None, None
         # Find display unit of measure
         try:
@@ -180,6 +184,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
 
+        log.debug("returning history list")
         return 1, list(zip(time_list, history_list))
 
     def write_json(self, data_filename):
