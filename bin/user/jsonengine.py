@@ -51,8 +51,6 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             else:
                 log.info("JSONGenerator is not enabled")
     def setup(self):
-        self.db_manager = self.db_binder.get_manager()
-
         self.json_dict = self.skin_dict['JSONGenerator']
         self.gauge_dict = self.skin_dict['LiveGauges']
         self.chart_dict = self.skin_dict['LiveCharts']
@@ -64,10 +62,11 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.converter = weewx.units.Converter(self.units_dict['Groups'])
 
         # Lookup the last reading in the archive
-        self.lastGoodStamp = self.db_manager.lastGoodStamp()
+        db_manager = self.db_binder.get_manager()
+        self.lastGoodStamp = db_manager.lastGoodStamp()
 
         self.record_dict_vtd = None
-        batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
+        batch_records = db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
 
         try:
             for rec in batch_records:
@@ -95,21 +94,25 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)
 
         for gauge in self.gauge_dict.sections:
-            ret, gauge_history = self.gen_history_data(gauge, live_options)
+            data_type = self.gauge_dict[gauge].get('data_type', gauge)
+            ret, gauge_history = self.gen_history_data(gauge, data_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
             self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
             self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
 
             if ret is not None:
                 ngen += 1
+                log.debug("Adding %s to frontend_data." % gauge)
                 self.frontend_data[gauge] = gauge_history
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
-                ret, category_history = self.gen_history_data(category, live_options)
+                data_type = self.chart_dict[chart][category].get('data_type', category)
+                ret, category_history = self.gen_history_data(category, data_type, live_options, self.chart_dict[chart][category].get('data_binding'))
                 self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
                 self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
 
                 if ret is not None:
                     ngen += 1
+                    log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
 
         # Write JSON self.frontend_data output if a filename is specified
@@ -137,9 +140,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.info("JSONGenerator: weewx.units.obs_group_dict['%s'] is not present, using the empty string." % column_name)
             return ""
 
-
-    def gen_history_data(self, column_name, live_options):
-        if column_name in self.frontend_data:
+    def gen_history_data(self, obs_name, column_name, live_options, binding_name):
+        log.debug("Generating history for obs_name %s and column_name %s with binding %s" % (obs_name, column_name, binding_name))
+        if obs_name in self.frontend_data:
+            log.debug("Data for observation %s has already been collected." % obs_name)
             return None, None
         # Find display unit of measure
         try:
@@ -154,8 +158,20 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         else:
             history_list = []
             time_list = []
+            
+            try:
+                if binding_name:
+                    db_manager = self.db_binder.get_manager(binding_name)
+                else:
+                    db_manager = self.db_binder.get_manager()
+                
+            except:
+                if binding_name:
+                    logging.exception("Could not get db_manager for binding %s" % binding_name)
+                else:
+                    logging.exception("Could not get db_manager for default binding")
 
-            batch_records = self.db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
+            batch_records = db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
             for rec in batch_records:
                 db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
                 if target_unit == "":
@@ -168,6 +184,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
 
+        log.debug("returning history list")
         return 1, list(zip(time_list, history_list))
 
     def write_json(self, data_filename):

@@ -229,7 +229,8 @@ class MyXSearch(SearchList):
             readingBinder = getattr(table_stats, obs_type)
 
             # Some aggregate come with an argument
-            if aggregate_type in ['max_ge', 'max_le', 'min_le', 'sum_ge']:
+            if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
+                                  'sum_ge', 'sum_le', 'avg_ge', 'avg_le']:
 
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
