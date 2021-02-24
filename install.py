@@ -51,7 +51,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/charts.js',
             'skins/Bootstrap/js/echarts.min.js',
             'skins/Bootstrap/js/gauges.js',
-            'skins/Bootstrap/js/moments-with-locales.js',
+            'skins/Bootstrap/js/moment-with-locales.js',
             'skins/Bootstrap/js/mqtt.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js',
