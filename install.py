@@ -50,7 +50,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/bootstrap.bundle.min.js.map',
             'skins/Bootstrap/js/charts.js',
             'skins/Bootstrap/js/echarts.min.js',
-            'skins/Bootstrap/js/gauges.js.map',
+            'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/moments-with-locales.js',
             'skins/Bootstrap/js/mqtt.min.js',
             'skins/Bootstrap/js/site.js',
