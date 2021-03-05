@@ -375,7 +375,7 @@ class MyXSearch(SearchList):
 
         if value is not None:
             for c in cellColours:
-                if (value >= float(c[0])) and (value <= float(c[1])):
+                if (value >= float(c[0])) and (value < float(c[1])):
                     cellText += '" style="background-color:%s; color:%s"' % (c[2], c[3])
 
             formatted_value = format_string % value
