@@ -1,7 +1,11 @@
 let maxOpacity = 255 * 0.55;
 for (let gaugeId of Object.keys(weewxData.gauges)) {
     let documentGaugeId = gaugeId + "Gauge";
-    let gauge = echarts.init(document.getElementById(documentGaugeId));
+    let gaugeElement = document.getElementById(documentGaugeId);
+    if(gaugeElement === null || gaugeElement === undefined) {
+        continue;
+    }
+    let gauge = echarts.init(gaugeElement);
     gauge.weewxData = weewxData.gauges[gaugeId];
     gauge.weewxData.observationType = gaugeId;
     gauge.weewxData.dataset = { weewxColumn: gaugeId};

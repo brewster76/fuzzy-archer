@@ -1,6 +1,10 @@
 for(let chartId of Object.keys(weewxData.charts)) {
     let documentChartId = chartId + "Chart";
-    let chart = echarts.init(document.getElementById(documentChartId));
+    let chartElement = document.getElementById(documentChartId);
+    if(chartElement === null || chartElement === undefined) {
+        continue;
+    }
+    let chart = echarts.init(chartElement);
     chart.weewxData = weewxData.charts[chartId];
     charts[documentChartId] = chart;
     let chartSeriesConfigs = [];
