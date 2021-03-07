@@ -369,20 +369,21 @@ class MyXSearch(SearchList):
 
         if summary is False:
             if noaa is False:
-                cellText += " border-right"
+                cellText += ' border-right"'
         else:
-            cellText += " ml-1 border-left"
+            cellText += ' ml-1 border-left"'
 
         if value is not None:
             for c in cellColours:
                 if (value >= float(c[0])) and (value < float(c[1])):
-                    cellText += '" style="background-color:%s; color:%s"' % (c[2], c[3])
-
+                    cellText += ' style="background-color:%s; color:%s"' % (c[2], c[3])
+                    break
             formatted_value = format_string % value
-            cellText += '> %s </div>\n' % formatted_value
 
         else:
-            cellText += '">-</div>\n'
+            formatted_value = '-'
+
+        cellText += '> %s </div>\n' % formatted_value
 
         return cellText
 
