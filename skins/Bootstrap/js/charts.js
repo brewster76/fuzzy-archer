@@ -291,10 +291,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
                 type: "line"
             },
             show: true,
-
-            position: function (pt) {
-                return [pt[0], 200];
-            },
+            position: "inside",
             formatter: function (params, ticket, callback) {
                 let halfAggregateInterval = aggregateInterval * 60000 / 2;
                 let from = moment(params[0].axisValue - halfAggregateInterval).format("D.M.YYYY, H:mm:ss");
