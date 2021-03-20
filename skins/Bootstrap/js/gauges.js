@@ -15,10 +15,12 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
     let minvalue = gauge.weewxData.minvalue;
     let maxvalue = gauge.weewxData.maxvalue;
     let splitnumber = gauge.weewxData.splitnumber;
+    let axisTickSplitNumber = 5;
     if (gauge.weewxData.obs_group === "group_direction") {
         minvalue = 0;
         maxvalue = 360;
         splitnumber = 4;
+        axisTickSplitNumber = 4;
         colors = [[0.25, gauge.weewxData.lineColorN], [0.5, gauge.weewxData.lineColorS], [0.75, gauge.weewxData.lineColorS], [1, gauge.weewxData.lineColorN]];
     } else {
         let lineColors = Array.isArray(gauge.weewxData.lineColor) ? gauge.weewxData.lineColor : [gauge.weewxData.lineColor];
@@ -39,7 +41,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
             colors.push([(untilValue - minvalue) / range, lineColors[i]]);
         }
     }
-    let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, 5, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
+    let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
     if (gauge.weewxData.obs_group === "group_direction") {
         gaugeOption.animation = gauge.weewxData.animation !== undefined && gauge.weewxData.animation.toLowerCase() === "true";
         gaugeOption.series[0].startAngle = 90;
