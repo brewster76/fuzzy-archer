@@ -80,7 +80,9 @@ function setGaugeValue(gauge, value, timestamp) {
     let valueSeries = option.series[0];
     valueSeries.data[0].value = value;
     addValue(gauge.weewxData.dataset, value, timestamp);
-    option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
+    if(option.series[1] !== undefined) {
+        option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
+    }
     gauge.setOption(option);
 }
 
