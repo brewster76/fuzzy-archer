@@ -1,7 +1,10 @@
-let charts = {};
 for(let chartId of Object.keys(weewxData.charts)) {
     let documentChartId = chartId + "Chart";
-    let chart = echarts.init(document.getElementById(documentChartId));
+    let chartElement = document.getElementById(documentChartId);
+    if(chartElement === null || chartElement === undefined) {
+        continue;
+    }
+    let chart = echarts.init(chartElement);
     chart.weewxData = weewxData.charts[chartId];
     charts[documentChartId] = chart;
     let chartSeriesConfigs = [];
@@ -11,6 +14,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
             continue;
         }
         chart.weewxData[categoryId].observationType = categoryId;
+        addUndefinedIfCurrentMissing(weewxData[categoryId]);
         var obs_group = category.obs_group;
         let chartSeriesConfig = {
             name: weewxData.labels.Generic[categoryId],
@@ -154,10 +158,14 @@ function getLineChartOption(seriesConfigs) {
             position: "inside",
             formatter: function (params, ticket, callback) {
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + moment(params[0].axisValue).format("D.M.YYYY, H:mm:ss") + '</td></tr>';
+                let show = false;
                 params.forEach(item => {
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
+                    if(!isNaN(item.data[1])) {
+                        show = true;
+                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
+                    }
                 });
-                return tooltipHTML + '</table>';
+                return show ? tooltipHTML + '</table>' : "";
             }
         },
         xAxis: {
@@ -283,10 +291,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
                 type: "line"
             },
             show: true,
-
-            position: function (pt) {
-                return [pt[0], 200];
-            },
+            position: "inside",
             formatter: function (params, ticket, callback) {
                 let halfAggregateInterval = aggregateInterval * 60000 / 2;
                 let from = moment(params[0].axisValue - halfAggregateInterval).format("D.M.YYYY, H:mm:ss");
@@ -360,11 +365,23 @@ function aggregate(data, aggregateIntervalMinutes) {
     let aggregatedData = [];
     for(let entry of data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
-        setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
+        if(entry[1] !== undefined){
+            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
+        }
     }
     return aggregatedData;
 }
 
 function getXMinInterval() {
     return weewxData.config.timespan * 3600000 / 8;
+}
+
+function addUndefinedIfCurrentMissing(data) {
+    let latestTimestamp = 0;
+    if(data.length > 0) {
+        latestTimestamp = data[data.length - 1][0];
+    }
+    if(Date.now() - latestTimestamp > weewxData.config.archive_interval) {
+        data.push([Date.now(), undefined]);
+    }
 }

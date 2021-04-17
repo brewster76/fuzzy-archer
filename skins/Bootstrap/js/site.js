@@ -3,6 +3,8 @@ let locale = weewxData.config.locale;
 moment.locale(locale.split("_")[0]);
 let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
+let gauges = {};
+let charts = {};
 
 let clients = [];
 if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
@@ -59,7 +61,6 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
                     setGaugeValue(gauge, value, timestamp);
                 }
             }
-
             for (let chartId of Object.keys(charts)) {
                 let chart = charts[chartId];
                 if (chart.weewxData.aggregate_interval_minutes !== undefined) {
@@ -79,7 +80,9 @@ function setGaugeValue(gauge, value, timestamp) {
     let valueSeries = option.series[0];
     valueSeries.data[0].value = value;
     addValue(gauge.weewxData.dataset, value, timestamp);
-    option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
+    if(option.series[1] !== undefined) {
+        option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
+    }
     gauge.setOption(option);
 }
 

@@ -33,24 +33,25 @@
         #include "livegauges.html.tmpl"
         <!-- Graph panel -->     
         <div class="col-md-9 main">
-         <h3>$BootstrapLabels.history_tables.min_temp</h3>
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.min_temp</h3>
 $min_temp_table
 
-         <h3>$BootstrapLabels.history_tables.avg_temp</h3>
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.avg_temp</h3>
 $avg_temp_table
 
-         <h3>$BootstrapLabels.history_tables.max_temp</h3>
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.max_temp</h3>
 $max_temp_table
 
-         <h3>$BootstrapLabels.history_tables.rain</h3>
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.rain</h3>
 $rain_table
 
-         <h3>$BootstrapLabels.history_tables.rain_days</h3>
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.rain_days</h3>
 $rain_days_table
 
-          <h3>$BootstrapLabels.history_tables.NOAA</h3>
-$NOAA_table
+         <h3 class="historyHeader">$BootstrapLabels.history_tables.max_wind</h3>
+$max_wind_table
 
+$NOAA_table
         </div>
       </div>
       <hr>
@@ -71,7 +72,6 @@ $NOAA_table
     <script src="js/site.js"></script>
     <script src="js/echarts.min.js"></script>
     <script src="js/gauges.js"></script>
-    <script src="js/charts.js"></script>
     <script type="text/javascript">
           $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
               event.preventDefault();
