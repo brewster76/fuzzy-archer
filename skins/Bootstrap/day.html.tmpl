@@ -80,8 +80,6 @@
         <p>$BootstrapLabels.footer</p>
       </footer>    
     </div>
-    <!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
-    #raw
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="js/jquery-3.5.1.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
@@ -94,7 +92,10 @@
     <script src="js/units.js"></script>
     <script src="js/site.js"></script>
     <script src="js/echarts.min.js"></script>
+    <script src="js/lang.js"></script>
     <script src="js/gauges.js"></script>
+    <!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
+    #raw
     <script type="text/javascript">
           $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
               event.preventDefault();

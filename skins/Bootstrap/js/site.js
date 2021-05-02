@@ -1,6 +1,8 @@
 let archiveIntervalSeconds = weewxData.config.archive_interval;
 let locale = weewxData.config.locale;
-moment.locale(locale.split("_")[0]);
+let lang = locale.split("_")[0];
+let eChartsLocale = lang.toUpperCase();
+moment.locale(lang);
 let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
 let gauges = {};

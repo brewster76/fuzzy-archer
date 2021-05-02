@@ -4,7 +4,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
     if(chartElement === null || chartElement === undefined) {
         continue;
     }
-    let chart = echarts.init(chartElement);
+    let chart = echarts.init(chartElement, null, {locale: eChartsLocale});
     chart.weewxData = weewxData.charts[chartId];
     charts[documentChartId] = chart;
     let chartSeriesConfigs = [];

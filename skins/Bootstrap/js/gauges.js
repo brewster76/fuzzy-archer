@@ -5,7 +5,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
     if (gaugeElement === null || gaugeElement === undefined) {
         continue;
     }
-    let gauge = echarts.init(gaugeElement);
+    let gauge = echarts.init(gaugeElement, null, {locale: eChartsLocale});
     gauge.weewxData = weewxData.gauges[gaugeId];
     gauge.weewxData.observationType = gaugeId;
     gauge.weewxData.dataset = {
