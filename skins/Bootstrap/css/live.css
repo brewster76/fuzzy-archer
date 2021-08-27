@@ -48,3 +48,17 @@
 .statsTable {
   font-size: calc(9px + 0.4vw);
 }
+.chartTimestamp {
+  position: absolute;
+  bottom: 5px;
+}
+
+.chartTimestampOuter {
+  position: relative;
+  width:100%;
+  display: flex;
+  justify-content: center;
+  color: #777;
+  font-family: sans-serif;
+  font-size: 12px;
+}

@@ -59,6 +59,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
     }
     chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
     chart.setOption(chartOption);
+    chartElement.appendChild(getTimestampDiv(documentChartId));
 }
 
 function getLineChartOption(seriesConfigs) {
@@ -157,7 +158,8 @@ function getLineChartOption(seriesConfigs) {
             show: true,
             position: "inside",
             formatter: function (params, ticket, callback) {
-                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + moment(params[0].axisValue).format("D.M.YYYY, H:mm:ss") + '</td></tr>';
+                let date = new Date(params[0].axisValue);
+                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
                 let show = false;
                 params.forEach(item => {
                     if(!isNaN(item.data[1])) {
@@ -294,8 +296,10 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             position: "inside",
             formatter: function (params, ticket, callback) {
                 let halfAggregateInterval = aggregateInterval * 60000 / 2;
-                let from = moment(params[0].axisValue - halfAggregateInterval).format("D.M.YYYY, H:mm:ss");
-                let to = moment(params[0].axisValue + halfAggregateInterval).format("H:mm:ss");
+                let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
+                let toDate = new Date(params[0].axisValue + halfAggregateInterval);
+                let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
+                let to = toDate.toLocaleTimeString(localeWithDash);
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                 params.forEach(item => {
                     tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
@@ -384,4 +388,14 @@ function addUndefinedIfCurrentMissing(data) {
     if(Date.now() - latestTimestamp > weewxData.config.archive_interval) {
         data.push([Date.now(), undefined]);
     }
+}
+
+function getTimestampDiv(parentId) {
+    let outerDiv = document.createElement("div");
+    outerDiv.setAttribute("class", "chartTimestampOuter");
+    let timestampDiv = document.createElement("div");
+    timestampDiv.id = parentId + "_timestamp";
+    timestampDiv.setAttribute("class", "chartTimestamp");
+    outerDiv.appendChild(timestampDiv);
+    return outerDiv;
 }

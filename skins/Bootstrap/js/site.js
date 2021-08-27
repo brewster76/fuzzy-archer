@@ -1,8 +1,8 @@
 let archiveIntervalSeconds = weewxData.config.archive_interval;
 let locale = weewxData.config.locale;
+let localeWithDash = locale.replace("_", "-");
 let lang = locale.split("_")[0];
 let eChartsLocale = lang.toUpperCase();
-moment.locale(lang);
 let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
 let gauges = {};
@@ -56,6 +56,7 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
             } else {
                 timestamp = Date.now();
             }
+            let date = new Date(timestamp);
             for (let gaugeId of Object.keys(gauges)) {
                 let gauge = gauges[gaugeId];
                 let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
@@ -65,6 +66,7 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
             }
             for (let chartId of Object.keys(charts)) {
                 let chart = charts[chartId];
+                chart.chartId = chartId;
                 if (chart.weewxData.aggregate_interval_minutes !== undefined) {
                     addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
                 } else {
@@ -72,8 +74,7 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
                 }
             }
             let lastUpdate = document.getElementById("lastUpdate");
-            lastUpdate.innerHTML = moment(timestamp).format("L") + " um " + moment(timestamp).format("LTS");
-
+            lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
         });
     }
 }
@@ -95,6 +96,11 @@ function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalM
         if (!isNaN(value)) {
             addAggregatedChartValue(dataset, value, timestamp, aggregateIntervalMinutes);
             chart.setOption(option);
+            if(chart.chartId !== undefined) {
+                let chartElem = document.getElementById(chart.chartId + "_timestamp");
+                let date = new Date(timestamp);
+                chartElem.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+            }
         }
     }
 }
@@ -102,6 +108,7 @@ function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalM
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     for (let dataset of option.series) {
+        dataset.chartId = chart.chartId;
         let value = convert(chart.weewxData[dataset.weewxColumn], jPayload[dataset.payloadKey]);
         if (!isNaN(value)) {
             addValue(dataset, value, timestamp);
@@ -130,6 +137,11 @@ function addValue(dataset, value, timestamp) {
         value = getIntervalValue(type, currentIntervalData, value);
     }
     data.push([timestamp, value]);
+    if(dataset.chartId !== undefined) {
+        let chartElem = document.getElementById(dataset.chartId + "_timestamp");
+        let date = new Date(timestamp);
+        chartElem.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+    }
     rotateData(dataset.data);
 }
 
