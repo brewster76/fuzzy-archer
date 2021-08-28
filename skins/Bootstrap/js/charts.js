@@ -8,6 +8,9 @@ for(let chartId of Object.keys(weewxData.charts)) {
     chart.weewxData = weewxData.charts[chartId];
     charts[documentChartId] = chart;
     let chartSeriesConfigs = [];
+
+    let timestamp = 0;
+
     for(let categoryId of Object.keys(weewxData.charts[chartId])) {
         let category = weewxData.charts[chartId][categoryId];
         if(typeof category !== 'object' || category === null) {
@@ -36,6 +39,13 @@ for(let chartId of Object.keys(weewxData.charts)) {
             };
         }
         chartSeriesConfigs.push(chartSeriesConfig);
+
+        if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
+            let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
+            if(categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
+                timestamp = categoryTimestamp;
+            }
+        }
     }
     let chartOption;
     if(chart.weewxData.aggregate_interval_minutes !== undefined) {
@@ -59,7 +69,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
     }
     chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
     chart.setOption(chartOption);
-    chartElement.appendChild(getTimestampDiv(documentChartId));
+    chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
 }
 
 function getLineChartOption(seriesConfigs) {
@@ -390,12 +400,15 @@ function addUndefinedIfCurrentMissing(data) {
     }
 }
 
-function getTimestampDiv(parentId) {
+function getTimestampDiv(parentId, timestamp) {
     let outerDiv = document.createElement("div");
     outerDiv.setAttribute("class", "chartTimestampOuter");
     let timestampDiv = document.createElement("div");
     timestampDiv.id = parentId + "_timestamp";
     timestampDiv.setAttribute("class", "chartTimestamp");
+    if(timestamp > 0) {
+        timestampDiv.innerHTML = formatDateTime(timestamp);
+    }
     outerDiv.appendChild(timestampDiv);
     return outerDiv;
 }

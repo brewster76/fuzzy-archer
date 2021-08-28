@@ -98,8 +98,7 @@ function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalM
             chart.setOption(option);
             if(chart.chartId !== undefined) {
                 let chartElem = document.getElementById(chart.chartId + "_timestamp");
-                let date = new Date(timestamp);
-                chartElem.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+                chartElem.innerHTML = formatDateTime(timestamp);
             }
         }
     }
@@ -139,8 +138,7 @@ function addValue(dataset, value, timestamp) {
     data.push([timestamp, value]);
     if(dataset.chartId !== undefined) {
         let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-        let date = new Date(timestamp);
-        chartElem.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+        chartElem.innerHTML = formatDateTime(timestamp);
     }
     rotateData(dataset.data);
 }
@@ -246,4 +244,9 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
         offset = 180;
     }
     return (Math.atan(sumY / sumX) * 180 / Math.PI) + offset;
+}
+
+function formatDateTime(timestamp) {
+    let date = new Date(timestamp);
+    return date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
 }
