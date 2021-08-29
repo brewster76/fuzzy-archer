@@ -23,7 +23,7 @@
    font-family: sans-serif;
    font-size: smaller;
 }
-.primaryLive {
+.primaryLive, .primaryLive:active, .primaryLive:focus, .primaryLive:checked {
   background-color: #428bca;
   border-color: #428bca;
 }
@@ -33,6 +33,9 @@
 }
 .primaryLight {
   color: #428bca;
+}
+.primaryLight:hover {
+  background-color: #e2e6ea;
 }
 .btnNOAA {
   font-size: calc(5px + 0.5vw);
@@ -61,4 +64,24 @@
   color: #777;
   font-family: sans-serif;
   font-size: 12px;
+}
+
+.statsTime {
+  color: #777;
+  font-size: smaller;
+}
+
+td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
+  padding: 0px;
+  white-space: nowrap;
+}
+
+.month {
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+
+.year {
+  border-left-style: double;
+  border-left-width: 4px;
 }
