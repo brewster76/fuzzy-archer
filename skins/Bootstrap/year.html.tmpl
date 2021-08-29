@@ -22,7 +22,7 @@
             #include "graphMenu.html.tmpl"
             <div class="row" id="modalRow">
                 <script type="text/javascript">
-              let readingTypes = ["yeartempmaxmin", "yearbarometer", "yearrain", "yearhumidity", "yearwind", "yearwinddir"];
+              readingTypes = ["yeartempmaxmin", "yearbarometer", "yearrain", "yearhumidity", "yearwind", "yearwinddir"];
 
 
                 </script>
@@ -45,14 +45,7 @@
 <script src="js/echarts.min.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/gauges.js"></script>
-<script type="text/javascript">
-#include "chartTemplate.html.tmpl"
-</script>
+<script type="text/javascript"></script>
 #include "script.html.tmpl"
-<script type="text/javascript">
-      insertCharts(readingTypes);
-
-
-</script>
 </body>
 </html>

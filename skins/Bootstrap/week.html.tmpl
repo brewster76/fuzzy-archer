@@ -22,7 +22,7 @@
             #include "graphMenu.html.tmpl"
             <div class="row" id="modalRow">
                 <script type="text/javascript">
-              let readingTypes = ["weektempchill", "weekbarometer", "weekrain", "weekhumidity", "weekwind", "weekwinddir"];
+              readingTypes = ["weektempchill", "weekbarometer", "weekrain", "weekhumidity", "weekwind", "weekwinddir"];
 
 
 
@@ -46,13 +46,6 @@
 <script src="js/echarts.min.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/gauges.js"></script>
-<script type="text/javascript">
-#include "chartTemplate.html.tmpl"
-</script>
 #include "script.html.tmpl"
-<script type="text/javascript">
-      insertCharts(readingTypes);
-
-</script>
 </body>
 </html>

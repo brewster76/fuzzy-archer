@@ -1,52 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>$BootstrapLabels.title</title>
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet"/>
     <link href="css/live.css" rel="stylesheet">
-  </head>
-  <body>
-    <!-- Menu navbar -->
-    #include "nav.html.tmpl"
-    <!-- Main container -->
-    <div class="container-fluid">
-      <div class="row">
+</head>
+<body>
+<!-- Menu navbar -->
+#include "nav.html.tmpl"
+<!-- Main container -->
+<div class="container-fluid">
+    <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.tmpl"
         <!-- Graph panel -->
         <div class="col-md-9 main">
-          <p></p>
-          #include "graphMenu.html.tmpl"
-          <div class="row">
-            <div id="outTempChart" class="chart"></div>
-            <div id="barometerChart" class="chart"></div>
-            <div id="rainChart" class="chart"></div>
-            <div id="outHumidityChart" class="chart"></div>
-            <div id="windChart" class="chart"></div>
-            <div id="windDirChart" class="chart"></div>
-          </div>
+            <p></p>
+            #include "graphMenu.html.tmpl"
+            <div class="row">
+                <div id="outTempChart" class="chart"></div>
+                <div id="barometerChart" class="chart"></div>
+                <div id="rainChart" class="chart"></div>
+                <div id="outHumidityChart" class="chart"></div>
+                <div id="windChart" class="chart"></div>
+                <div id="windDirChart" class="chart"></div>
+            </div>
         </div>
-      </div>
-      <hr />
-      <footer>
-        <p>$BootstrapLabels.footer</p>
-      </footer>
     </div>
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="js/jquery-3.6.0.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.bundle.min.js"></script>
-    <script src="js/mqtt.min.js"></script>
-    <script src="weewxData.js"></script>
-    <script src="js/units.js"></script>
-    <script src="js/site.js"></script>
-    <script src="js/echarts.min.js"></script>
-    <script src="js/lang.js"></script>
-    <script src="js/gauges.js"></script>
-    <script src="js/charts.js"></script>
-    #include "script.html.tmpl"
-  </body>
+    <hr/>
+    <footer>
+        <p>$BootstrapLabels.footer</p>
+    </footer>
+</div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="js/jquery-3.6.0.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/mqtt.min.js"></script>
+<script src="weewxData.js"></script>
+<script src="js/units.js"></script>
+<script src="js/site.js"></script>
+<script src="js/echarts.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/gauges.js"></script>
+<script src="js/charts.js"></script>
+#include "script.html.tmpl"
+</body>
 </html>
