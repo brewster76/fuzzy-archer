@@ -61,6 +61,12 @@ for(let chartId of Object.keys(weewxData.charts)) {
         chartOption.yAxis.min = 0;
         chartOption.yAxis.max = 100;
     }
+    if(chart.weewxData.yAxis_minInterval !== undefined) {
+        chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
+    }
+    if(chart.weewxData.yAxis_axisLabel_align !== undefined) {
+        chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
+    }
     if(obs_group === "group_direction") {
         chartOption.yAxis.min = 0;
         chartOption.yAxis.max = 360;
