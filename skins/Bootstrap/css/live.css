@@ -40,7 +40,7 @@
 }
 .btnNOAA {
   font-size: calc(5px + 0.5vw);
-  padding: 2px 4px;  
+  padding: 0px 2px;
 }
 .historyHeader, .statsHeader {
   font-weight: bold;
@@ -73,7 +73,7 @@
 }
 
 td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
-  padding: 0px;
+  padding: 2px;
   white-space: nowrap;
 }
 

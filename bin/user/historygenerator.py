@@ -383,18 +383,18 @@ class MyXSearch(SearchList):
         else:
             formatted_value = '-'
 
-        cellText += '> %s </td>\n' % formatted_value
+        cellText += '>%s</td>\n' % formatted_value
 
         return cellText
 
     def _NoaaCell(self, dt, table_options):
-        cellText = '<td class="noaa"><a href="%s" class="btn btn-sm btn-light primaryLight btnNOAA"> %s </a> </td>\n' % \
+        cellText = '<td class="noaa"><a href="%s" class="btn btn-sm btn-light primaryLight btnNOAA">%s</a> </td>\n' % \
                    (dt.strftime(table_options['month_filename']), dt.strftime("%m-%y"))
 
         return cellText
 
     def _NoaaYear(self, dt, table_options):
-        cellText = '<th class="noaa"><a href="%s" class="btn btn-sm btn-primary primaryLive btnNOAA"> %s </a></th>\n' % \
+        cellText = '<th class="noaa"><a href="%s" class="btn btn-sm btn-primary primaryLive btnNOAA">%s</a></th>\n' % \
                    (dt.strftime(table_options['year_filename']), dt.strftime("%Y"))
 
         return cellText
