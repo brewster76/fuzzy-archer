@@ -1,142 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>$BootstrapLabels.title</title>
-
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-  </head>
-
-  <body>
-    <!-- Menu navbar -->
-    <div class="navbar navbar-inverse" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a>
+    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/live.css" rel="stylesheet">
+</head>
+<body>
+<!-- Menu navbar -->
+#include "nav.html.tmpl"
+<!-- Main container -->
+<div class="container-fluid">
+    <div class="row">
+        <!-- Gauge panel -->
+        #include "livegauges.html.tmpl"
+        <!-- Graph panel -->
+        <div class="col-md-9 main">
+            <p></p>
+            #include "graphMenu.html.tmpl"
+            <div class="row">
+                <div id="outTempChart" class="chart"></div>
+                <div id="barometerChart" class="chart"></div>
+                <div id="rainChart" class="chart"></div>
+                <div id="outHumidityChart" class="chart"></div>
+                <div id="windChart" class="chart"></div>
+                <div id="windDirChart" class="chart"></div>
+                <div id="pvOutputChart" class="chart"></div>
+            </div>
         </div>
-        <div class="navbar-collapse collapse">
-           
-          <ul class="nav navbar-nav">
-            <li class="active"><a href="#">$BootstrapLabels.headings.front_page</a></li>
-            <li><a href="stats.html">$BootstrapLabels.headings.stats</a></li>
-            <li><a href="history.html">$BootstrapLabels.headings.history</a></li>
-            <li><a href="news.html">$BootstrapLabels.headings.news</a></li>
-            <li><a href="about.html">$BootstrapLabels.headings.about</a></li>
-          </ul>
-          
-          <p class="navbar-text navbar-right">
-              $BootstrapLabels.headings.last_update $current.dateTime
-          </p>
-        </div><!--/.nav-collapse -->
-      </div>
-    </div>  
-
- 
-  
-    <!-- Main container -->  
-    <div class="container">
-      <div class="row">
-      
-      
-        <!-- Gauge panel -->      
-#include "gauges.html.tmpl"
-
-
-          <!-- Graph panel -->        
-          <div class="col-md-8 main">
-              <ul class="nav nav-pills">
-                <li class="active"><a href="#">$BootstrapLabels.timespans.day</a></li>
-                <li><a href="week.html">$BootstrapLabels.timespans.week</a></li>
-                <li><a href="month.html">$BootstrapLabels.timespans.month</a></li>
-                <li><a href="year.html">$BootstrapLabels.timespans.year</a></li>
-              </ul>          
-              <br>                  
-                             
-              <div class="row">
-                <div class="col-md-6" align="center">
-                  <a href="big_images/daytempchill-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/daytempchill-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>
-            
-                <div class="col-md-6" align="center">
-                  <a href="big_images/daybarometer-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/daybarometer-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>          
-              </div>
-                  
-              <br>
-              <div class="row">
-                <div class="col-md-6" align="center">
-                  <a href="big_images/dayrain-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/dayrain-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>          
-            
-                <div class="col-md-6" align="center">
-                  <a href="big_images/dayhumidity-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/dayhumidity-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>          
-              </div>
-
-              <br>
-              <div class="row">
-                <div class="col-md-6" align="center">
-                  <a href="big_images/daywind-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/daywind-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>          
-            
-                <div class="col-md-6" align="center">
-                  <a href="big_images/daywinddir-Bootstrap.png" data-toggle="lightbox">
-                    <img src="images/daywinddir-Bootstrap.png" alt="" class="img-responsive" style="max-width:100%;">
-                  </a>
-                </div>          
-              </div>
-
-        </div>
-      </div>
-  
-    <hr>
-    <footer>
-      <p>$BootstrapLabels.footer</p>
-    </footer>    
     </div>
-
-<!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
-#raw
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-    <!-- Lightbox -->
-    <script src="js/ekko-lightbox.min.js"></script>
-	<script type="text/javascript">
-        $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
-            event.preventDefault();
-            $(this).ekkoLightbox();
-        });
-	</script>
-#end raw
-
-  </body>
+    <hr/>
+    <footer>
+        <p>$BootstrapLabels.footer</p>
+    </footer>
+</div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="js/jquery-3.6.0.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/mqtt.min.js"></script>
+<script src="weewxData.js"></script>
+<script src="js/units.js"></script>
+<script src="js/site.js"></script>
+<script src="js/echarts.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/gauges.js"></script>
+<script src="js/charts.js"></script>
+#include "script.html.tmpl"
+</body>
 </html>

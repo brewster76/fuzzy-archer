@@ -33,12 +33,26 @@ these translation classes:
         generator_list = user.translategenerator.CheetahGeneratorTranslated, user.translategenerator.ImageGeneratorTranslated, weewx.reportengine.CopyGenerator
 """
 
-import syslog
+import logging
 import os.path
+
 from configobj import ConfigObj
 
 from weewx.imagegenerator import ImageGenerator
 from weewx.cheetahgenerator import CheetahGenerator
+from user.jsonengine import JSONGenerator
+
+log = logging.getLogger(__name__)
+
+class JSONGeneratorTranslated(JSONGenerator):
+    """Overwrite skin.conf dictionary with language specific entries"""
+
+    def setup(self):
+        language_dict = _get_language_dict(self.skin_dict, self.config_dict)
+        if language_dict is not None:
+            self.skin_dict.merge(language_dict)
+
+        JSONGenerator.setup(self)
 
 class ImageGeneratorTranslated(ImageGenerator):
     """Overwrite skin.conf dictionary with language specific entries"""
@@ -77,7 +91,7 @@ def _get_language_dict(skin_dict, config_dict):
         if 'language' in skin_dict['Language']:
             language = skin_dict['Language']['language']
 
-            syslog.syslog(syslog.LOG_INFO, "%s: Language is %s" % (os.path.basename(__file__), language))
+            log.info("%s: Language is %s" % (os.path.basename(__file__), language))
 
             # Figure out where the language config files can be found
             language_config_path = os.path.join(config_dict['WEEWX_ROOT'], config_dict['StdReport']['SKIN_ROOT'],
@@ -86,12 +100,12 @@ def _get_language_dict(skin_dict, config_dict):
             try:
                 language_dict = ConfigObj(language_config_path)
             except:
-                syslog.syslog(syslog.LOG_INFO, "%s: Could not import lanuguage dictionary %s" %
+                log.info("%s: Could not import lanuguage dictionary %s" %
                               os.path.basename(__file__), language_config_path)
 
                 language_dict = None
 
     if language_dict is None:
-        syslog.syslog(syslog.LOG_DEBUG, "%s: No language override specified." % (os.path.basename(__file__)))
+        log.debug("%s: No language override specified." % (os.path.basename(__file__)))
 
     return language_dict
