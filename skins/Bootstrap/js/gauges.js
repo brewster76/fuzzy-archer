@@ -139,10 +139,11 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                     fontSize: 12,
                     color: '#777',
                     formatter: function (value) {
+                        let unitString = unit === undefined ? "" : unit;
                         if (decimals !== undefined && decimals >= 0) {
-                            return value.toFixed(decimals) + unit;
+                            return value.toFixed(decimals) + unitString;
                         } else {
-                            return value + unit;
+                            return value + unitString;
                         }
                     },
                     offsetCenter: ['0', '70%']
