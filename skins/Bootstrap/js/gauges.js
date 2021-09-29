@@ -5,7 +5,9 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
     if (gaugeElement === null || gaugeElement === undefined) {
         continue;
     }
-    let gauge = echarts.init(gaugeElement);
+    let gauge = echarts.init(gaugeElement, null, {
+            locale: eChartsLocale
+        });
     gauge.weewxData = weewxData.gauges[gaugeId];
     gauge.weewxData.observationType = gaugeId;
     gauge.weewxData.dataset = {
@@ -53,7 +55,7 @@ for (let gaugeId of Object.keys(weewxData.gauges)) {
         gaugeOption.animation = gauge.weewxData.animation !== undefined && gauge.weewxData.animation.toLowerCase() === "true";
         gaugeOption.series[0].startAngle = 90;
         gaugeOption.series[0].endAngle = -270;
-        if(gaugeOption.series[1] !== undefined){
+        if (gaugeOption.series[1] !== undefined) {
             gaugeOption.series[1].startAngle = 90;
             gaugeOption.series[1].endAngle = -270;
         }
@@ -137,10 +139,11 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                     fontSize: 12,
                     color: '#777',
                     formatter: function (value) {
+                        let unitString = unit === undefined ? "" : unit;
                         if (decimals !== undefined && decimals >= 0) {
-                            return value.toFixed(decimals) + unit;
+                            return value.toFixed(decimals) + unitString;
                         } else {
-                            return value + unit;
+                            return value + unitString;
                         }
                     },
                     offsetCenter: ['0', '70%']
@@ -155,37 +158,37 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
     };
     if (weewxData.heatMapEnabled) {
         option.series.push({
-                                           name: "heat",
-                                           z: -1,
-                                           type: 'gauge',
-                                           min: Number(min),
-                                           max: Number(max),
-                                           splitNumber: 0,
-                                           radius: '95%',
-                                           axisLine: {
-                                               lineStyle: {
-                                                   width: '100%',
-                                                   color: getHeatColor(max, min, splitNumber, axisTickSplitNumber, data),
-                                                   shadowBlur: 3,
-                                               }
-                                           },
-                                           pointer: {
-                                               width: 5,
-                                               itemStyle: {
-                                                   color: '#428bca',
-                                                   shadowBlur: 3
-                                               }
-                                           },
-                                           axisTick: {
-                                               show: false,
-                                           },
-                                           splitLine: {
-                                               show: false,
-                                           },
-                                           axisLabel: {
-                                               show: false,
-                                           }
-                                       });
+            name: "heat",
+            z: -1,
+            type: 'gauge',
+            min: Number(min),
+            max: Number(max),
+            splitNumber: 0,
+            radius: '95%',
+            axisLine: {
+                lineStyle: {
+                    width: '100%',
+                    color: getHeatColor(max, min, splitNumber, axisTickSplitNumber, data),
+                    shadowBlur: 3,
+                }
+            },
+            pointer: {
+                width: 5,
+                itemStyle: {
+                    color: '#428bca',
+                    shadowBlur: 3
+                }
+            },
+            axisTick: {
+                show: false,
+            },
+            splitLine: {
+                show: false,
+            },
+            axisLabel: {
+                show: false,
+            }
+        });
     }
     return option;
 }

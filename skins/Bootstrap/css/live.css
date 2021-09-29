@@ -15,7 +15,8 @@
 .chart {
   width: 400px;
   height:250px;
-  margin: 3px;
+  margin-top: 3px;
+  margin-bottom: 3px;
   float: left;
 }
 .stationInfo td {
@@ -23,7 +24,7 @@
    font-family: sans-serif;
    font-size: smaller;
 }
-.primaryLive {
+.primaryLive, .primaryLive:active, .primaryLive:focus, .primaryLive:checked {
   background-color: #428bca;
   border-color: #428bca;
 }
@@ -34,9 +35,12 @@
 .primaryLight {
   color: #428bca;
 }
+.primaryLight:hover {
+  background-color: #e2e6ea;
+}
 .btnNOAA {
   font-size: calc(5px + 0.5vw);
-  padding: 2px 4px;  
+  padding: 0px 2px;
 }
 .historyHeader, .statsHeader {
   font-weight: bold;
@@ -47,4 +51,38 @@
 }
 .statsTable {
   font-size: calc(9px + 0.4vw);
+}
+.chartTimestamp {
+  position: absolute;
+  bottom: 5px;
+}
+
+.chartTimestampOuter {
+  position: relative;
+  width:100%;
+  display: flex;
+  justify-content: center;
+  color: #777;
+  font-family: sans-serif;
+  font-size: 12px;
+}
+
+.statsTime {
+  color: #777;
+  font-size: smaller;
+}
+
+td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
+  padding: 2px;
+  white-space: nowrap;
+}
+
+.month {
+  border-left-width: 1px;
+  border-right-width: 1px;
+}
+
+.year {
+  border-left-style: double;
+  border-left-width: 4px;
 }

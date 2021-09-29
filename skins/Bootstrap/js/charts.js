@@ -4,10 +4,13 @@ for(let chartId of Object.keys(weewxData.charts)) {
     if(chartElement === null || chartElement === undefined) {
         continue;
     }
-    let chart = echarts.init(chartElement);
+    let chart = echarts.init(chartElement, null, {locale: eChartsLocale});
     chart.weewxData = weewxData.charts[chartId];
     charts[documentChartId] = chart;
     let chartSeriesConfigs = [];
+
+    let timestamp = 0;
+
     for(let categoryId of Object.keys(weewxData.charts[chartId])) {
         let category = weewxData.charts[chartId][categoryId];
         if(typeof category !== 'object' || category === null) {
@@ -36,6 +39,13 @@ for(let chartId of Object.keys(weewxData.charts)) {
             };
         }
         chartSeriesConfigs.push(chartSeriesConfig);
+
+        if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
+            let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
+            if(categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
+                timestamp = categoryTimestamp;
+            }
+        }
     }
     let chartOption;
     if(chart.weewxData.aggregate_interval_minutes !== undefined) {
@@ -51,6 +61,12 @@ for(let chartId of Object.keys(weewxData.charts)) {
         chartOption.yAxis.min = 0;
         chartOption.yAxis.max = 100;
     }
+    if(chart.weewxData.yAxis_minInterval !== undefined) {
+        chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
+    }
+    if(chart.weewxData.yAxis_axisLabel_align !== undefined) {
+        chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
+    }
     if(obs_group === "group_direction") {
         chartOption.yAxis.min = 0;
         chartOption.yAxis.max = 360;
@@ -59,6 +75,7 @@ for(let chartId of Object.keys(weewxData.charts)) {
     }
     chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
     chart.setOption(chartOption);
+    chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
 }
 
 function getLineChartOption(seriesConfigs) {
@@ -157,7 +174,8 @@ function getLineChartOption(seriesConfigs) {
             show: true,
             position: "inside",
             formatter: function (params, ticket, callback) {
-                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + moment(params[0].axisValue).format("D.M.YYYY, H:mm:ss") + '</td></tr>';
+                let date = new Date(params[0].axisValue);
+                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
                 let show = false;
                 params.forEach(item => {
                     if(!isNaN(item.data[1])) {
@@ -294,8 +312,10 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             position: "inside",
             formatter: function (params, ticket, callback) {
                 let halfAggregateInterval = aggregateInterval * 60000 / 2;
-                let from = moment(params[0].axisValue - halfAggregateInterval).format("D.M.YYYY, H:mm:ss");
-                let to = moment(params[0].axisValue + halfAggregateInterval).format("H:mm:ss");
+                let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
+                let toDate = new Date(params[0].axisValue + halfAggregateInterval);
+                let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
+                let to = toDate.toLocaleTimeString(localeWithDash);
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                 params.forEach(item => {
                     tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
@@ -384,4 +404,17 @@ function addUndefinedIfCurrentMissing(data) {
     if(Date.now() - latestTimestamp > weewxData.config.archive_interval) {
         data.push([Date.now(), undefined]);
     }
+}
+
+function getTimestampDiv(parentId, timestamp) {
+    let outerDiv = document.createElement("div");
+    outerDiv.setAttribute("class", "chartTimestampOuter");
+    let timestampDiv = document.createElement("div");
+    timestampDiv.id = parentId + "_timestamp";
+    timestampDiv.setAttribute("class", "chartTimestamp");
+    if(timestamp > 0) {
+        timestampDiv.innerHTML = formatDateTime(timestamp);
+    }
+    outerDiv.appendChild(timestampDiv);
+    return outerDiv;
 }

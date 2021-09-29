@@ -1,84 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$BootstrapLabels.title</title>
     <!-- Bootstrap -->
-    <link href="css/bootstrap-4.6.0.min.css" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/live.css" rel="stylesheet">
-  </head>
-  <body>
-    <!-- Menu navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarText">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item"><a class="nav-link" href="index.html">$BootstrapLabels.headings.front_page<span class="sr-only">(current)</span></a></li>
-          <li class="nav-item"><a class="nav-link" href="stats.html">$BootstrapLabels.headings.stats</a></li>
-          <li class="nav-item active"><a class="nav-link" href="#">$BootstrapLabels.headings.history</a></li>
-          <li class="nav-item"><a class="nav-link" href="news.html">$BootstrapLabels.headings.news</a></li>
-          <li class="nav-item"><a class="nav-link" href="about.html">$BootstrapLabels.headings.about</a></li>
-        </ul>
-        <span class="navbar-text">$BootstrapLabels.headings.last_update <span id="lastUpdate">$current.dateTime</span></span>
-      </div>
-    </nav>  
-    <!-- Main container -->  
-    <div class="container-fluid">
-      <div class="row">
+</head>
+<body>
+<!-- Menu navbar -->
+#include "nav.html.tmpl"
+<!-- Main container -->
+<div class="container-fluid">
+    <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.tmpl"
-        <!-- Graph panel -->     
+        <!-- Graph panel -->
         <div class="col-md-9 main">
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.min_temp</h3>
-$min_temp_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.min_temp</h3>
+            $min_temp_table
 
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.avg_temp</h3>
-$avg_temp_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.avg_temp</h3>
+            $avg_temp_table
 
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.max_temp</h3>
-$max_temp_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.max_temp</h3>
+            $max_temp_table
 
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.rain</h3>
-$rain_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.rain</h3>
+            $rain_table
 
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.rain_days</h3>
-$rain_days_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.rain_days</h3>
+            $rain_days_table
 
-         <h3 class="historyHeader">$BootstrapLabels.history_tables.max_wind</h3>
-$max_wind_table
+            <h3 class="historyHeader">$BootstrapLabels.history_tables.max_wind</h3>
+            $max_wind_table
 
-$NOAA_table
+            $NOAA_table
         </div>
-      </div>
-      <hr>
-      <footer>
-        <p>$BootstrapLabels.footer</p>
-      </footer>
     </div>
-    <!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
-    #raw
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="js/jquery-3.5.1.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.bundle.min.js"></script>
-    <script src="js/moment-with-locales.js"></script>
-    <script src="js/mqtt.min.js"></script>
-    <script src="weewxData.js"></script>
-    <script src="js/units.js"></script>
-    <script src="js/site.js"></script>
-    <script src="js/echarts.min.js"></script>
-    <script src="js/gauges.js"></script>
-    <script type="text/javascript">
-          $(document).delegate('*[data-toggle="lightbox"]', 'click', function(event) {
-              event.preventDefault();
-              $(this).ekkoLightbox();
-          });
-          
-    </script>
-    #end raw
-  </body>
+    <hr>
+    <footer>
+        <p>$BootstrapLabels.footer</p>
+    </footer>
+</div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="js/jquery-3.6.0.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/mqtt.min.js"></script>
+<script src="weewxData.js"></script>
+<script src="js/units.js"></script>
+<script src="js/site.js"></script>
+<script src="js/echarts.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/gauges.js"></script>
+</body>
 </html>
