@@ -178,9 +178,10 @@ function getLineChartOption(seriesConfigs) {
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
                 let show = false;
                 params.forEach(item => {
+                    let unitString = configs[item.seriesIndex].unit === undefined ? "" : configs[item.seriesIndex].unit;
                     if(!isNaN(item.data[1])) {
                         show = true;
-                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
+                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + unitString + '</td></tr>');
                     }
                 });
                 return show ? tooltipHTML + '</table>' : "";
@@ -318,7 +319,8 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
                 let to = toDate.toLocaleTimeString(localeWithDash);
                 let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                 params.forEach(item => {
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + configs[item.seriesIndex].unit + '</td></tr>');
+                    let unitString = configs[item.seriesIndex].unit === undefined ? "" : configs[item.seriesIndex].unit;
+                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + unitString + '</td></tr>');
                 });
                 return tooltipHTML + '</table>';
             }
