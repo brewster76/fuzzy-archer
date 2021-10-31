@@ -1,83 +1,90 @@
-for(let chartId of Object.keys(weewxData.charts)) {
-    let documentChartId = chartId + "Chart";
-    let chartElement = document.getElementById(documentChartId);
-    if(chartElement === null || chartElement === undefined) {
-        continue;
-    }
-    let chart = echarts.init(chartElement, null, {locale: eChartsLocale});
-    chart.weewxData = weewxData.charts[chartId];
-    charts[documentChartId] = chart;
-    let chartSeriesConfigs = [];
+function loadCharts() {
+    for(let chartId of Object.keys(weewxData.charts)) {
+        let documentChartId = chartId + "Chart";
 
-    let timestamp = 0;
+         if(charts[documentChartId] !== undefined){
+            charts[documentChartId].dispose();
+            charts[documentChartId] = undefined;
+        }
 
-    for(let categoryId of Object.keys(weewxData.charts[chartId])) {
-        let category = weewxData.charts[chartId][categoryId];
-        if(typeof category !== 'object' || category === null) {
+        let chartElement = document.getElementById(documentChartId);
+        if(chartElement === null || chartElement === undefined) {
             continue;
         }
-        chart.weewxData[categoryId].observationType = categoryId;
-        addUndefinedIfCurrentMissing(weewxData[categoryId]);
-        var obs_group = category.obs_group;
-        let chartSeriesConfig = {
-            name: weewxData.labels.Generic[categoryId],
-            payloadKey: category.payload_key,
-            weewxColumn: categoryId,
-            decimals: Number(category.decimals),
-            showMaxMarkPoint: category.showMaxMarkPoint.toLowerCase() === 'true',
-            showMinMarkPoint: category.showMinMarkPoint.toLowerCase() === 'true',
-            showAvgMarkLine: category.showAvgMarkLine.toLowerCase() === 'true',
-            lineColor: category.lineColor,
-            data: weewxData[categoryId],
-            unit: weewxData.units.Labels[category.target_unit],
-            symbol: category.symbol,
-            symbolSize: category.symbolSize,
-        }
-        if(category.lineWidth !== undefined) {
-            chartSeriesConfig.lineStyle = {
-                width: category.lineWidth,
-            };
-        }
-        chartSeriesConfigs.push(chartSeriesConfig);
+        let chart = echarts.init(chartElement, null, {locale: eChartsLocale});
+        chart.weewxData = weewxData.charts[chartId];
+        charts[documentChartId] = chart;
+        let chartSeriesConfigs = [];
 
-        if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
-            let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
-            if(categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
-                timestamp = categoryTimestamp;
+        let timestamp = 0;
+
+        for(let categoryId of Object.keys(weewxData.charts[chartId])) {
+            let category = weewxData.charts[chartId][categoryId];
+            if(typeof category !== 'object' || category === null) {
+                continue;
+            }
+            chart.weewxData[categoryId].observationType = categoryId;
+            addUndefinedIfCurrentMissing(weewxData[categoryId]);
+            var obs_group = category.obs_group;
+            let chartSeriesConfig = {
+                name: weewxData.labels.Generic[categoryId],
+                payloadKey: category.payload_key,
+                weewxColumn: categoryId,
+                decimals: Number(category.decimals),
+                showMaxMarkPoint: category.showMaxMarkPoint.toLowerCase() === 'true',
+                showMinMarkPoint: category.showMinMarkPoint.toLowerCase() === 'true',
+                showAvgMarkLine: category.showAvgMarkLine.toLowerCase() === 'true',
+                lineColor: category.lineColor,
+                data: weewxData[categoryId],
+                unit: weewxData.units.Labels[category.target_unit],
+                symbol: category.symbol,
+                symbolSize: category.symbolSize,
+            }
+            if(category.lineWidth !== undefined) {
+                chartSeriesConfig.lineStyle = {
+                    width: category.lineWidth,
+                };
+            }
+            chartSeriesConfigs.push(chartSeriesConfig);
+
+            if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
+                let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
+                if(categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
+                    timestamp = categoryTimestamp;
+                }
             }
         }
-    }
-    let chartOption;
-    if(chart.weewxData.aggregate_interval_minutes !== undefined) {
-        chartOption = getBarChartOption(chartSeriesConfigs, chart.weewxData.aggregate_interval_minutes);
-    } else {
-        chartOption = getLineChartOption(chartSeriesConfigs);
-    }
+        let chartOption;
+        if(chart.weewxData.aggregate_interval_minutes !== undefined) {
+            chartOption = getBarChartOption(chartSeriesConfigs, chart.weewxData.aggregate_interval_minutes);
+        } else {
+            chartOption = getLineChartOption(chartSeriesConfigs);
+        }
 
-    if(obs_group === "group_speed") {
-        chartOption.yAxis.min = 0;
+        if(obs_group === "group_speed") {
+            chartOption.yAxis.min = 0;
+        }
+        if(obs_group === "group_percent") {
+            chartOption.yAxis.min = 0;
+            chartOption.yAxis.max = 100;
+        }
+        if(chart.weewxData.yAxis_minInterval !== undefined) {
+            chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
+        }
+        if(chart.weewxData.yAxis_axisLabel_align !== undefined) {
+            chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
+        }
+        if(obs_group === "group_direction") {
+            chartOption.yAxis.min = 0;
+            chartOption.yAxis.max = 360;
+            chartOption.yAxis.minInterval = 90;
+            chartOption.yAxis.maxInterval = 90;
+        }
+        chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
+        chart.setOption(chartOption);
+        chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
-    if(obs_group === "group_percent") {
-        chartOption.yAxis.min = 0;
-        chartOption.yAxis.max = 100;
-    }
-    if(chart.weewxData.yAxis_minInterval !== undefined) {
-        chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
-    }
-    if(chart.weewxData.yAxis_axisLabel_align !== undefined) {
-        chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
-    }
-    if(obs_group === "group_direction") {
-        chartOption.yAxis.min = 0;
-        chartOption.yAxis.max = 360;
-        chartOption.yAxis.minInterval = 90;
-        chartOption.yAxis.maxInterval = 90;
-    }
-    chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
-    chart.setOption(chartOption);
-    chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
 }
-
 function getLineChartOption(seriesConfigs) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
@@ -420,3 +427,4 @@ function getTimestampDiv(parentId, timestamp) {
     outerDiv.appendChild(timestampDiv);
     return outerDiv;
 }
+loadCharts();

@@ -7,6 +7,8 @@ let maxAgeHoursMS = weewxData.config.timespan * 3600000;
 let intervalData = {};
 let gauges = {};
 let charts = {};
+let lastAsyncReloadTimestamp = Date.now();
+let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
 
 let clients = [];
 if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
@@ -40,6 +42,7 @@ if (weewxData !== undefined && weewxData.config !== undefined && weewxData.confi
 
         client.on("message", function (topic, payload) {
             console.log(topic);
+            checkAsyncReload();
             let jPayload = {};
             let topicConfig = this.topics[topic];
             if (topicConfig.type.toUpperCase() === "JSON") {
@@ -249,4 +252,32 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
 function formatDateTime(timestamp) {
     let date = new Date(timestamp);
     return date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+}
+
+function checkAsyncReload() {
+    if(true || (Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
+        fetch(weewxData.config.frontend_timestamp_json).then(function (u) {
+            return u.json();
+        }).then(function (serverData) {
+            if(Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
+                lastGoodStamp = serverData.lastGoodStamp;
+                asyncReloadWeewxData();
+            }
+        }).catch(err => {
+            throw err
+        });
+    }
+}
+
+function asyncReloadWeewxData() {
+    fetch(weewxData.config.frontend_data_json).then(function (u) {
+        return u.text();
+    }).then(function (serverData) {
+        serverData = serverData.replace("\\\"", "\"").substring(serverData.indexOf("=") + 1).trim();
+        weewxData = JSON.parse(serverData);
+        loadGauges();
+        loadCharts();
+    }).catch(err => {
+        throw err
+    });
 }
