@@ -116,8 +116,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     self.frontend_data[category] = category_history
 
         # Write JSON self.frontend_data output if a filename is specified
-        data_filename = live_options.get('frontend_data_json', 'weewxData.js')
-        timestamp_filename = live_options.get('frontend_timestamp_json', 'ts.js')
+        data_filename = 'weewxData.js'
+        timestamp_filename = 'ts.js'
         html_root = os.path.join(self.config_dict['WEEWX_ROOT'], live_options['HTML_ROOT'])
         if data_filename is not None:
             self.write_json(os.path.join(html_root, data_filename))
@@ -198,7 +198,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.error("JSONGenerator: Could not open %s for writing" % data_filename)
         else:
             with fp:
-                json_string = "let weewxData = " + json.dumps(self.frontend_data, indent=None)
+                json_string = json.dumps(self.frontend_data, indent=None)
                 fp.write(json_string)
 
     def write_ts_file(self, timestamp_filename):

@@ -240,4 +240,3 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
     }
     return color;
 }
-loadGauges();

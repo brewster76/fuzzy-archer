@@ -427,4 +427,3 @@ function getTimestampDiv(parentId, timestamp) {
     outerDiv.appendChild(timestampDiv);
     return outerDiv;
 }
-loadCharts();
