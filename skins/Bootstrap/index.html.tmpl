@@ -21,12 +21,9 @@
             <p></p>
             #include "graphMenu.html.tmpl"
             <div class="row">
-                <div id="outTempChart" class="chart"></div>
-                <div id="barometerChart" class="chart"></div>
-                <div id="rainChart" class="chart"></div>
-                <div id="outHumidityChart" class="chart"></div>
-                <div id="windChart" class="chart"></div>
-                <div id="windDirChart" class="chart"></div>
+                #for $key in $LiveCharts
+                <div id="${key}Chart" class="chart"></div>
+                #end for
             </div>
         </div>
     </div>
@@ -46,6 +43,5 @@
 <script src="js/lang.js"></script>
 <script src="js/gauges.js"></script>
 <script src="js/charts.js"></script>
-#include "script.html.tmpl"
 </body>
 </html>
