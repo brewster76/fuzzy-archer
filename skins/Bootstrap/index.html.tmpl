@@ -21,8 +21,10 @@
             <p></p>
             #include "graphMenu.html.tmpl"
             <div class="row">
-                #for $key in $LiveCharts
-                <div id="${key}Chart" class="chart"></div>
+                #for $chartName, value in $LiveCharts.items()
+                #if isinstance($value, dict)
+                <div id="${chartName}Chart" class="chart"></div>
+                #end if
                 #end for
             </div>
         </div>

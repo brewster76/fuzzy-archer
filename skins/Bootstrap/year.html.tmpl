@@ -22,9 +22,13 @@
             #include "graphMenu.html.tmpl"
             <div class="row" id="modalRow">
                 <script type="text/javascript">
-              readingTypes = ["yeartempmaxmin", "yearbarometer", "yearrain", "yearhumidity", "yearwind", "yearwinddir"];
-
-
+                  readingTypes = [
+                  #for $imageName, $value in $ImageGenerator.year_images.items()
+                  #if isinstance($value, dict)
+                  "${imageName}",
+                  #end if
+                  #end for
+                  ];
                 </script>
             </div>
         </div>
