@@ -85,6 +85,8 @@ import time
 import logging
 import os.path
 
+from configobj import ConfigObj
+
 from weewx.cheetahgenerator import SearchList
 from weewx.tags import TimespanBinder
 import weeutil.weeutil
@@ -103,7 +105,7 @@ class MyXSearch(SearchList):
 
         self.search_list_extension = {}
 
-        # Make bootstrap specific labels in config file available to
+        # Make bootstrap specific labels in config file available to templates
         if 'BootstrapLabels' in generator.skin_dict:
             self.search_list_extension['BootstrapLabels'] = generator.skin_dict['BootstrapLabels']
         else:
@@ -114,6 +116,32 @@ class MyXSearch(SearchList):
             self.search_list_extension['Labels'] = generator.skin_dict['Labels']
         else:
             log.debug("%s: No observation labels found" % os.path.basename(__file__))
+
+        # Make LiveGauges specific labels in config file available to templates
+        if 'LiveGauges' in generator.skin_dict:
+            self.search_list_extension['LiveGauges'] = generator.skin_dict['LiveGauges']
+        else:
+            log.debug("%s: No LiveGauges specific labels found" % os.path.basename(__file__))
+
+        # Make LiveCharts specific labels in config file available to templates
+        if 'LiveCharts' in generator.skin_dict:
+            self.search_list_extension['LiveCharts'] = generator.skin_dict['LiveCharts']
+        else:
+            log.debug("%s: No LiveCharts specific labels found" % os.path.basename(__file__))
+
+        # Make ImageGenerator specific labels in config file available to templates
+        image_dict = {}
+        image_config_path = os.path.join(generator.config_dict['WEEWX_ROOT'], generator.config_dict['StdReport']['SKIN_ROOT'],
+                                         'Images', "skin.conf")
+        try:
+            image_dict = ConfigObj(image_config_path)
+        except:
+            log.info("%s: Could not import image dictionary %s" %
+                     os.path.basename(__file__), image_config_path)
+        if 'ImageGenerator' in image_dict:
+            self.search_list_extension['ImageGenerator'] = image_dict['ImageGenerator']
+        else:
+            log.debug("%s: No ImageGenerator specific labels found" % os.path.basename(__file__))
 
     def get_extension_list(self, valid_timespan, db_lookup):
         """For weewx V3.x extensions. Should return a list

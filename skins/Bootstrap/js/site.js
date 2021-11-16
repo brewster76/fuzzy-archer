@@ -1,83 +1,107 @@
-let archiveIntervalSeconds = weewxData.config.archive_interval;
-let locale = weewxData.config.locale;
-let localeWithDash = locale.replace("_", "-");
-let lang = locale.split("_")[0];
-let eChartsLocale = lang.toUpperCase();
-let maxAgeHoursMS = weewxData.config.timespan * 3600000;
-let intervalData = {};
+let weewxData;
+let weewxDataUrl = "weewxData.js";
 let gauges = {};
 let charts = {};
+let lastAsyncReloadTimestamp = Date.now();
+let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
+let archiveIntervalSeconds;
+let locale;
+let localeWithDash;
+let lang;
+let eChartsLocale;
+let maxAgeHoursMS;
+let intervalData = {};
 
-let clients = [];
-if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
-    for (let connectionId of Object.keys(weewxData.config.MQTT.connections)) {
-        let connection = weewxData.config.MQTT.connections[connectionId];
-        let mqttConnection = connection.broker_connection;
-        let mqttUsername = connection.mqtt_username;
-        let mqttPassword = connection.mqtt_password;
-        let intervalData = {};
+fetch(weewxDataUrl).then(function (u) {
+    return u.json();
+}).then(function (serverData) {
+    weewxData = serverData;
+    archiveIntervalSeconds = weewxData.config.archive_interval;
+    locale = weewxData.config.locale;
+    localeWithDash = locale.replace("_", "-");
+    lang = locale.split("_")[0];
+    eChartsLocale = lang.toUpperCase();
+    maxAgeHoursMS = weewxData.config.timespan * 3600000;
 
-        let mqttCredentials;
-        if (mqttUsername !== undefined) {
-            mqttCredentials = {
-                username: mqttUsername
-            };
-            if (mqttPassword !== undefined) {
-                mqttCredentials["password"] = mqttPassword;
-            }
-        }
-        if (mqttCredentials === undefined) {
-            client = mqtt.connect(mqttConnection);
-        } else {
-            client = mqtt.connect(mqttConnection, mqttCredentials);
-        }
-        client.topics = connection.topics;
-        clients.push(client);
+    let clients = [];
+    if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
+        for (let connectionId of Object.keys(weewxData.config.MQTT.connections)) {
+            let connection = weewxData.config.MQTT.connections[connectionId];
+            let mqttConnection = connection.broker_connection;
+            let mqttUsername = connection.mqtt_username;
+            let mqttPassword = connection.mqtt_password;
+            let intervalData = {};
 
-        for (let topic of Object.keys(connection.topics)) {
-            client.subscribe(topic);
-        }
-
-        client.on("message", function (topic, payload) {
-            console.log(topic);
-            let jPayload = {};
-            let topicConfig = this.topics[topic];
-            if (topicConfig.type.toUpperCase() === "JSON") {
-                jPayload = JSON.parse(payload);
-            } else if (topicConfig.type.toLowerCase() === "plain" && topicConfig.payload_key !== undefined) {
-                jPayload[topicConfig.payload_key] = parseFloat(payload);
-            } else {
-                return;
-            }
-
-            let timestamp;
-            if (jPayload.dateTime !== undefined) {
-                timestamp = parseInt(jPayload.dateTime) * 1000;
-            } else {
-                timestamp = Date.now();
-            }
-            let date = new Date(timestamp);
-            for (let gaugeId of Object.keys(gauges)) {
-                let gauge = gauges[gaugeId];
-                let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
-                if (!isNaN(value)) {
-                    setGaugeValue(gauge, value, timestamp);
+            let mqttCredentials;
+            if (mqttUsername !== undefined) {
+                mqttCredentials = {
+                    username: mqttUsername
+                };
+                if (mqttPassword !== undefined) {
+                    mqttCredentials["password"] = mqttPassword;
                 }
             }
-            for (let chartId of Object.keys(charts)) {
-                let chart = charts[chartId];
-                chart.chartId = chartId;
-                if (chart.weewxData.aggregate_interval_minutes !== undefined) {
-                    addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
+            if (mqttCredentials === undefined) {
+                client = mqtt.connect(mqttConnection);
+            } else {
+                client = mqtt.connect(mqttConnection, mqttCredentials);
+            }
+            client.topics = connection.topics;
+            clients.push(client);
+
+            for (let topic of Object.keys(connection.topics)) {
+                client.subscribe(topic);
+            }
+
+            client.on("message", function (topic, payload) {
+                console.log(topic);
+                checkAsyncReload();
+                let jPayload = {};
+                let topicConfig = this.topics[topic];
+                if (topicConfig.type.toUpperCase() === "JSON") {
+                    jPayload = JSON.parse(payload);
+                } else if (topicConfig.type.toLowerCase() === "plain" && topicConfig.payload_key !== undefined) {
+                    jPayload[topicConfig.payload_key] = parseFloat(payload);
                 } else {
-                    addValues(chart, jPayload, timestamp);
+                    return;
                 }
-            }
-            let lastUpdate = document.getElementById("lastUpdate");
-            lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
-        });
+
+                let timestamp;
+                if (jPayload.dateTime !== undefined) {
+                    timestamp = parseInt(jPayload.dateTime) * 1000;
+                } else {
+                    timestamp = Date.now();
+                }
+                let date = new Date(timestamp);
+                for (let gaugeId of Object.keys(gauges)) {
+                    let gauge = gauges[gaugeId];
+                    let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
+                    if (!isNaN(value)) {
+                        setGaugeValue(gauge, value, timestamp);
+                    }
+                }
+                for (let chartId of Object.keys(charts)) {
+                    let chart = charts[chartId];
+                    chart.chartId = chartId;
+                    if (chart.weewxData.aggregate_interval_minutes !== undefined) {
+                        addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
+                    } else {
+                        addValues(chart, jPayload, timestamp);
+                    }
+                }
+                let lastUpdate = document.getElementById("lastUpdate");
+                lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+            });
+        }
     }
-}
+    loadGauges();
+    if(typeof loadCharts === "function") {
+        loadCharts();
+    }
+}).catch(err => {
+        throw err
+});
+
 function setGaugeValue(gauge, value, timestamp) {
     let option = gauge.getOption();
     let valueSeries = option.series[0];
@@ -249,4 +273,31 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
 function formatDateTime(timestamp) {
     let date = new Date(timestamp);
     return date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+}
+
+function checkAsyncReload() {
+    if(true || (Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
+        fetch("ts.js").then(function (u) {
+            return u.json();
+        }).then(function (serverData) {
+            if(Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
+                lastGoodStamp = serverData.lastGoodStamp;
+                asyncReloadWeewxData();
+            }
+        }).catch(err => {
+            throw err
+        });
+    }
+}
+
+function asyncReloadWeewxData() {
+    fetch(weewxDataUrl).then(function (u) {
+        return u.json();
+    }).then(function (serverData) {
+        weewxData = serverData;
+        loadGauges();
+        loadCharts();
+    }).catch(err => {
+        throw err
+    });
 }

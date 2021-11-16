@@ -4,31 +4,20 @@
             <h1 style="color: #777; font-family: sans-serif;">$BootstrapLabels.live.current_conditions</h1>
         </div>
     </div>
+    #set $count = 0
+    #set $size = len($LiveGauges)
+    #for $gauge in $LiveGauges
+    #if $count % 2 == 0
     <div class="row">
+    #end if
         <div class="gaugecol col-md-6" align="center">
-            <div id="outTempGauge" class="gauge"></div>
+            <div id="${gauge}Gauge" class="gauge"></div>
         </div>
-        <div class="gaugecol col-md-6" align="center">
-            <div id="barometerGauge" class="gauge"></div>
-        </div>
+    #if $count % 2 == 1 or $count == ($size - 1)
     </div>
-    <div class="row">
-        <div class="gaugecol col-md-6" align="center">
-            <div id="windDirGauge" class="gauge"></div>
-        </div>
-        <div class="gaugecol col-md-6" align="center">
-            <div id="outHumidityGauge" class="gauge"></div>
-        </div>
-    </div>
-    <div class="row">
-        <div class="gaugecol col-md-6" align="center">
-            <div id="windSpeedGauge" class="gauge"></div>
-        </div>
-        <div class="gaugecol col-md-6" align="center">
-            <div id="windGustGauge" class="gauge"></div>
-        </div>
-    </div>
-
+    #end if
+    #set $count = $count + 1
+    #end for
     <!-- Station info -->
     <div class="row stationInfo">
         <table class="table table-hover">
