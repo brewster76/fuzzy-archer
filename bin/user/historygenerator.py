@@ -297,7 +297,7 @@ class MyXSearch(SearchList):
             if 'units' in table_options:
                 unit_formatted = table_options['units']
             else:
-                if (unit_type == 'count'):
+                if (aggregation):
                     unit_formatted = "Days"
                 else:
                     if unit_type in reading.formatter.unit_label_dict:
