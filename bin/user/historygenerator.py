@@ -238,6 +238,8 @@ class MyXSearch(SearchList):
         all_stats: Link to all_stats TimespanBinder
         """
 
+        aggregation = False
+
         cellColours = self._parseTableOptions(table_options, table_name)
 
         summary_column = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
@@ -260,6 +262,7 @@ class MyXSearch(SearchList):
             if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
                                   'sum_ge', 'sum_le', 'avg_ge', 'avg_le']:
 
+                aggregation = True
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
                 except KeyError:
@@ -353,7 +356,7 @@ class MyXSearch(SearchList):
                     # update the binding to access the right DB
                     obsMonth = getattr(month, obs_type)
                     obsMonth.data_binding = binding;
-                    if unit_type == 'count':
+                    if aggregation:
                         try:
                             value = getattr(obsMonth, aggregate_type)((threshold_value, threshold_units)).value_t
                         except:
@@ -367,7 +370,7 @@ class MyXSearch(SearchList):
                 obsYear = getattr(year, obs_type)
                 obsYear.data_binding = binding;
 
-                if unit_type == 'count':
+                if aggregation:
                     try:
                         value = getattr(obsYear, aggregate_type)((threshold_value, threshold_units)).value_t
                     except:
