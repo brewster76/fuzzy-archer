@@ -94,9 +94,11 @@ fetch(weewxDataUrl).then(function (u) {
             });
         }
     }
-    loadGauges();
-    if(typeof loadCharts === "function") {
+    if(typeof loadGauges === "function" && typeof loadCharts === "function") {
+        loadGauges();
         loadCharts();
+    } else {
+        setTimeout(asyncReloadWeewxData, 1);
     }
 }).catch(err => {
         throw err
