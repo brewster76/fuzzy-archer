@@ -107,13 +107,41 @@ fetch(weewxDataUrl).then(function (u) {
 function setGaugeValue(gauge, value, timestamp) {
     let option = gauge.getOption();
     let valueSeries = option.series[0];
-    valueSeries.data[0].value = value;
     addValue(gauge.weewxData.dataset, value, timestamp);
     if(option.series[1] !== undefined) {
         option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
     }
     gauge.setOption(option);
+    updateGaugeValue(value, gauge);
 }
+
+function updateGaugeValue(newValue, gauge) {
+   let option = gauge.getOption();
+   let currentValue = option.series[0].data[0].value;
+   if(gauge.isCircular !== undefined && gauge.isCircular && Math.abs(newValue - currentValue) > 180) {
+     let currentAnimationEasingUpdate = option.series[0].animationEasingUpdate;
+     let currentAnimationSetting = option.animation;
+     option.series[0].animationEasingUpdate = 'linear';
+     let toNorth = 360;
+     let fromNorth = 0;
+     if(currentValue < 180) {
+       toNorth = 0;
+       fromNorth = 360;
+     }
+     option.series[0].data[0].value = toNorth;
+     gauge.setOption(option);
+     option.animation = false;
+     option.series[0].data[0].value = fromNorth;
+     gauge.setOption(option);
+     option.animation = currentAnimationSetting;
+     option.series[0].animationEasingUpdate = currentAnimationEasingUpdate;
+     option.series[0].data[0].value = newValue;
+     gauge.setOption(option);
+   } else {
+        option.series[0].data[0].value = newValue;
+   }
+   gauge.setOption(option);
+ }
 
 function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
     let option = chart.getOption();

@@ -59,7 +59,7 @@ function loadGauges() {
         }
         let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
         if (gauge.weewxData.obs_group === "group_direction") {
-            gaugeOption.animation = gauge.weewxData.animation !== undefined && gauge.weewxData.animation.toLowerCase() === "true";
+            gauge.isCircular = true;
             gaugeOption.series[0].startAngle = 90;
             gaugeOption.series[0].endAngle = -270;
             if (gaugeOption.series[1] !== undefined) {
@@ -96,6 +96,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
     }
     let option = {
         animation: weewxData.animation === undefined || !weewxData.animation.toLowerCase() === "false",
+        animationDurationUpdate: 750,
         series: [{
                 name: name,
                 type: 'gauge',
