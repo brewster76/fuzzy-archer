@@ -71,6 +71,11 @@ Frequently Asked Questions
     Make sure you have fonts installed that support truetype scaling:
       apt-get install ttf-freefont
 
+4) The colors on the History page do not vary much
+    The color schemes are based around values in Celsius and mm.
+    Color schemes for Fahrenheit and inches are also included in the [HistoryReport] section
+    in skins/Bootstrap/skin.conf. Comment out the Celsius and mm lines and uncomment the Fahrenheit and inches lines.
+
 
 Installation - The involved way
 ===============================
