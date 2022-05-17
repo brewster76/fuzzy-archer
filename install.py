@@ -2,7 +2,7 @@
 #
 # Based on installer for xstats
 #
-# Configured by Nick to install bootstrap skin, 2014-2020
+# Configured by Nick to install bootstrap skin, 2014-2022
 
 import os.path
 import configobj
@@ -107,7 +107,9 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                     print(("   %s" % l[:-1]))
 
         print("")
-        print("Language changes can be made in skins/Bootstrap/skin.conf")
+        print("Change to a different language using the [Language] setting in:")
+        print("   Webpage text: skins/Bootstrap/skin.conf")
+        print("   Images:       skins/Images/skin.conf")
 
         print("")
         print("Default location for HTML and image files is public_html/Bootstrap")
