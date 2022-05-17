@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 - 2022  Nick Dajda <nick.dajda@gmail.com>
+# Copyright (c) 2015  Nick Dajda <nick.dajda@gmail.com>
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
@@ -33,19 +33,32 @@ these translation classes:
         generator_list = user.translategenerator.CheetahGeneratorTranslated, user.translategenerator.ImageGeneratorTranslated, weewx.reportengine.CopyGenerator
 """
 
-import syslog
+import logging
 import os.path
+
 from configobj import ConfigObj
 
 from weewx.imagegenerator import ImageGenerator
 from weewx.cheetahgenerator import CheetahGenerator
+from user.jsonengine import JSONGenerator
 
+log = logging.getLogger(__name__)
+
+class JSONGeneratorTranslated(JSONGenerator):
+    """Overwrite skin.conf dictionary with language specific entries"""
+
+    def setup(self):
+        language_dict = _get_language_dict(self.skin_dict, self.config_dict)
+        if language_dict is not None:
+            self.skin_dict.merge(language_dict)
+
+        JSONGenerator.setup(self)
 
 class ImageGeneratorTranslated(ImageGenerator):
     """Overwrite skin.conf dictionary with language specific entries"""
 
     def setup(self):
-        language_dict = _get_language_dict(self.skin_dict, self.config_dict, self.__class__.__name__)
+        language_dict = _get_language_dict(self.skin_dict, self.config_dict)
 
         if language_dict is not None:
             self.skin_dict.merge(language_dict)
@@ -56,16 +69,15 @@ class ImageGeneratorTranslated(ImageGenerator):
 class CheetahGeneratorTranslated(CheetahGenerator):
     """Overwrite skin.conf dictionary with language specific entries"""
 
-    def run(self):
-        language_dict = _get_language_dict(self.skin_dict, self.config_dict, self.__class__.__name__)
+    def setup(self):
+        language_dict = _get_language_dict(self.skin_dict, self.config_dict)
 
         if language_dict is not None:
             self.skin_dict.merge(language_dict)
 
-        CheetahGenerator.run(self)
+        CheetahGenerator.setup(self)
 
-
-def _get_language_dict(skin_dict, config_dict, calling_class):
+def _get_language_dict(skin_dict, config_dict):
     """Look for this section in the skin.conf dictionary:
      [Language]
         language = espanol
@@ -79,8 +91,7 @@ def _get_language_dict(skin_dict, config_dict, calling_class):
         if 'language' in skin_dict['Language']:
             language = skin_dict['Language']['language']
 
-            syslog.syslog(syslog.LOG_INFO, "%s - %s: Language is %s" % (os.path.basename(__file__), calling_class,
-                                                                        language))
+            log.info("%s: Language is %s" % (os.path.basename(__file__), language))
 
             # Figure out where the language config files can be found
             language_config_path = os.path.join(config_dict['WEEWX_ROOT'], config_dict['StdReport']['SKIN_ROOT'],
@@ -89,13 +100,12 @@ def _get_language_dict(skin_dict, config_dict, calling_class):
             try:
                 language_dict = ConfigObj(language_config_path)
             except:
-                syslog.syslog(syslog.LOG_INFO, "%s - %s: Could not import language dictionary %s" %
-                              os.path.basename(__file__), calling_class, language_config_path)
+                log.info("%s: Could not import lanuguage dictionary %s" %
+                              os.path.basename(__file__), language_config_path)
 
                 language_dict = None
 
     if language_dict is None:
-        syslog.syslog(syslog.LOG_DEBUG, "%s - %s: No language override specified." %
-                      (os.path.basename(__file__), calling_class))
+        log.debug("%s: No language override specified." % (os.path.basename(__file__)))
 
     return language_dict
