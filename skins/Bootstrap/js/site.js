@@ -326,7 +326,9 @@ function asyncReloadWeewxData() {
     }).then(function (serverData) {
         weewxData = serverData;
         loadGauges();
-        loadCharts();
+        if(typeof loadCharts === 'function') {
+            loadCharts();
+        }
     }).catch(err => {
         throw err
     });
