@@ -1,187 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$BootstrapLabels.title</title>
-
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet" />
-
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-  </head>
-
-  <body>
-    <!-- Menu navbar -->
-    <div class="navbar navbar-inverse" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="$BootstrapLabels.location_href">$station.location</a>
-        </div>
-        <div class="navbar-collapse collapse">
-
-          <ul class="nav navbar-nav">
-            <li><a href="index.html">$BootstrapLabels.headings.front_page</a></li>
-            <li class="active"><a href="#">$BootstrapLabels.headings.stats</a></li>
-            <li><a href="history.html">$BootstrapLabels.headings.history</a></li>
-            <li><a href="news.html">$BootstrapLabels.headings.news</a></li>
-            <li><a href="about.html">$BootstrapLabels.headings.about</a></li>
-          </ul>
-
-          <p class="navbar-text navbar-right">
-              $BootstrapLabels.headings.last_update $current.dateTime
-          </p>
-        </div><!--/.nav-collapse -->
-      </div>
-    </div>
-
-    <!-- Main container -->
-    <div class="container">
-      <div class="row">
-
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/live.css" rel="stylesheet">
+</head>
+<body>
+<!-- Menu navbar -->
+#include "nav.html.tmpl"
+<!-- Main container -->
+<div class="container-fluid">
+    <div class="row">
         <!-- Gauge panel -->
-#include "gauges.html.tmpl"
-
-
-        <!-- Graph panel -->
-        <div class="col-md-8 main">
-
-          <h3>$Labels.Generic.outTemp</h3>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th></th>
-                <th>$BootstrapLabels.timespans.today</th>
-                <th>$BootstrapLabels.timespans.week</th>
-                <th>$BootstrapLabels.timespans.month</th>
-                <th>$BootstrapLabels.timespans.year</th>
-                <th>$BootstrapLabels.timespans.ever</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>$BootstrapLabels.minmax.max</td>
-                    <td>$day.outTemp.max<br>$day.outTemp.maxtime</td>
-                    <td>$week.outTemp.max<br>$week.outTemp.maxtime</td>
-                    <td>$month.outTemp.max<br>$month.outTemp.maxtime</td>
-                    <td>$year.outTemp.max<br>$year.outTemp.maxtime</td>
-                    <td>$alltime.outTemp.max<br>$alltime.outTemp.maxtime</td>
-              </tr>
-              <tr>
-                <td>$BootstrapLabels.minmax.min</td>
-                    <td>$day.outTemp.min<br>$day.outTemp.mintime</td>
-                    <td>$week.outTemp.min<br>$week.outTemp.mintime</td>
-                    <td>$month.outTemp.min<br>$month.outTemp.mintime</td>
-                    <td>$year.outTemp.min<br>$year.outTemp.mintime</td>
-                    <td>$alltime.outTemp.min<br>$alltime.outTemp.mintime</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>$Labels.Generic.rain</h3>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th></th>
-                <th>$BootstrapLabels.timespans.today</th>
-                <th>$BootstrapLabels.timespans.week</th>
-                <th>$BootstrapLabels.timespans.month</th>
-                <th>$BootstrapLabels.timespans.year</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td></td>
-                <td>$day.rain.sum</td>
-                <td>$week.rain.sum</td>
-                <td>$month.rain.sum</td>
-                <td>$year.rain.sum</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>$Labels.Generic.barometer</h3>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th></th>
-                <th>$BootstrapLabels.timespans.today</th>
-                <th>$BootstrapLabels.timespans.week</th>
-                <th>$BootstrapLabels.timespans.month</th>
-                <th>$BootstrapLabels.timespans.year</th>
-                <th>$BootstrapLabels.timespans.ever</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>$BootstrapLabels.minmax.max</td>
-            <td>$day.barometer.max<br>$day.barometer.maxtime</td>
-            <td>$week.barometer.max<br>$week.barometer.maxtime</td>
-            <td>$month.barometer.max<br>$month.barometer.maxtime</td>
-            <td>$year.barometer.max<br>$year.barometer.maxtime</td>
-                                    <td>$alltime.barometer.max<br>$alltime.barometer.maxtime</td>
-              </tr>
-              <tr>
-                <td>$BootstrapLabels.minmax.min</td>
-            <td>$day.barometer.min<br>$day.barometer.mintime</td>
-            <td>$week.barometer.min<br>$week.barometer.mintime</td>
-            <td>$month.barometer.min<br>$month.barometer.mintime</td>
-            <td>$year.barometer.min<br>$year.barometer.mintime</td>
-            <td>$alltime.barometer.min<br>$alltime.barometer.mintime</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>$Labels.Generic.windSpeed</h3>
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th></th>
-                <th>$BootstrapLabels.timespans.today</th>
-                <th>$BootstrapLabels.timespans.week</th>
-                <th>$BootstrapLabels.timespans.month</th>
-                <th>$BootstrapLabels.timespans.year</th>
-                <th>$BootstrapLabels.timespans.ever</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>$BootstrapLabels.minmax.max</td>
-                <td>$day.wind.max<br>$day.wind.maxtime</td>
-                <td>$week.wind.max<br>$week.wind.maxtime</td>
-                <td>$month.wind.max<br>$month.wind.maxtime</td>
-                <td>$year.wind.max<br>$year.wind.maxtime</td>
-                <td>$alltime.wind.max<br>$alltime.wind.maxtime</td>
-              </tr>
-            </tbody>
-          </table>
-
+        #include "livegauges.html.tmpl"
+        <!-- Stats panel -->
+        <div class="col-md-9 main">
+            <table class="table statsTable">
+                <thead>
+                <tr>
+                    <th class="statsHeader">$Labels.Generic.outTemp</th>
+                    <th>$BootstrapLabels.timespans.today</th>
+                    <th>$BootstrapLabels.timespans.week</th>
+                    <th>$BootstrapLabels.timespans.month</th>
+                    <th>$BootstrapLabels.timespans.year</th>
+                    <th>$BootstrapLabels.timespans.ever</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.minmax.max</th>
+                    <td>$day.outTemp.max<br><span class="statsTime">$day.outTemp.maxtime</span></td>
+                    <td>$week.outTemp.max<br><span class="statsTime">$week.outTemp.maxtime</span></td>
+                    <td>$month.outTemp.max<br><span class="statsTime">$month.outTemp.maxtime</span></td>
+                    <td>$year.outTemp.max<br><span class="statsTime">$year.outTemp.maxtime</span></td>
+                    <td>$alltime.outTemp.max<br><span class="statsTime">$alltime.outTemp.maxtime</span></td>
+                </tr>
+                </tbody>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.minmax.min</th>
+                    <td>$day.outTemp.min<br><span class="statsTime">$day.outTemp.mintime</span></td>
+                    <td>$week.outTemp.min<br><span class="statsTime">$week.outTemp.mintime</span></td>
+                    <td>$month.outTemp.min<br><span class="statsTime">$month.outTemp.mintime</span></td>
+                    <td>$year.outTemp.min<br><span class="statsTime">$year.outTemp.mintime</span></td>
+                    <td>$alltime.outTemp.min<br><span class="statsTime">$alltime.outTemp.mintime</span></td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table statsTable">
+                <thead>
+                <tr>
+                    <th class="statsHeader">$Labels.Generic.rain</th>
+                    <th>$BootstrapLabels.timespans.today</th>
+                    <th>$BootstrapLabels.timespans.week</th>
+                    <th>$BootstrapLabels.timespans.month</th>
+                    <th>$BootstrapLabels.timespans.year</th>
+                    <th>&nbsp;</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.stats.sum</th>
+                    <td>$day.rain.sum</td>
+                    <td>$week.rain.sum</td>
+                    <td>$month.rain.sum</td>
+                    <td>$year.rain.sum</td>
+                    <td>&nbsp;</td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table statsTable">
+                <thead>
+                <tr>
+                    <th class="statsHeader">$Labels.Generic.barometer</th>
+                    <th>$BootstrapLabels.timespans.today</th>
+                    <th>$BootstrapLabels.timespans.week</th>
+                    <th>$BootstrapLabels.timespans.month</th>
+                    <th>$BootstrapLabels.timespans.year</th>
+                    <th>$BootstrapLabels.timespans.ever</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.minmax.max</th>
+                    <td>$day.barometer.max<br><span class="statsTime">$day.barometer.maxtime</span></td>
+                    <td>$week.barometer.max<br><span class="statsTime">$week.barometer.maxtime</span></td>
+                    <td>$month.barometer.max<br><span class="statsTime">$month.barometer.maxtime</span></td>
+                    <td>$year.barometer.max<br><span class="statsTime">$year.barometer.maxtime</span></td>
+                    <td>$alltime.barometer.max<br><span class="statsTime">$alltime.barometer.maxtime</span></td>
+                </tr>
+                </tbody>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.minmax.min</th>
+                    <td>$day.barometer.min<br><span class="statsTime">$day.barometer.mintime</span></td>
+                    <td>$week.barometer.min<br><span class="statsTime">$week.barometer.mintime</span></td>
+                    <td>$month.barometer.min<br><span class="statsTime">$month.barometer.mintime</span></td>
+                    <td>$year.barometer.min<br><span class="statsTime">$year.barometer.mintime</span></td>
+                    <td>$alltime.barometer.min<br><span class="statsTime">$alltime.barometer.mintime</span></td>
+                </tr>
+                </tbody>
+            </table>
+            <table class="table statsTable">
+                <thead>
+                <tr>
+                    <th class="statsHeader">$Labels.Generic.windSpeed</th>
+                    <th>$BootstrapLabels.timespans.today</th>
+                    <th>$BootstrapLabels.timespans.week</th>
+                    <th>$BootstrapLabels.timespans.month</th>
+                    <th>$BootstrapLabels.timespans.year</th>
+                    <th>$BootstrapLabels.timespans.ever</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th>$BootstrapLabels.minmax.max</th>
+                    <td>$day.wind.max<br><span class="statsTime">$day.wind.maxtime</span></td>
+                    <td>$week.wind.max<br><span class="statsTime">$week.wind.maxtime</span></td>
+                    <td>$month.wind.max<br><span class="statsTime">$month.wind.maxtime</span></td>
+                    <td>$year.wind.max<br><span class="statsTime">$year.wind.maxtime</span></td>
+                    <td>$alltime.wind.max<br><span class="statsTime">$alltime.wind.maxtime</span></td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-      </div>
-
-      <hr>
-      <footer>
-        <p>$BootstrapLabels.footer</p>
-      </footer>
-
     </div>
-
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="js/bootstrap.min.js"></script>
-  </body>
+    <hr>
+    <footer>
+        <p>$BootstrapLabels.footer</p>
+    </footer>
+</div>
+<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+<script src="js/jquery-3.6.0.min.js"></script>
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="js/mqtt.min.js"></script>
+<script src="js/units.js"></script>
+<script src="js/site.js"></script>
+<script src="js/echarts.min.js"></script>
+<script src="js/lang.js"></script>
+<script src="js/gauges.js"></script>
+</body>
 </html>
