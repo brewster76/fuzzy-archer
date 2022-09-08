@@ -100,8 +100,8 @@ Directions for use:
         aggregate_type = None
 """
 
+import logging
 import time
-import syslog
 import os.path
 from PIL import Image
 
@@ -110,6 +110,7 @@ import weewx.reportengine
 import weeplot.utilities
 import user.gauges
 
+log = logging.getLogger(__name__)
 
 class GaugeGenerator(weewx.reportengine.ReportGenerator):
     """Class for managing the gauge generator."""
@@ -141,7 +142,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                     self.record_dict_vtd = rec
 
         except:
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Cannot find the current reading")
+            log.info("GaugeGenerator: Cannot find the current reading")
 
         # For checking development code deals with 'None' readings correctly
         if self.gauge_dict.get('test_none_readings', None) is not None:
@@ -175,8 +176,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
 
         t2 = time.time()
 
-        syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: Generated %d images for %s in %.2f seconds" %
-                      (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
+        log.info("GaugeGenerator: Generated %d images for %s in %.2f seconds" %
+                 (ngen, self.skin_dict['REPORT_NAME'], t2 - t1))
 
     def gen_gauge(self, gaugename, plot_options, img_file):
         image_width = int(plot_options.get('image_width', 180))
@@ -226,7 +227,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         try:
             major_step = float(plot_options.get('majorstep'))
         except:
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify majorstep for gauge %s in skin.conf ***" % gaugename)
+            log.info("GaugeGenerator: *** Please specify majorstep for gauge %s in skin.conf ***" % gaugename)
             return
 
         try:
@@ -253,15 +254,15 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 try:
                     min_value = float(plot_options.get('minvalue'))
                 except:
-                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify minvalue for gauge %s in skin.conf ***"
-                                  % gaugename)
+                    log.info("GaugeGenerator: *** Please specify minvalue for gauge %s in skin.conf ***"
+                             % gaugename)
                     return
 
                 try:
                     max_value = float(plot_options.get('maxvalue'))
                 except:
-                    syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Please specify maxvalue for gauge %s in skin.conf ***"
-                                  % gaugename)
+                    log.info("GaugeGenerator: *** Please specify maxvalue for gauge %s in skin.conf ***"
+                             % gaugename)
                     return
 
                 dial_arc = int(plot_options.get('dial_arc', 270))
@@ -277,7 +278,7 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
         try:
             target_unit = self.units_dict['Groups'][weewx.units.obs_group_dict[columnname]]
         except:
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: *** Could not find target unit of measure for gauge '%s' ***" % gaugename)
+            log.info("GaugeGenerator: *** Could not find target unit of measure for gauge '%s' ***" % gaugename)
             return
 
         # Deal with None readings / convert to target units
@@ -288,12 +289,12 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
             else:
                 value_now = float(none_value)
 
-            syslog.syslog(syslog.LOG_INFO, "GaugeGenerator: %s has no reading (%s)" % (gaugename,  value_now))
+            log.info("GaugeGenerator: %s has no reading (%s)" % (gaugename,  value_now))
 
         else:
             # Convert it to units in skin.conf file
             value_now = weewx.units.convert(weewx.units.as_value_tuple(self.record_dict_vtd, columnname), target_unit)[0]
-            syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: %s reading = %s %s" % (gaugename, value_now, target_unit))
+            log.debug("GaugeGenerator: %s reading = %s %s" % (gaugename, value_now, target_unit))
 
         label_format = self.units_dict['StringFormats'][target_unit]
         dial_format = plot_options.get('digitformat', label_format)
@@ -328,8 +329,8 @@ class GaugeGenerator(weewx.reportengine.ReportGenerator):
                 try:
                     history_list.append(float(history_value))
                 except:
-                    syslog.syslog(syslog.LOG_DEBUG, "GaugeGenerator: Cannot decode reading of '%s' for gauge '%s'"
-                                  % (history_value, gaugename))
+                    log.debug("GaugeGenerator: Cannot decode reading of '%s' for gauge '%s'"
+                              % (history_value, gaugename))
                 else:
                     if gaugename == 'windRose':
                         speed_value = self.converter.convertDict(rec)['windSpeed']  # Uses up a lot of time

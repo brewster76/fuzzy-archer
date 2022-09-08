@@ -2,7 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v2.26) has been tested on Weewx version 4.0.0 on Ubuntu linux 16.04 LTS and Python 3.6.
+ 1) This release (v3.0) has been tested on Weewx version 4.8.0 on Ubuntu linux 18.04 LTS and Python 3.6.9.
     Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
@@ -70,6 +70,20 @@ Frequently Asked Questions
 3) Text in graphs looks very small
     Make sure you have fonts installed that support truetype scaling:
       apt-get install ttf-freefont
+
+4) The colors on the History page do not vary much
+    The default color schemes are based around values in Fahrenheit and inches.
+    Color schemes for Celsius and mm are also included in the [HistoryReport] section
+    in skins/Bootstrap/skin.conf. Comment out the Fahrenheit and inches lines and uncomment the  Celsius and mm lines.
+
+5) I can see the static day, week, month and year graphs but cannot see the live graphs or gauges.
+    The live gauges cannot connect to live readings over a file:// browser connection.
+    One easy way view live gauges and charts on a local filesystem is to run a simple python webserver from your
+    public_html folder and connect to that using your browser:
+      cd [location of your weewx public_html folder]
+      python -m http.server 8080
+
+      In your browser, connect to http://localhost:8080/Bootstrap
 
 
 Installation - The involved way

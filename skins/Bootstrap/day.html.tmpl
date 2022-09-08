@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$BootstrapLabels.title</title>
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/live.css" rel="stylesheet">
 </head>
 <body>
@@ -20,16 +20,20 @@
         <div class="col-md-9 main">
             <p></p>
             #include "graphMenu.html.tmpl"
-            <div class="row">
-                #for $chartName, value in $LiveCharts.items()
-                #if isinstance($value, dict)
-                <div id="${chartName}Chart" class="chart"></div>
-                #end if
-                #end for
+            <div class="row" id="modalRow">
+                <script type="text/javascript">
+                    readingTypes = [
+                    #for $imageName, $value in $ImageGenerator.day_images.items()
+                    #if isinstance($value, dict)
+                    "${imageName}",
+                    #end if
+                    #end for
+                    ];
+                </script>
             </div>
         </div>
     </div>
-    <hr/>
+    <hr>
     <footer>
         <p>$BootstrapLabels.footer</p>
     </footer>
@@ -44,7 +48,6 @@
 <script src="js/echarts.min.js"></script>
 <script src="js/lang.js"></script>
 <script src="js/gauges.js"></script>
-<script src="js/charts.js"></script>
 #include "script.html.tmpl"
 </body>
 </html>
