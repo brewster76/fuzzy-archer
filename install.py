@@ -52,7 +52,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             ['skins/Bootstrap/js/bootstrap.bundle.min.js',
             'skins/Bootstrap/js/charts.js',
             'skins/Bootstrap/js/echarts.min.js',
-             'skins/Bootstrap/js/jquery-3.6.0.min.js',
+             'skins/Bootstrap/js/jquery-3.6.3.min.js',
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/lang.js',
             'skins/Bootstrap/js/mqtt.min.js',
