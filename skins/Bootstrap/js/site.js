@@ -75,7 +75,7 @@ fetch(weewxDataUrl).then(function (u) {
                 let date = new Date(timestamp);
                 for (let gaugeId of Object.keys(gauges)) {
                     let gauge = gauges[gaugeId];
-                    let value = convert(gauge.weewxData, jPayload[gauge.weewxData.payload_key]);
+                    let value = convert(gauge.weewxData, getValue(jPayload, gauge.weewxData.payload_key));
                     if (!isNaN(value)) {
                         setGaugeValue(gauge, value, timestamp);
                     }
@@ -146,7 +146,7 @@ function updateGaugeValue(newValue, gauge) {
 function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
     let option = chart.getOption();
     for (let dataset of option.series) {
-        let value = convert(chart.weewxData[dataset.weewxColumn], jPayload[dataset.payloadKey]);
+        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
         if (!isNaN(value)) {
             addAggregatedChartValue(dataset, value, timestamp, aggregateIntervalMinutes);
             chart.setOption(option);
@@ -162,7 +162,7 @@ function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     for (let dataset of option.series) {
         dataset.chartId = chart.chartId;
-        let value = convert(chart.weewxData[dataset.weewxColumn], jPayload[dataset.payloadKey]);
+        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
         if (!isNaN(value)) {
             addValue(dataset, value, timestamp);
             chart.setOption(option);
@@ -332,4 +332,15 @@ function asyncReloadWeewxData() {
     }).catch(err => {
         throw err
     });
+}
+
+function getValue(obj, path) {
+    let pathArray = path.split(".");
+    let value = obj;
+    for(let i = 0; i < pathArray.length; i++) {
+        if(value !== undefined && value[pathArray[i]] !== undefined) {
+  	        value = value[pathArray[i]];
+  	    }
+    }
+    return value;
 }
