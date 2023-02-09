@@ -1,26 +1,30 @@
+let baseColor = '#111111';
+let backGroundColor = baseColor + '0a';
+let nightBackGroundColorModifier = '1a';
+
 function loadCharts() {
-    for(let chartId of Object.keys(weewxData.charts)) {
+    for (let chartId of Object.keys(weewxData.charts)) {
         let documentChartId = chartId + "Chart";
 
-         if(charts[documentChartId] !== undefined){
+        if (charts[documentChartId] !== undefined) {
             charts[documentChartId].dispose();
             charts[documentChartId] = undefined;
         }
 
         let chartElement = document.getElementById(documentChartId);
-        if(chartElement === null || chartElement === undefined) {
+        if (chartElement === null || chartElement === undefined) {
             continue;
         }
-        let chart = echarts.init(chartElement, null, {locale: eChartsLocale});
+        let chart = echarts.init(chartElement, null, { locale: eChartsLocale });
         chart.weewxData = weewxData.charts[chartId];
         charts[documentChartId] = chart;
         let chartSeriesConfigs = [];
 
         let timestamp = 0;
 
-        for(let categoryId of Object.keys(weewxData.charts[chartId])) {
+        for (let categoryId of Object.keys(weewxData.charts[chartId])) {
             let category = weewxData.charts[chartId][categoryId];
-            if(typeof category !== 'object' || category === null) {
+            if (typeof category !== 'object' || category === null) {
                 continue;
             }
             chart.weewxData[categoryId].observationType = categoryId;
@@ -40,7 +44,7 @@ function loadCharts() {
                 symbol: category.symbol,
                 symbolSize: category.symbolSize,
             }
-            if(category.lineWidth !== undefined) {
+            if (category.lineWidth !== undefined) {
                 chartSeriesConfig.lineStyle = {
                     width: category.lineWidth,
                 };
@@ -49,32 +53,41 @@ function loadCharts() {
 
             if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
                 let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
-                if(categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
+                if (categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
                     timestamp = categoryTimestamp;
                 }
             }
         }
+
         let chartOption;
-        if(chart.weewxData.aggregate_interval_minutes !== undefined) {
+        let start;
+        let end;
+        if (chart.weewxData.aggregate_interval_minutes !== undefined) {
             chartOption = getBarChartOption(chartSeriesConfigs, chart.weewxData.aggregate_interval_minutes);
+            start = chartOption.series[0].data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
+            end = chartOption.series[0].data[chartOption.series[0].data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
         } else {
             chartOption = getLineChartOption(chartSeriesConfigs);
         }
+        
+        chartSeriesConfigs.push(getDayNighSeries(chartId, start, end));
 
-        if(obs_group === "group_speed") {
+        chartOption.series[0].markArea = getMarkArea();
+
+        if (obs_group === "group_speed") {
             chartOption.yAxis.min = 0;
         }
-        if(obs_group === "group_percent") {
+        if (obs_group === "group_percent") {
             chartOption.yAxis.min = 0;
             chartOption.yAxis.max = 100;
         }
-        if(chart.weewxData.yAxis_minInterval !== undefined) {
+        if (chart.weewxData.yAxis_minInterval !== undefined) {
             chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
         }
-        if(chart.weewxData.yAxis_axisLabel_align !== undefined) {
+        if (chart.weewxData.yAxis_axisLabel_align !== undefined) {
             chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
         }
-        if(obs_group === "group_direction") {
+        if (obs_group === "group_direction") {
             chartOption.yAxis.min = 0;
             chartOption.yAxis.max = 360;
             chartOption.yAxis.minInterval = 90;
@@ -85,6 +98,33 @@ function loadCharts() {
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
 }
+
+function getDayNighSeries(chartId, start, end) {
+    let data = [];
+
+    if(weewxData['day_night_events'] === undefined) {
+        return data;
+    }
+    
+    weewxData['day_night_events'].forEach(
+        (element, index) => {
+            data.push([element[0], undefined]);
+         }
+    );
+    if(start !== undefined && data[0] !== undefined) {
+        data[0][0] = start;
+    }
+    if(end !== undefined && data[data.length - 1] !== undefined) {
+        data[data.length - 1][0] = end;
+    }
+
+    return {
+        name: "dayNight_" + chartId,
+        data: data
+    }
+}
+
+
 function getLineChartOption(seriesConfigs) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
@@ -106,6 +146,7 @@ function getLineChartOption(seriesConfigs) {
             },
             data: seriesConfig.data,
         };
+
 
         if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
             let markPoint = {};
@@ -143,12 +184,12 @@ function getLineChartOption(seriesConfigs) {
             serie.markLine = {
                 precision: seriesConfig.decimals,
                 data: [{
-                        type: "average",
-                        name: "Avg",
-                        label: {
-                            formatter: "{c}" + yAxisName
-                        }
+                    type: "average",
+                    name: "Avg",
+                    label: {
+                        formatter: "{c}" + yAxisName
                     }
+                }
                 ]
             };
         }
@@ -164,7 +205,7 @@ function getLineChartOption(seriesConfigs) {
             fontSize: 10,
         },
         color: colors,
-        backgroundColor: '#1111110a',
+        backgroundColor: backGroundColor,
         toolbox: {
             show: true,
             feature: {
@@ -186,7 +227,7 @@ function getLineChartOption(seriesConfigs) {
                 let show = false;
                 params.forEach(item => {
                     let unitString = configs[item.seriesIndex].unit === undefined ? "" : configs[item.seriesIndex].unit;
-                    if(!isNaN(item.data[1])) {
+                    if (!isNaN(item.data[1])) {
                         show = true;
                         tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + unitString + '</td></tr>');
                     }
@@ -280,12 +321,12 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             serie.markLine = {
                 precision: seriesConfig.decimals,
                 data: [{
-                        type: "average",
-                        name: "Avg",
-                        label: {
-                            formatter: "{c}" + yAxisName
-                        }
+                    type: "average",
+                    name: "Avg",
+                    label: {
+                        formatter: "{c}" + yAxisName
                     }
+                }
                 ]
             };
         }
@@ -302,7 +343,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             fontSize: 10,
         },
         color: colors,
-        backgroundColor: '#1111110a',
+        backgroundColor: backGroundColor,
         toolbox: {
             show: true,
             feature: {
@@ -392,9 +433,9 @@ function getDecimalSeparator(locale) {
 
 function aggregate(data, aggregateIntervalMinutes) {
     let aggregatedData = [];
-    for(let entry of data) {
+    for (let entry of data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
-        if(entry[1] !== undefined){
+        if (entry[1] !== undefined) {
             setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
         }
     }
@@ -407,10 +448,10 @@ function getXMinInterval() {
 
 function addUndefinedIfCurrentMissing(data) {
     let latestTimestamp = 0;
-    if(data.length > 0) {
+    if (data.length > 0) {
         latestTimestamp = data[data.length - 1][0];
     }
-    if(Date.now() - latestTimestamp > weewxData.config.archive_interval) {
+    if (Date.now() - latestTimestamp > weewxData.config.archive_interval) {
         data.push([Date.now(), undefined]);
     }
 }
@@ -421,9 +462,64 @@ function getTimestampDiv(parentId, timestamp) {
     let timestampDiv = document.createElement("div");
     timestampDiv.id = parentId + "_timestamp";
     timestampDiv.setAttribute("class", "chartTimestamp");
-    if(timestamp > 0) {
+    if (timestamp > 0) {
         timestampDiv.innerHTML = formatDateTime(timestamp);
     }
     outerDiv.appendChild(timestampDiv);
     return outerDiv;
+}
+
+function getMarkArea() {
+    let data = [];
+    if(weewxData['day_night_events'] === undefined) {
+        return data;
+    }
+    weewxData['day_night_events'].forEach(
+        (element, index) => {
+            let end = weewxData['day_night_events'][index + 1];
+            if(end !== undefined) {
+                let part = getPart(element[0], end[0], element[1], end[1]);
+                data.push(part);
+            }
+         }
+    );
+
+    return {
+        data: data,
+        silent: true
+    }
+}
+
+
+
+function getPart(start, end, startDarkeningExtent, endDarkeningExtent) {
+    return [
+        {
+            itemStyle: {
+                color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 1,
+                    y2: 0,
+                    colorStops: [{
+                        offset: 0, color: baseColor + getColorModifier(startDarkeningExtent)
+                    }, {
+                        offset: 1, color: baseColor + getColorModifier(endDarkeningExtent)
+                    }],
+                    global: false
+                }
+            },
+            xAxis: start
+        },
+        {
+            xAxis: end
+        }
+    ];
+}
+
+function getColorModifier(extent) {
+    return Math.round(
+        Number('0x' + nightBackGroundColorModifier) * extent
+        ).toString(16).padStart(2, '0');
 }
