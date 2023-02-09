@@ -470,17 +470,20 @@ function getTimestampDiv(parentId, timestamp) {
 }
 
 function getMarkArea() {
+    let dayNightEvents = weewxData['day_night_events'];
     let data = [];
-    if(weewxData['day_night_events'] === undefined) {
+    if(dayNightEvents === undefined) {
         return data;
     }
-    weewxData['day_night_events'].forEach(
+    dayNightEvents.forEach(
         (element, index) => {
-            let end = weewxData['day_night_events'][index + 1];
-            if(end !== undefined) {
-                let part = getPart(element[0], end[0], element[1], end[1]);
-                data.push(part);
-            }
+            let last = dayNightEvents[index + 1];
+            let start = index == 0 ? undefined : element[0];
+            let end = index == (dayNightEvents.length - 1) ? undefined : last[0];
+            let extentEnd = last !== undefined ? last[1] : element[1];
+            let part = getPart(start, end, element[1], extentEnd);
+            data.push(part);
+            
          }
     );
 
