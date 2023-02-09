@@ -335,6 +335,9 @@ function asyncReloadWeewxData() {
 }
 
 function getValue(obj, path) {
+    if(path === undefined) {
+        return;
+    }
     let pathArray = path.split(".");
     let value = obj;
     for(let i = 0; i < pathArray.length; i++) {
