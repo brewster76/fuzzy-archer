@@ -71,9 +71,9 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/languages/norwegian.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="2.26",
+            version="3.1",
             name='bootstrap',
-            description='A skin based around the bootstrap 3.2.0 framework',
+            description='A skin based around the bootstrap 5.2.0 framework',
             author="Nick Dajda",
             author_email="nick.dajda@gmail.com",
             config={
