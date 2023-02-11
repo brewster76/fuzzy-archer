@@ -22,7 +22,7 @@ Directions for use:
 #
 TODO: example
 """
-
+import sys
 import time
 import logging
 import json
@@ -30,8 +30,9 @@ import os.path
 
 import weeutil.weeutil
 import weewx.reportengine
-import weeplot.utilities
-import user.gauges
+from weewx.units import convert
+
+from user.sunevents import SunEvents
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +69,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.record_dict_vtd = None
         batch_records = db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
 
+        self.transition_angle = 8
+
         try:
             for rec in batch_records:
                 if self.record_dict_vtd is None:
@@ -83,7 +86,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
     def gen_data(self):
         """Generate data."""
-        startTime = time.time()
+        start_time = time.time()
         ngen = 0
         self.frontend_data['config'] = self.json_dict
         self.frontend_data['config']['archive_interval'] = self.config_dict['StdArchive']['archive_interval']
@@ -115,6 +118,17 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
 
+        timespan = int(live_options.get('timespan'))
+        first_value_timestamp = self.lastGoodStamp - timespan * 60 * 60
+        last_value_timestamp = self.lastGoodStamp
+
+        altitude = self.config_dict['Station']['altitude']
+        altitude_m = altitude[0]
+        if altitude[1] == 'foot':
+            altitude_m = convert(altitude[0], 'meter')[0]
+        events = self.get_day_night_events(first_value_timestamp, last_value_timestamp, self.config_dict['Station']['longitude'], self.config_dict['Station']['latitude'], altitude_m)
+        self.frontend_data['day_night_events'] = events
+
         # Write JSON self.frontend_data output if a filename is specified
         data_filename = 'weewxData.js'
         timestamp_filename = 'ts.js'
@@ -124,10 +138,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         if timestamp_filename is not None:
             self.write_ts_file(os.path.join(html_root, timestamp_filename))
 
-        finishTime = time.time()
+        finish_time = time.time()
 
         log.info("JSONGenerator: Generated %d data items for %s in %.2f seconds" %
-                 (ngen, self.skin_dict['REPORT_NAME'], finishTime - startTime))
+                 (ngen, self.skin_dict['REPORT_NAME'], finish_time - start_time))
 
     def get_target_unit(self, column_name):
         try:
@@ -209,3 +223,21 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         else:
             with fp:
                 fp.write('{"lastGoodStamp":"' + str(self.lastGoodStamp) + '"}')
+
+
+    def get_day_night_events(self, start, end, lon, lat, altitude_m):
+        if 'ephem' not in sys.modules:
+            return []
+
+        above_below_horizon_angle = 6
+        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(above_below_horizon_angle)
+        for event in events:
+            event[0] = event[0] * 1000
+            angle = event[1]
+            darkening_extent = abs(((event[1] - above_below_horizon_angle) / 2) / above_below_horizon_angle)
+            if angle >= above_below_horizon_angle:
+                darkening_extent = 0
+            if angle <= -above_below_horizon_angle:
+                darkening_extent = 1
+            event[1] = darkening_extent
+        return events
