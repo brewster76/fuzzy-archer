@@ -1,7 +1,7 @@
 <div class="col-md-3">
     <div class="row">
         <div class="col-md-12" align="center">
-            <h1 style="color: #777; font-family: sans-serif;">Current Conditions</h1>
+            <h1 style="color: #777; font-family: sans-serif;">$gettext("Current Conditions")</h1>
         </div>
     </div>
     #set $count = 0
@@ -23,7 +23,7 @@
         <table class="table table-hover">
             <tbody>
             <tr>
-                <td>Latitude</td>
+                <td>$gettext("Latitude")</td>
                 <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
             </tr>
             <tr>
