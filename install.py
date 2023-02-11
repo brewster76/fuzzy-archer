@@ -31,7 +31,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/month.html.tmpl',
              'skins/Bootstrap/nav.html.inc',
              'skins/Bootstrap/news.html.tmpl',
-             'skins/Bootstrap/script.html.tmpl',
+             'skins/Bootstrap/script.html.inc',
              'skins/Bootstrap/stats.html.tmpl',
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
