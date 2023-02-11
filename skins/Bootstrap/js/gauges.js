@@ -71,13 +71,13 @@ function loadGauges() {
             gaugeOption.series[0].axisLabel.fontWeight = 'bold';
             gaugeOption.series[0].axisLabel.formatter = function (value) {
                 if (value === 0)
-                    return 'N';
+                    return weewxData.labels.hemispheres === undefined ? "N" : weewxData.labels.hemispheres[0];
                 if (value === 90)
-                    return 'O';
+                    return weewxData.labels.hemispheres === undefined ? "E" : weewxData.labels.hemispheres[3];
                 if (value === 180)
-                    return 'S';
+                    return weewxData.labels.hemispheres === undefined ? "S" : weewxData.labels.hemispheres[1];
                 if (value === 270)
-                    return 'W';
+                    return weewxData.labels.hemispheres === undefined ? "W" : weewxData.labels.hemispheres[2];
             };
             gaugeOption.series[0].title.offsetCenter = ['0', '-25%'];
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
