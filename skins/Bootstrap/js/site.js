@@ -325,6 +325,10 @@ function asyncReloadWeewxData() {
         return u.json();
     }).then(function (serverData) {
         weewxData = serverData;
+        while(loadGauges === undefined) {
+            setTimeout(asyncReloadWeewxData, 10);
+            return;
+        }
         loadGauges();
         if(typeof loadCharts === 'function') {
             loadCharts();
