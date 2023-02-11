@@ -61,16 +61,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/mqtt.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
-           ('skins/languages',
-            ['skins/languages/catala.conf',
-             'skins/languages/dutch.conf',
-             'skins/languages/espanol.conf',
-             'skins/languages/finnish.conf',
-             'skins/languages/francais.conf',
-             'skins/languages/german.conf',
-             'skins/languages/italian.conf',
-             'skins/languages/korean.conf',
-             'skins/languages/norwegian.conf'])]
+           ('skins/Bootstrap/lang',
+            ['skins/Bootstrap/lang/catala.conf',
+             'skins/Bootstrap/lang/dutch.conf',
+             'skins/Bootstrap/lang/espanol.conf',
+             'skins/Bootstrap/lang/finnish.conf',
+             'skins/Bootstrap/lang/francais.conf',
+             'skins/Bootstrap/lang/de.conf',
+             'skins/Bootstrap/lang/italian.conf',
+             'skins/Bootstrap/lang/korean.conf',
+             'skins/Bootstrap/lang/norwegian.conf'])]
 
         super(BootstrapInstaller, self).__init__(
             version="3.1",
