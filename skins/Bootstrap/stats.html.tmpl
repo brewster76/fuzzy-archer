@@ -1,37 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$BootstrapLabels.title</title>
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/live.css" rel="stylesheet">
-</head>
+#include "head.html.inc"
 <body>
 <!-- Menu navbar -->
-#include "nav.html.tmpl"
+#include "nav.html.inc"
 <!-- Main container -->
 <div class="container-fluid">
     <div class="row">
         <!-- Gauge panel -->
-        #include "livegauges.html.tmpl"
+        #include "livegauges.html.inc"
         <!-- Stats panel -->
         <div class="col-md-9 main">
             <table class="table statsTable">
                 <thead>
                 <tr>
                     <th class="statsHeader">$Labels.Generic.outTemp</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
+                    <th>Today</th>
+                    <th>This week</th>
+                    <th>This month</th>
+                    <th>This year</th>
+                    <th>Since ever</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
+                    <th>High</th>
                     <td>$day.outTemp.max<br><span class="statsTime">$day.outTemp.maxtime</span></td>
                     <td>$week.outTemp.max<br><span class="statsTime">$week.outTemp.maxtime</span></td>
                     <td>$month.outTemp.max<br><span class="statsTime">$month.outTemp.maxtime</span></td>
@@ -39,7 +30,7 @@
                     <td>$alltime.outTemp.max<br><span class="statsTime">$alltime.outTemp.maxtime</span></td>
                 </tr>
                 <tr>
-                    <th>$BootstrapLabels.minmax.min</th>
+                    <th>Low</th>
                     <td>$day.outTemp.min<br><span class="statsTime">$day.outTemp.mintime</span></td>
                     <td>$week.outTemp.min<br><span class="statsTime">$week.outTemp.mintime</span></td>
                     <td>$month.outTemp.min<br><span class="statsTime">$month.outTemp.mintime</span></td>
@@ -52,16 +43,16 @@
                 <thead>
                 <tr>
                     <th class="statsHeader">$Labels.Generic.rain</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
+                    <th>Today</th>
+                    <th>This week</th>
+                    <th>This month</th>
+                    <th>This year</th>
                     <th>&nbsp;</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <th>$BootstrapLabels.stats.sum</th>
+                    <th>Sum</th>
                     <td>$day.rain.sum</td>
                     <td>$week.rain.sum</td>
                     <td>$month.rain.sum</td>
@@ -74,16 +65,16 @@
                 <thead>
                 <tr>
                     <th class="statsHeader">$Labels.Generic.barometer</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
+                    <th>Today</th>
+                    <th>This week</th>
+                    <th>This month</th>
+                    <th>This year</th>
+                    <th>Since ever</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
+                    <th>High</th>
                     <td>$day.barometer.max<br><span class="statsTime">$day.barometer.maxtime</span></td>
                     <td>$week.barometer.max<br><span class="statsTime">$week.barometer.maxtime</span></td>
                     <td>$month.barometer.max<br><span class="statsTime">$month.barometer.maxtime</span></td>
@@ -91,7 +82,7 @@
                     <td>$alltime.barometer.max<br><span class="statsTime">$alltime.barometer.maxtime</span></td>
                 </tr>
                 <tr>
-                    <th>$BootstrapLabels.minmax.min</th>
+                    <th>Low</th>
                     <td>$day.barometer.min<br><span class="statsTime">$day.barometer.mintime</span></td>
                     <td>$week.barometer.min<br><span class="statsTime">$week.barometer.mintime</span></td>
                     <td>$month.barometer.min<br><span class="statsTime">$month.barometer.mintime</span></td>
@@ -104,16 +95,16 @@
                 <thead>
                 <tr>
                     <th class="statsHeader">$Labels.Generic.windSpeed</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
+                    <th>Today</th>
+                    <th>This week</th>
+                    <th>This month</th>
+                    <th>This year</th>
+                    <th>Since ever</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
+                    <th>High</th>
                     <td>$day.wind.max<br><span class="statsTime">$day.wind.maxtime</span></td>
                     <td>$week.wind.max<br><span class="statsTime">$week.wind.maxtime</span></td>
                     <td>$month.wind.max<br><span class="statsTime">$month.wind.maxtime</span></td>
@@ -124,20 +115,8 @@
             </table>
         </div>
     </div>
-    <hr>
-    <footer>
-        <p>$BootstrapLabels.footer</p>
-    </footer>
+    #include "foot.html.inc"
 </div>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="js/jquery-3.6.3.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="js/bootstrap.bundle.min.js"></script>
-<script src="js/mqtt.min.js"></script>
-<script src="js/units.js"></script>
-<script src="js/site.js"></script>
-<script src="js/echarts.min.js"></script>
-<script src="js/lang.js"></script>
-<script src="js/gauges.js"></script>
+#include "script.html.inc"
 </body>
 </html>

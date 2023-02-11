@@ -8,25 +8,24 @@
         <div class="collapse navbar-collapse" id="navbarText">
             <ul id="navbarList" class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a id="indexHtml" class="nav-link" href="index.html#">$BootstrapLabels.headings.front_page<span
+                    <a id="indexHtml" class="nav-link" href="index.html#">The Weather<span
                             class="visually-hidden">(current)</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="stats.html">$BootstrapLabels.headings.stats</a>
+                    <a class="nav-link" href="stats.html">Stats</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="history.html">$BootstrapLabels.headings.history</a>
+                    <a class="nav-link" href="history.html">History</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="news.html">$BootstrapLabels.headings.news</a>
+                    <a class="nav-link" href="news.html">News</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="about.html">$BootstrapLabels.headings.about</a>
+                    <a class="nav-link" href="about.html">About</a>
                 </li>
             </ul>
-            <span class="navbar-text">$BootstrapLabels.headings.last_update <span
-                    id="lastUpdate">$current.dateTime</span>
+            <span class="navbar-text">Last update<span id="lastUpdate"> $current.dateTime</span>
       </span>
         </div>
     </div>

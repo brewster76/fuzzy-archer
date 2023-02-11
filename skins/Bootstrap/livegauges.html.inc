@@ -1,7 +1,7 @@
 <div class="col-md-3">
     <div class="row">
         <div class="col-md-12" align="center">
-            <h1 style="color: #777; font-family: sans-serif;">$BootstrapLabels.live.current_conditions</h1>
+            <h1 style="color: #777; font-family: sans-serif;">Current Conditions</h1>
         </div>
     </div>
     #set $count = 0
@@ -23,35 +23,35 @@
         <table class="table table-hover">
             <tbody>
             <tr>
-                <td>$BootstrapLabels.status.latitude</td>
+                <td>Latitude</td>
                 <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.status.longitude</td>
+                <td>Longitude</td>
                 <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.status.altitude</td>
+                <td>Altitude</td>
                 <td>$station.altitude</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.Almanac.sunrise</td>
+                <td>Sunrise</td>
                 <td>$almanac.sunrise</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.Almanac.sunset</td>
+                <td>Sunset</td>
                 <td>$almanac.sunset</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.Almanac.moon_phase</td>
+                <td>Moon Phase</td>
                 <td>$almanac.moon_phase ($almanac.moon_fullness%)</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.status.station_uptime</td>
+                <td>Station Uptime</td>
                 <td>$station.uptime.long_form</td>
             </tr>
             <tr>
-                <td>$BootstrapLabels.status.server_uptime</td>
+                <td>Server Uptime</td>
                 <td>$station.os_uptime.long_form</td>
             </tr>
             </tbody>
