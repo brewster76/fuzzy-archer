@@ -1,4 +1,4 @@
     <hr>
     <footer>
-        <p>Footer Text</p>
+        <p>$gettext(Footer Text)</p>
     </footer>

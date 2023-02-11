@@ -27,31 +27,31 @@
                 <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
             </tr>
             <tr>
-                <td>Longitude</td>
+                <td>$gettext(Longitude)</td>
                 <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
             </tr>
             <tr>
-                <td>Altitude</td>
+                <td>$gettext(Altitude)</td>
                 <td>$station.altitude</td>
             </tr>
             <tr>
-                <td>Sunrise</td>
+                <td>$gettext(Sunrise)</td>
                 <td>$almanac.sunrise</td>
             </tr>
             <tr>
-                <td>Sunset</td>
+                <td>$gettext(Sunset)</td>
                 <td>$almanac.sunset</td>
             </tr>
             <tr>
-                <td>Moon Phase</td>
+                <td>$gettext(Moon Phase)</td>
                 <td>$almanac.moon_phase ($almanac.moon_fullness%)</td>
             </tr>
             <tr>
-                <td>Station Uptime</td>
+                <td>$gettext(Station Uptime)</td>
                 <td>$station.uptime.long_form</td>
             </tr>
             <tr>
-                <td>Server Uptime</td>
+                <td>$gettext(Server Uptime)</td>
                 <td>$station.os_uptime.long_form</td>
             </tr>
             </tbody>
