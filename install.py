@@ -62,15 +62,17 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',
-            ['skins/Bootstrap/lang/catala.conf',
-             'skins/Bootstrap/lang/dutch.conf',
-             'skins/Bootstrap/lang/espanol.conf',
-             'skins/Bootstrap/lang/finnish.conf',
-             'skins/Bootstrap/lang/francais.conf',
+            ['skins/Bootstrap/lang/cn.conf',
+             'skins/Bootstrap/lang/cz.conf',
              'skins/Bootstrap/lang/de.conf',
-             'skins/Bootstrap/lang/italian.conf',
-             'skins/Bootstrap/lang/korean.conf',
-             'skins/Bootstrap/lang/norwegian.conf'])]
+             'skins/Bootstrap/lang/en.conf',
+             'skins/Bootstrap/lang/es.conf',
+             'skins/Bootstrap/lang/fr.conf',
+             'skins/Bootstrap/lang/gr.conf',
+             'skins/Bootstrap/lang/it.conf',
+             'skins/Bootstrap/lang/nl.conf',
+             'skins/Bootstrap/lang/no.conf',
+             'skins/Bootstrap/lang/th.conf'])]
 
         super(BootstrapInstaller, self).__init__(
             version="3.1",
