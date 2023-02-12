@@ -204,7 +204,8 @@ class MyXSearch(SearchList):
                     table_stats = all_stats
 
                 table_name = table + '_table'
-                self.search_list_extension[table_name] = self._statsHTMLTable(table_options, table_stats, table_name, binding, NOAA=noaa)
+                self.search_list_extension[table_name] = table_stats
+                #self.search_list_extension[table_name] = self._statsHTMLTable(table_options, table_stats, table_name, binding, NOAA=noaa)
                 ngen += 1
 
             t2 = time.time()
