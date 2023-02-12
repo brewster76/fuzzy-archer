@@ -12,7 +12,7 @@
             #include "graphMenu.html.inc"
             <div class="row" id="modalRow">
                 <script type="text/javascript">
-                  readingTypes = [
+                  let readingTypes = [
                   #for $imageName, $value in $ImageGenerator.month_images.items()
                   #if isinstance($value, dict)
                   "${imageName}",
@@ -20,6 +20,7 @@
                   #end for
                   ];
                 </script>
+                #include "imagescript.html.inc"
             </div>
         </div>
     </div>

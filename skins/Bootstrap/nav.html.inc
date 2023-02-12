@@ -1,9 +1,9 @@
 <nav aria-label="Nav" class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="https://de.wikipedia.org/wiki/Hallein">$station.location</a>
+        <a class="navbar-brand" href="$station.station_url">$station.location</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
                 aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"/>
+            <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarText">
             <ul id="navbarList" class="navbar-nav me-auto mb-2 mb-lg-0">

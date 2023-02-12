@@ -9,27 +9,33 @@
         #include "livegauges.html.inc"
         <!-- Graph panel -->
         <div class="col-md-9 main">
-            <h3 class="historyHeader">$gettext("Minimum Temperature")</h3>
-            $min_temp_table
-
-            <h3 class="historyHeader">$gettext("Average Temperature")</h3>
-            $avg_temp_table
-
-            <h3 class="historyHeader">$gettext("Maximum Temperature")</h3>
-            $max_temp_table
-
-            <h3 class="historyHeader">$gettext("Rainfall")</h3>
-            $rain_table
-
-            <h3 class="historyHeader">$gettext("Days of Rainfall")</h3>
-            $rain_days_table
-
-            <h3 class="historyHeader">$gettext("Maximum Gust")</h3>
-            $max_wind_table
-
-            $NOAA_table
+            #for $table in $history_tables
+            #if $table.noaa is False
+            <h3 class="historyHeader">$table.header_text</h3>
+            <table class="table historyTable text-center">
+                <thead>
+                    <tr>
+                        #for $header in $table.headers
+                        <th class="head">$header</th>
+                        #end for
+                    </tr>
+                </thead>
+                <tbody>
+                #for $line in $table.lines
+                <tr>
+                    <th class="head">$line.head</th>
+                    #for $value in $line.values
+                    <td class="$value.class">$value.value</td>
+                    #end for
+                </tr>
+                #end for
+                </tbody>
+            #end if
+            #end for
+            </table>
         </div>
     </div>
+    $history_tables
     #include "foot.html.inc"
 </div>
 #include "script.html.inc"

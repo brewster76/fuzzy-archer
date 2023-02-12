@@ -73,11 +73,11 @@ function loadGauges() {
                 if (value === 0)
                     return weewxData.labels.hemispheres === undefined ? "N" : weewxData.labels.hemispheres[0];
                 if (value === 90)
-                    return weewxData.labels.hemispheres === undefined ? "E" : weewxData.labels.hemispheres[3];
+                    return weewxData.labels.hemispheres === undefined ? "E" : weewxData.labels.hemispheres[2];
                 if (value === 180)
                     return weewxData.labels.hemispheres === undefined ? "S" : weewxData.labels.hemispheres[1];
                 if (value === 270)
-                    return weewxData.labels.hemispheres === undefined ? "W" : weewxData.labels.hemispheres[2];
+                    return weewxData.labels.hemispheres === undefined ? "W" : weewxData.labels.hemispheres[3];
             };
             gaugeOption.series[0].title.offsetCenter = ['0', '-25%'];
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
