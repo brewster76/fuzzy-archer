@@ -325,8 +325,8 @@ function asyncReloadWeewxData() {
         return u.json();
     }).then(function (serverData) {
         weewxData = serverData;
-        while(!typeof loadGauges === "function") {
-            setTimeout(asyncReloadWeewxData, 1);
+        while(loadGauges !== undefined && !typeof loadGauges === "function") {
+            setTimeout(asyncReloadWeewxData, 10);
             return;
         }
         loadGauges();
