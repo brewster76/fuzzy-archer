@@ -308,30 +308,33 @@ class MyXSearch(SearchList):
             else:
                 format_string = reading.formatter.unit_format_dict[unit_type]
 
-        header_text = "header_text"
+        header_text = table_name + "header_text"
         if "header_text" in table_options:
             header_text = table_options["header_text"]
         table_dict = {
             "noaa": NOAA,
             "header_text": header_text,
-            "headers": [unit_formatted, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov',
-                       'Dec'],
+            "header": {"head": unit_formatted, "values": ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']},
             "lines": []}
-        if NOAA is False or summary_column:
-            table_dict["headers"].append("Year")
+        if NOAA is False and summary_column:
+            table_dict["header"]["summary"] = 'Year'
 
         for year in table_stats.years():
             year_number = datetime.fromtimestamp(year.timespan[0]).year
-
-            line = {"head": str(year_number), "values" : []}
+            value = {"value": str(year_number)}
+            if NOAA is True:
+                dt = datetime.fromtimestamp(year.timespan[0])
+                value["url"] = dt.strftime(table_options['year_filename'])
+            line = {"head": value, "values": []}
 
             for month in year.months():
                 if NOAA is True:
-                    if (month.timespan[1] < table_stats.timespan.start) or (month.timespan[0] > table_stats.timespan.stop):
-                        line["values"].append("-")
-                    else:
+                    noaa_value = {"value": ""}
+                    if (month.timespan[1] >= table_stats.timespan.start) and (month.timespan[0] <= table_stats.timespan.stop):
                         dt = datetime.fromtimestamp(month.timespan[0])
-                        line["values"].append([dt.strftime(table_options['month_filename']), dt.strftime("%m-%y")])
+                        noaa_value["value"] = dt.strftime("%m-%y")
+                        noaa_value["url"] = dt.strftime(table_options['month_filename'])
+                    line["values"].append(noaa_value)
                 else:
                     # update the binding to access the right DB
                     obs_month = getattr(month, obs_type)
@@ -370,24 +373,12 @@ class MyXSearch(SearchList):
         format_string: How the numberic value should be represented in the table cell.
         cellColours: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
-
-        cell = {}
-        if summary is False:
-            if noaa is False:
-                cell["class"] = 'month'
-        else:
-            cell["class"] = 'year'
-
+        cell = {"value": "", "bgcolor": "", "fontcolor": ""}
         if value is not None:
             for c in cellColours:
                 if (value >= float(c[0])) and (value < float(c[1])):
                     cell["bgcolor"] = c[2]
                     cell["fontcolor"] = c[3]
                     break
-            formatted_value = format_string % value
-        else:
-            formatted_value = '-'
-
-        cell["value"] = formatted_value
-
+            cell["value"] = format_string % value
         return cell
