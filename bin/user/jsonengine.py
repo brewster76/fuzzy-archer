@@ -133,10 +133,11 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         data_filename = 'weewxData.js'
         timestamp_filename = 'ts.js'
         html_root = os.path.join(self.config_dict['WEEWX_ROOT'], live_options['HTML_ROOT'])
-        if data_filename is not None:
-            self.write_json(os.path.join(html_root, data_filename))
-        if timestamp_filename is not None:
-            self.write_ts_file(os.path.join(html_root, timestamp_filename))
+
+        if not os.path.exists(html_root):
+            os.makedirs(html_root)
+        self.write_json(os.path.join(html_root, data_filename))
+        self.write_ts_file(os.path.join(html_root, timestamp_filename))
 
         finish_time = time.time()
 

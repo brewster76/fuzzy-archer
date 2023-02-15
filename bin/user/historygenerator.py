@@ -132,7 +132,7 @@ class MyXSearch(SearchList):
         # Make ImageGenerator specific labels in config file available to templates
         image_dict = {}
         image_config_path = os.path.join(generator.config_dict['WEEWX_ROOT'], generator.config_dict['StdReport']['SKIN_ROOT'],
-                                         'Images', "skin.conf")
+                                         'Bootstrap', "skin.conf")
         try:
             image_dict = ConfigObj(image_config_path)
         except:

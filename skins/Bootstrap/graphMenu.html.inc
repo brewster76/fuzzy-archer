@@ -6,7 +6,7 @@
     <a class="btn" href="year.html#">$gettext("Year")</a>
 </p>
 <script type="text/javascript">
-<!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
+## 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar characters in the js
 #raw
 
         let href = window.location.href;
