@@ -48,6 +48,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
            ('bin/user',
             ['bin/user/historygenerator.py',
              'bin/user/jsonengine.py',
+             'bin/user/largeimagegenerator.py',
              'bin/user/sunevents.py']),
            ('skins/Bootstrap/css',
             ['skins/Bootstrap/css/bootstrap.min.css',

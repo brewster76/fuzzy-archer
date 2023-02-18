@@ -17,7 +17,7 @@
                     #for $imageName, $value in $ImageGenerator[$global_type + '_images'].items()
                     #if isinstance($value, dict)
                     <div class="chart">
-                        <div class="modal fade" id="lg-${imageName}Modal" tabindex="-1" aria-hidden="true">
+                        <div class="modal fade" id="large-${imageName}Modal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog" style="max-width: 900px">
                                 <div class="modal-content">
                                     <div class="modal-header">
@@ -25,14 +25,14 @@
                                                 aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <img src="lg-${imageName}.png" alt="" class="mw-100">
+                                        <img src="large-${imageName}.png" alt="" class="mw-100">
                                     </div>
                                     <div class="modal-footer"></div>
                                 </div>
                             </div>
                         </div>
                         <img src="${imageName}.png" alt="" class="mw-100" data-bs-toggle="modal"
-                             data-bs-target="#lg-${imageName}Modal" style="cursor: pointer;">
+                             data-bs-target="#large-${imageName}Modal" style="cursor: pointer;">
                     </div>
                     #end if
                     #end for
