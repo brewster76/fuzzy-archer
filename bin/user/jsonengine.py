@@ -3,7 +3,7 @@
 #    Author: Michael Kainzbauer (github: mkainzbauer)
 """generator for configuration and initializing live data skin
 
-Tested on Weewx release 4.3.0.
+Tested on Weewx release 4.10.1.
 Tested with sqlite, may not work with other databases.
 
 Directions for use:
@@ -70,6 +70,16 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         batch_records = db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
 
         self.transition_angle = 8
+        try:
+            self.transition_angle = int(self.chart_dict['transition_angle'])
+        except KeyError:
+            log.debug('Using default transition_angle %s' % self.transition_angle)
+
+        self.show_daynight = True
+        try:
+            self.show_daynight = weeutil.weeutil.to_bool(self.chart_dict['show_daynight'])
+        except KeyError:
+            log.debug('show_daynight is on')
 
         try:
             for rec in batch_records:
@@ -227,18 +237,17 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
 
     def get_day_night_events(self, start, end, lon, lat, altitude_m):
-        if 'ephem' not in sys.modules:
+        if 'ephem' not in sys.modules or not self.show_daynight:
             return []
 
-        above_below_horizon_angle = 6
-        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(above_below_horizon_angle)
+        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(self.transition_angle)
         for event in events:
             event[0] = event[0] * 1000
             angle = event[1]
-            darkening_extent = abs(((event[1] - above_below_horizon_angle) / 2) / above_below_horizon_angle)
-            if angle >= above_below_horizon_angle:
+            darkening_extent = abs(((event[1] - self.transition_angle) / 2) / self.transition_angle)
+            if angle >= self.transition_angle:
                 darkening_extent = 0
-            if angle <= -above_below_horizon_angle:
+            if angle <= -self.transition_angle:
                 darkening_extent = 1
             event[1] = darkening_extent
         return events

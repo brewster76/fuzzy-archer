@@ -123,6 +123,12 @@ class MyXSearch(SearchList):
         else:
             log.debug("%s: No LiveGauges specific labels found" % os.path.basename(__file__))
 
+        # Make Stats specific labels in config file available to templates
+        if 'Stats' in generator.skin_dict:
+            self.search_list_extension['Stats'] = generator.skin_dict['Stats']
+        else:
+            log.debug("%s: No Stats specific labels found" % os.path.basename(__file__))
+
         # Make LiveCharts specific labels in config file available to templates
         if 'LiveCharts' in generator.skin_dict:
             self.search_list_extension['LiveCharts'] = generator.skin_dict['LiveCharts']

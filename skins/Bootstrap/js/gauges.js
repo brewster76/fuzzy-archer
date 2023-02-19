@@ -3,7 +3,7 @@ function loadGauges() {
     for (let gaugeId of Object.keys(weewxData.gauges)) {
         let documentGaugeId = gaugeId + "Gauge";
 
-         if(gauges[documentGaugeId] !== undefined){
+        if (gauges[documentGaugeId] !== undefined) {
             gauges[documentGaugeId].dispose();
             gauges[documentGaugeId] = undefined;
         }
@@ -13,8 +13,8 @@ function loadGauges() {
             continue;
         }
         let gauge = echarts.init(gaugeElement, null, {
-                locale: eChartsLocale
-            });
+            locale: eChartsLocale
+        });
         gauge.weewxData = weewxData.gauges[gaugeId];
         gauge.weewxData.observationType = gaugeId;
         gauge.weewxData.dataset = {
@@ -23,8 +23,8 @@ function loadGauges() {
         gauge.weewxData.dataset.data = JSON.parse(JSON.stringify(weewxData[gaugeId]));
         gauges[documentGaugeId] = gauge;
         let colors = [];
-        let minvalue = gauge.weewxData.minvalue;
-        let maxvalue = gauge.weewxData.maxvalue;
+        let minvalue = getConvertedValue(gauge.weewxData.minvalue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
+        let maxvalue = getConvertedValue(gauge.weewxData.maxvalue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
         let splitnumber = gauge.weewxData.splitnumber;
         let axisTickSplitNumber = 5;
         if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
@@ -53,6 +53,8 @@ function loadGauges() {
                         console.log("Invalid value: " + untilValue);
                         untilValue = maxvalue;
                     }
+                } else {
+                    untilValue = getConvertedValue(untilValue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
                 }
                 colors.push([(untilValue - minvalue) / range, lineColors[i]]);
             }
@@ -98,70 +100,73 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
         animation: weewxData.animation === undefined || !weewxData.animation.toLowerCase() === "false",
         animationDurationUpdate: 750,
         series: [{
-                name: name,
-                type: 'gauge',
-                min: Number(min),
-                max: Number(max),
-                splitNumber: Number(splitNumber),
-                radius: '95%',
-                axisLine: {
-                    lineStyle: {
-                        width: 8,
-                        color: lineColor,
-                        shadowBlur: 3
-                    }
-                },
-                pointer: {
-                    width: 5,
-                    itemStyle: {
-                        color: '#428bca',
-                        shadowBlur: 3
-                    }
-                },
-                axisTick: {
-                    splitNumber: axisTickSplitNumber,
-                    length: 4,
-                    lineStyle: {
-                        color: 'auto'
-                    }
-                },
-                splitLine: {
-                    length: 6,
-                    lineStyle: {
-                        color: 'auto'
-                    }
-                },
-                axisLabel: {
-                    fontWeight: 'normal',
-                    fontSize: 8,
-                    color: '#777'
-                },
-                title: {
-                    fontWeight: 'normal',
-                    fontSize: 10,
-                    color: '#777',
-                    offsetCenter: ['0', '28%']
-                },
-                detail: {
-                    fontWeight: 'bold',
-                    fontSize: 12,
-                    color: '#777',
-                    formatter: function (value) {
-                        let unitString = unit === undefined ? "" : unit;
-                        if (decimals !== undefined && decimals >= 0) {
-                            return value.toFixed(decimals) + unitString;
-                        } else {
-                            return value + unitString;
-                        }
-                    },
-                    offsetCenter: ['0', '70%']
-                },
-                data: [{
-                        value: value,
-                        name: name
-                    }
-                ]
+            name: name,
+            type: 'gauge',
+            min: Number(min),
+            max: Number(max),
+            splitNumber: Number(splitNumber),
+            radius: '95%',
+            axisLine: {
+                lineStyle: {
+                    width: 8,
+                    color: lineColor,
+                    shadowBlur: 3
+                }
             },
+            pointer: {
+                width: 5,
+                itemStyle: {
+                    color: '#428bca',
+                    shadowBlur: 3
+                }
+            },
+            axisTick: {
+                splitNumber: axisTickSplitNumber,
+                length: 4,
+                lineStyle: {
+                    color: 'auto'
+                }
+            },
+            splitLine: {
+                length: 6,
+                lineStyle: {
+                    color: 'auto'
+                }
+            },
+            axisLabel: {
+                fontWeight: 'normal',
+                fontSize: 8,
+                color: '#777',
+                formatter: function (value, index) {
+                    return round(value, 1);
+                }
+            },
+            title: {
+                fontWeight: 'normal',
+                fontSize: 10,
+                color: '#777',
+                offsetCenter: ['0', '28%']
+            },
+            detail: {
+                fontWeight: 'bold',
+                fontSize: 12,
+                color: '#777',
+                formatter: function (value) {
+                    let unitString = unit === undefined ? "" : unit;
+                    if (decimals !== undefined && decimals >= 0) {
+                        return value.toFixed(decimals) + unitString;
+                    } else {
+                        return value + unitString;
+                    }
+                },
+                offsetCenter: ['0', '70%']
+            },
+            data: [{
+                value: value,
+                name: name
+            }
+            ]
+        },
         ]
     };
     if (weewxData.heatMapEnabled) {
@@ -214,8 +219,8 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
     let range = max - min;
     let ticksRange = (range / ticksNumber);
     let splitValueCount = Array.apply(null, Array(ticksNumber)).map(function () {
-            return 0;
-        });
+        return 0;
+    });
     let baseColor = '#ff0000';
     for (let item of data) {
         let value = item[1];
@@ -240,4 +245,19 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
         until += ticksWidth;
     }
     return color;
+}
+
+function getConvertedValue(value, targetUnit, valueUnit) {
+    if (valueUnit !== undefined && !isNaN(value)) {
+        let functionName = valueUnit + "_To_" + targetUnit;
+        if (window[functionName] !== undefined) {
+            value = window[functionName](value);
+        }
+    }
+    return round(value, 1);
+}
+
+function round(value, precision) {
+    var multiplier = Math.pow(10, precision || 0);
+    return Math.round(value * multiplier) / multiplier;
 }

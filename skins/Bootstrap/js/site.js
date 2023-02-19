@@ -331,6 +331,9 @@ function asyncReloadWeewxData() {
         if (typeof loadCharts === 'function') {
             loadCharts();
         }
+        let date = new Date(lastGoodStamp * 1000);
+        let lastUpdate = document.getElementById("lastUpdate");
+        lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
     }).catch(err => {
         throw err
     });

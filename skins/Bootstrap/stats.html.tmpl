@@ -11,110 +11,99 @@
         #include "livegauges.html.inc"
         <!-- Stats panel -->
         <div class="col-md-9 main">
+            #for $obs_type, $statsItem in $Stats.items()
+
+            #set $since_ever = True
+            #if 'since_ever' in $statsItem and $statsItem.since_ever.lower == 'false'
+            #set $since_ever = False
+            #end if
             <table class="table statsTable">
                 <thead>
                 <tr>
-                    <th class="statsHeader">$Labels.Generic.outTemp</th>
+                    <th class="statsHeader">$Labels.Generic[$obs_type]</th>
                     <th>$gettext("Today")</th>
                     <th>$gettext("This week")</th>
                     <th>$gettext("This month")</th>
                     <th>$gettext("This year")</th>
+                    #if $since_ever
                     <th>$gettext("Since ever")</th>
+                    #end if
                 </tr>
                 </thead>
+                #for $aggregate_type, $aggregate_type_item in $statsItem.items()
+                #if isinstance($aggregate_type_item, dict)
+                #set $aggregate_type_time = $aggregate_type + 'time'
+
+                #set $text = 'Translation missing'
+                #if 'label' in $aggregate_type_item.keys()
+                    #set $text = $aggregate_type_item.label
+                #elif $aggregate_type == 'max'
+                    #set $text = 'High'
+                #elif $aggregate_type == 'min'
+                    #set $text = 'Low'
+                #elif $aggregate_type == 'avg'
+                    #set $text = 'Average'
+                #elif $aggregate_type == 'sum'
+                    #set $text = 'Sum'
+                #elif $aggregate_type == 'maxmin'
+                    #set $text = 'Highest minimum'
+                #elif $aggregate_type == 'minmax'
+                    #set $text = 'Lowest maximum'
+                #end if
+
+                #set $item_since_ever = True
+                #if 'since_ever' in $aggregate_type_item and $aggregate_type_item.since_ever.lower == 'false'
+                #set $item_since_ever = False
+                #end if
+
+                #set $show_time = True
+                #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false'
+                #set $show_time = False
+                #end if
                 <tbody>
                 <tr>
-                    <th>$gettext("High")</th>
-                    <td>$day.outTemp.max<br><span class="statsTime">$day.outTemp.maxtime</span></td>
-                    <td>$week.outTemp.max<br><span class="statsTime">$week.outTemp.maxtime</span></td>
-                    <td>$month.outTemp.max<br><span class="statsTime">$month.outTemp.maxtime</span></td>
-                    <td>$year.outTemp.max<br><span class="statsTime">$year.outTemp.maxtime</span></td>
-                    <td>$alltime.outTemp.max<br><span class="statsTime">$alltime.outTemp.maxtime</span></td>
-                </tr>
-                <tr>
-                    <th>$gettext("Low")</th>
-                    <td>$day.outTemp.min<br><span class="statsTime">$day.outTemp.mintime</span></td>
-                    <td>$week.outTemp.min<br><span class="statsTime">$week.outTemp.mintime</span></td>
-                    <td>$month.outTemp.min<br><span class="statsTime">$month.outTemp.mintime</span></td>
-                    <td>$year.outTemp.min<br><span class="statsTime">$year.outTemp.mintime</span></td>
-                    <td>$alltime.outTemp.min<br><span class="statsTime">$alltime.outTemp.mintime</span></td>
-                </tr>
-                </tbody>
-            </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.rain</th>
-                    <th>$gettext("Today")</th>
-                    <th>$gettext("This week")</th>
-                    <th>$gettext("This month")</th>
-                    <th>$gettext("This year")</th>
-                    <th>&nbsp;</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$gettext("Sum")</th>
-                    <td>$day.rain.sum</td>
-                    <td>$week.rain.sum</td>
-                    <td>$month.rain.sum</td>
-                    <td>$year.rain.sum</td>
-                    <td>&nbsp;</td>
-                </tr>
-                </tbody>
-            </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.barometer</th>
-                    <th>$gettext("Today")</th>
-                    <th>$gettext("This week")</th>
-                    <th>$gettext("This month")</th>
-                    <th>$gettext("This year")</th>
-                    <th>$gettext("Since ever")</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$gettext("High")</th>
-                    <td>$day.barometer.max<br><span class="statsTime">$day.barometer.maxtime</span></td>
-                    <td>$week.barometer.max<br><span class="statsTime">$week.barometer.maxtime</span></td>
-                    <td>$month.barometer.max<br><span class="statsTime">$month.barometer.maxtime</span></td>
-                    <td>$year.barometer.max<br><span class="statsTime">$year.barometer.maxtime</span></td>
-                    <td>$alltime.barometer.max<br><span class="statsTime">$alltime.barometer.maxtime</span></td>
-                </tr>
-                <tr>
-                    <th>$gettext("Low")</th>
-                    <td>$day.barometer.min<br><span class="statsTime">$day.barometer.mintime</span></td>
-                    <td>$week.barometer.min<br><span class="statsTime">$week.barometer.mintime</span></td>
-                    <td>$month.barometer.min<br><span class="statsTime">$month.barometer.mintime</span></td>
-                    <td>$year.barometer.min<br><span class="statsTime">$year.barometer.mintime</span></td>
-                    <td>$alltime.barometer.min<br><span class="statsTime">$alltime.barometer.mintime</span></td>
+                    <th>$gettext($text)</th>
+                    <td>$getattr($getattr($day, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($day, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($week, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($week, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($month, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($month, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($year, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($year, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    #if $since_ever
+                    <td>
+                        #if $item_since_ever
+                        $getattr($getattr($alltime, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($alltime, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                        #end if
+                    </td>
+                    #end if
                 </tr>
                 </tbody>
+                #end if
+                #end for
             </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.windSpeed</th>
-                    <th>$gettext("Today")</th>
-                    <th>$gettext("This week")</th>
-                    <th>$gettext("This month")</th>
-                    <th>$gettext("This year")</th>
-                    <th>$gettext("Since ever")</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$gettext("High")</th>
-                    <td>$day.wind.max<br><span class="statsTime">$day.wind.maxtime</span></td>
-                    <td>$week.wind.max<br><span class="statsTime">$week.wind.maxtime</span></td>
-                    <td>$month.wind.max<br><span class="statsTime">$month.wind.maxtime</span></td>
-                    <td>$year.wind.max<br><span class="statsTime">$year.wind.maxtime</span></td>
-                    <td>$alltime.wind.max<br><span class="statsTime">$alltime.wind.maxtime</span></td>
-                </tr>
-                </tbody>
-            </table>
+            #end for
         </div>
     </div>
     #include "foot.html.inc"
