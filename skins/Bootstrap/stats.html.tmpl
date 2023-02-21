@@ -60,13 +60,21 @@
                 #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false'
                 #set $show_time = False
                 #end if
+
+                #set $show_today = True
+                #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
+                #set $show_today = False
+                #end if
                 <tbody>
                 <tr>
                     <th>$gettext($text)</th>
-                    <td>$getattr($getattr($day, $obs_type), $aggregate_type)
+                    <td>
+                        #if $show_today
+                        $getattr($getattr($day, $obs_type), $aggregate_type)
                         #if $show_time
                         <br>
                         <span class="statsTime">$getattr($getattr($day, $obs_type), $aggregate_type_time)</span>
+                        #end if
                         #end if
                     </td>
                     <td>$getattr($getattr($week, $obs_type), $aggregate_type)

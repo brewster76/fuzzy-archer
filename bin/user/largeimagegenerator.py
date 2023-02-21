@@ -26,24 +26,25 @@ class LargeImageGenerator(weewx.reportengine.ReportGenerator):
             image_generator_config = self.skin_dict[image_generator_key]
 
             large_image_width = 900
-            try:
+            if large_image_width_key in self.skin_dict[image_generator_key]:
                 large_image_width = self.skin_dict[image_generator_key][large_image_width_key]
-            except KeyError:
+            else:
                 log.debug("using default value for large_image_width")
 
             large_image_height = 600
-            try:
+            if large_image_height_key in self.skin_dict[image_generator_key]:
                 large_image_height = self.skin_dict[image_generator_key][large_image_height_key]
-            except KeyError:
+            else:
                 log.debug("using default value for large_image_height")
 
             self.generate_large_image_configs(image_generator_config, large_image_width, large_image_height)
             log.debug("[ImageGenerator]: %s" % image_generator_config)
+            log.debug("%s: Generated large images configs in %.2f seconds" %
+                      (os.path.basename(__file__), time.time() - start_time))
         except KeyError:
             log.warning("LargeImageGenerator failed to read config or config missing")
 
-        log.debug("%s: Generated large images configs in %.2f seconds" %
-                 (os.path.basename(__file__), time.time() - start_time))
+
 
     def generate_large_image_configs(self, image_generator_config, large_image_width, large_image_height):
         for key, image_generator_config_item in image_generator_config.items():
