@@ -80,18 +80,14 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             version="3.1",
             name='bootstrap',
             description='A skin based around the bootstrap 5.2.0 framework',
-            author="Nick Dajda and Michael Kainzbauer",
+            author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={
                 'StdReport': {
-                    'SmallImages': {
-                        'skin':'Images',
-                        'HTML_ROOT':'Bootstrap/images'},
-                    'BigImages': {
-                        'skin':'Images',
-                        'HTML_ROOT':'Bootstrap/big_images'},
-                    'HTMLPages': {
+                    'Bootstrap': {
                         'skin':'Bootstrap',
+                        'enable':'true',
+                        'lang':'en',
                         'HTML_ROOT':'Bootstrap'}}},
             files=files)
 
