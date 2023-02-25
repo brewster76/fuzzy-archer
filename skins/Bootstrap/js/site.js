@@ -308,7 +308,7 @@ function formatDateTime(timestamp) {
 }
 
 function checkAsyncReload() {
-    if (true || (Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
+    if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.js").then(function (u) {
             return u.json();
         }).then(function (serverData) {

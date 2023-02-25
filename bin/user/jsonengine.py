@@ -95,13 +95,19 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 self.record_dict_vtd[key] = None
 
     def gen_data(self):
-        """Generate data."""
         start_time = time.time()
         ngen = 0
+        unit_systems = {'US': weewx.units.USUnits, 'METRIC': weewx.units.MetricUnits, 'METRICWX': weewx.units.MetricWXUnits}
+        source_unit_system = self.config_dict['StdConvert']['target_unit']
+
         self.frontend_data['config'] = self.json_dict
         self.frontend_data['config']['archive_interval'] = self.config_dict['StdArchive']['archive_interval']
+
         self.frontend_data['gauges'] = self.gauge_dict
         self.frontend_data['charts'] = self.chart_dict
+        self.frontend_data['source_unit_system'] = {'type': source_unit_system}
+        for unit_system_item in unit_systems[source_unit_system].items():
+            self.frontend_data['source_unit_system'][unit_system_item[0]] = unit_system_item[1]
         self.frontend_data['units'] = self.units_dict
         self.frontend_data['labels'] = self.labels_dict
         live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)

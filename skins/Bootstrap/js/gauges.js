@@ -23,8 +23,9 @@ function loadGauges() {
         gauge.weewxData.dataset.data = JSON.parse(JSON.stringify(weewxData[gaugeId]));
         gauges[documentGaugeId] = gauge;
         let colors = [];
-        let minvalue = getConvertedValue(gauge.weewxData.minvalue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
-        let maxvalue = getConvertedValue(gauge.weewxData.maxvalue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
+        let gaugePitchPrecision = gauge.weewxData["gauge_pitch_precision"] === undefined ? 1 : gauge.weewxData["gauge_pitch_precision"];
+        let minvalue = round(convert(gauge.weewxData, gauge.weewxData.minvalue), gaugePitchPrecision);
+        let maxvalue = round(convert(gauge.weewxData, gauge.weewxData.minvalue), gaugePitchPrecision);
         let splitnumber = gauge.weewxData.splitnumber;
         let axisTickSplitNumber = 5;
         if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
@@ -54,7 +55,7 @@ function loadGauges() {
                         untilValue = maxvalue;
                     }
                 } else {
-                    untilValue = getConvertedValue(untilValue, gauge.weewxData.target_unit, gauge.weewxData.value_unit);
+                    untilValue = round(convert(gauge.weewxData, untilValue), gaugePitchPrecision);
                 }
                 colors.push([(untilValue - minvalue) / range, lineColors[i]]);
             }
@@ -245,19 +246,4 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
         until += ticksWidth;
     }
     return color;
-}
-
-function getConvertedValue(value, targetUnit, valueUnit) {
-    if (valueUnit !== undefined && !isNaN(value)) {
-        let functionName = valueUnit + "_To_" + targetUnit;
-        if (window[functionName] !== undefined) {
-            value = window[functionName](value);
-        }
-    }
-    return round(value, 1);
-}
-
-function round(value, precision) {
-    var multiplier = Math.pow(10, precision || 0);
-    return Math.round(value * multiplier) / multiplier;
 }
