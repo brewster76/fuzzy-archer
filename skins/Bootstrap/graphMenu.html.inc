@@ -1,11 +1,14 @@
+<p id="graphMenu">
+    <a class="btn" href="index.html#">$gettext("Live")</a>
+    <a class="btn" href="day.html#">$gettext("24 Hours")</a>
+    <a class="btn" href="week.html#">$gettext("Week")</a>
+    <a class="btn" href="month.html#">$gettext("Month")</a>
+    <a class="btn" href="year.html#">$gettext("Year")</a>
+</p>
 <script type="text/javascript">
-var modalTemplate = `
-#include "chartTemplate.html.tmpl"
-`;
-</script>
-<!-- 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar signs in the js -->
+## 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar characters in the js
 #raw
-<script type="text/javascript">
+
         let href = window.location.href;
 
         let graphMenu = document.getElementById("graphMenu");
@@ -43,20 +46,5 @@ var modalTemplate = `
           }
           item = listItems.iterateNext();
         }
-
-        function insertCharts(chartNames) {
-          let modalRow = document.getElementById("modalRow");
-          for(let chartName of chartNames) {
-            let elem = getModalElement(chartName);
-            modalRow.insertAdjacentHTML('beforeend', elem);
-          }
-        }
-
-        function getModalElement(name) {
-          return modalTemplate.replaceAll("###name###", name);
-        }
-        if(readingTypes !== undefined) {
-            insertCharts(readingTypes);
-        }
-</script>
 #end raw
+</script>

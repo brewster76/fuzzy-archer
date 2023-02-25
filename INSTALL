@@ -67,16 +67,12 @@ Frequently Asked Questions
       The reason for splitting the config files out is Images/skin.conf is run twice. Once to create the images for the
       webpage, and a second time for the expanded images which are shown when clicking on the webpage history graph.
 
-3) Text in graphs looks very small
-    Make sure you have fonts installed that support truetype scaling:
-      apt-get install ttf-freefont
-
-4) The colors on the History page do not vary much
+3) The colors on the History page do not vary much
     The default color schemes are based around values in Fahrenheit and inches.
     Color schemes for Celsius and mm are also included in the [HistoryReport] section
     in skins/Bootstrap/skin.conf. Comment out the Fahrenheit and inches lines and uncomment the  Celsius and mm lines.
 
-5) I can see the static day, week, month and year graphs but cannot see the live graphs or gauges.
+4) I can see the static day, week, month and year graphs but cannot see the live graphs or gauges.
     The live gauges cannot connect to live readings over a file:// browser connection.
     One easy way view live gauges and charts on a local filesystem is to run a simple python webserver from your
     public_html folder and connect to that using your browser:
@@ -114,23 +110,6 @@ The [StdReport] section will need to look something like this:
 
         # Where the generated reports should go, relative to WEEWX_ROOT:
         HTML_ROOT = public_html
-
-        [[SmallImages]]
-            # These are the images used on the front page of the website.
-            # Dimensions are set in the Images/skin.conf file
-            #
-            skin = Images
-            HTML_ROOT = public_html/Bootstrap
-
-        [[BigImages]]
-            # These images are used when a small web page image is clicked on.
-            # So the skin.conf image_width and image_height are overridden here.
-            #
-            skin = Images
-            HTML_ROOT = public_html/Bootstrap/big_images/
-            [[[ImageGenerator]]]
-                image_width = 800
-                image_height = 500
 
         [[HTMLPages]]
             # This generates the webpages themselves.

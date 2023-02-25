@@ -20,16 +20,18 @@ class BootstrapInstaller(setup.ExtensionInstaller):
     def __init__(self):
         files=[('skins/Bootstrap',
             ['skins/Bootstrap/about.html.tmpl',
-             'skins/Bootstrap/chartTemplate.html.tmpl',
              'skins/Bootstrap/day.html.tmpl',
-             'skins/Bootstrap/graphMenu.html.tmpl',
+             'skins/Bootstrap/foot.html.inc',
+             'skins/Bootstrap/graphMenu.html.inc',
+             'skins/Bootstrap/head.html.inc',
              'skins/Bootstrap/history.html.tmpl',
              'skins/Bootstrap/index.html.tmpl',
-             'skins/Bootstrap/livegauges.html.tmpl',
+             'skins/Bootstrap/livegauges.html.inc',
              'skins/Bootstrap/month.html.tmpl',
-             'skins/Bootstrap/nav.html.tmpl',
+             'skins/Bootstrap/nav.html.inc',
              'skins/Bootstrap/news.html.tmpl',
-             'skins/Bootstrap/script.html.tmpl',
+             'skins/Bootstrap/script.html.inc',
+             'skins/Bootstrap/chartimages.html.inc',
              'skins/Bootstrap/stats.html.tmpl',
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
@@ -38,14 +40,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
              'skins/Bootstrap/NOAA/NOAA-YYYY-MM.txt.tmpl']),
            ('skins/Images',
-            ['skins/Images/skin.conf']),
+            ['skins/Bootstrap/font/FreeMonoBold.ttf',
+            'skins/Bootstrap/font/GNU_FreeFont.txt',
+            'skins/Bootstrap/font/Kanit-Bold.ttf',
+            'skins/Bootstrap/font/Kanit-Regular.ttf',
+            'skins/Bootstrap/font/OFL.txt']),
            ('bin/user',
-            ['bin/user/gaugeengine.py',
-             'bin/user/gauges.py',
-             'bin/user/historygenerator.py',
+            ['bin/user/historygenerator.py',
              'bin/user/jsonengine.py',
-             'bin/user/sunevents.py',
-             'bin/user/translategenerator.py']),
+             'bin/user/largeimagegenerator.py',
+             'bin/user/sunevents.py']),
            ('skins/Bootstrap/css',
             ['skins/Bootstrap/css/bootstrap.min.css',
              'skins/Bootstrap/css/live.css']),
@@ -59,41 +63,31 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/mqtt.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
-           ('skins/languages',
-            ['skins/languages/catala.conf',
-             'skins/languages/dutch.conf',
-             'skins/languages/espanol.conf',
-             'skins/languages/finnish.conf',
-             'skins/languages/francais.conf',
-             'skins/languages/german.conf',
-             'skins/languages/italian.conf',
-             'skins/languages/korean.conf',
-             'skins/languages/norwegian.conf'])]
+           ('skins/Bootstrap/lang',
+            ['skins/Bootstrap/lang/cn.conf',
+             'skins/Bootstrap/lang/cz.conf',
+             'skins/Bootstrap/lang/de.conf',
+             'skins/Bootstrap/lang/en.conf',
+             'skins/Bootstrap/lang/es.conf',
+             'skins/Bootstrap/lang/fr.conf',
+             'skins/Bootstrap/lang/gr.conf',
+             'skins/Bootstrap/lang/it.conf',
+             'skins/Bootstrap/lang/nl.conf',
+             'skins/Bootstrap/lang/no.conf',
+             'skins/Bootstrap/lang/th.conf'])]
 
         super(BootstrapInstaller, self).__init__(
             version="3.1",
             name='bootstrap',
             description='A skin based around the bootstrap 5.2.0 framework',
-            author="Nick Dajda",
+            author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={
                 'StdReport': {
-                    'SmallImages': {
-                        'skin':'Images',
-                        'HTML_ROOT':'Bootstrap/images'},
-                    'BigImages': {
-                        'skin':'Images',
-                        'HTML_ROOT':'Bootstrap/big_images',
-                        'ImageGenerator' : {
-                            'image_width'            : '900',
-                            'image_height'           : '600',
-                            'anti_alias'             : '2',
-                            'top_label_font_size'    : '18',
-                            'unit_label_font_size'   : '18',
-                            'bottom_label_font_size' : '14',
-                            'axis_label_font_size'   : '14'}},
-                    'HTMLPages': {
+                    'Bootstrap': {
                         'skin':'Bootstrap',
+                        'enable':'true',
+                        'lang':'en',
                         'HTML_ROOT':'Bootstrap'}}},
             files=files)
 
@@ -102,15 +96,14 @@ class BootstrapInstaller(setup.ExtensionInstaller):
         self.language = None
 
         for f in files:
-            if f[0] == 'skins/languages':
+            if f[0] == 'skins/Bootstrap/lang':
                 for language in f[1]:
                     l = language.strip('conf').split('/')[-1]
                     print(("   %s" % l[:-1]))
 
         print("")
-        print("Change to a different language using the [Language] setting in:")
-        print("   Webpage text: skins/Bootstrap/skin.conf")
-        print("   Images:       skins/Images/skin.conf")
+        print("Change to a different language following the description at:")
+        print("   http://www.weewx.com/docs/customizing.htm#localization")
 
         print("")
         print("Default location for HTML and image files is public_html/Bootstrap")

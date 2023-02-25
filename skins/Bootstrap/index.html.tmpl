@@ -1,25 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>$BootstrapLabels.title</title>
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet"/>
-    <link href="css/live.css" rel="stylesheet">
-</head>
+<html lang="$lang">
+#include "head.html.inc"
 <body>
 <!-- Menu navbar -->
-#include "nav.html.tmpl"
+#include "nav.html.inc"
 <!-- Main container -->
 <div class="container-fluid">
     <div class="row">
         <!-- Gauge panel -->
-        #include "livegauges.html.tmpl"
+        #include "livegauges.html.inc"
         <!-- Graph panel -->
         <div class="col-md-9 main">
             <p></p>
-            #include "graphMenu.html.tmpl"
+            #include "graphMenu.html.inc"
             <div class="row">
                 #for $chartName, value in $LiveCharts.items()
                 #if isinstance($value, dict)
@@ -29,22 +22,9 @@
             </div>
         </div>
     </div>
-    <hr/>
-    <footer>
-        <p>$BootstrapLabels.footer</p>
-    </footer>
+    #include "foot.html.inc"
 </div>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="js/jquery-3.6.3.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="js/bootstrap.bundle.min.js"></script>
-<script src="js/mqtt.min.js"></script>
-<script src="js/units.js"></script>
-<script src="js/site.js"></script>
-<script src="js/echarts.min.js"></script>
-<script src="js/lang.js"></script>
-<script src="js/gauges.js"></script>
+#include "script.html.inc"
 <script src="js/charts.js"></script>
-#include "script.html.tmpl"
 </body>
 </html>

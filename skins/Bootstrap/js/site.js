@@ -94,21 +94,23 @@ fetch(weewxDataUrl).then(function (u) {
             });
         }
     }
-    if(typeof loadGauges === "function" && typeof loadCharts === "function") {
+    if (typeof loadGauges === "function" && typeof loadCharts === "function") {
         loadGauges();
         loadCharts();
     } else {
         setTimeout(asyncReloadWeewxData, 1);
     }
 }).catch(err => {
-        throw err
+    throw err
 });
+
+setInterval(checkAsyncReload, 60000);
 
 function setGaugeValue(gauge, value, timestamp) {
     let option = gauge.getOption();
     let valueSeries = option.series[0];
     addValue(gauge.weewxData.dataset, value, timestamp);
-    if(option.series[1] !== undefined) {
+    if (option.series[1] !== undefined) {
         option.series[1].axisLine.lineStyle.color = getHeatColor(valueSeries.max, valueSeries.min, valueSeries.splitNumber, valueSeries.axisTick.splitNumber, gauge.weewxData.dataset.data);
     }
     gauge.setOption(option);
@@ -116,32 +118,32 @@ function setGaugeValue(gauge, value, timestamp) {
 }
 
 function updateGaugeValue(newValue, gauge) {
-   let option = gauge.getOption();
-   let currentValue = option.series[0].data[0].value;
-   if(gauge.isCircular !== undefined && gauge.isCircular && Math.abs(newValue - currentValue) > 180) {
-     let currentAnimationEasingUpdate = option.series[0].animationEasingUpdate;
-     let currentAnimationSetting = option.animation;
-     option.series[0].animationEasingUpdate = 'linear';
-     let toNorth = 360;
-     let fromNorth = 0;
-     if(currentValue < 180) {
-       toNorth = 0;
-       fromNorth = 360;
-     }
-     option.series[0].data[0].value = toNorth;
-     gauge.setOption(option);
-     option.animation = false;
-     option.series[0].data[0].value = fromNorth;
-     gauge.setOption(option);
-     option.animation = currentAnimationSetting;
-     option.series[0].animationEasingUpdate = currentAnimationEasingUpdate;
-     option.series[0].data[0].value = newValue;
-     gauge.setOption(option);
-   } else {
+    let option = gauge.getOption();
+    let currentValue = option.series[0].data[0].value;
+    if (gauge.isCircular !== undefined && gauge.isCircular && Math.abs(newValue - currentValue) > 180) {
+        let currentAnimationEasingUpdate = option.series[0].animationEasingUpdate;
+        let currentAnimationSetting = option.animation;
+        option.series[0].animationEasingUpdate = 'linear';
+        let toNorth = 360;
+        let fromNorth = 0;
+        if (currentValue < 180) {
+            toNorth = 0;
+            fromNorth = 360;
+        }
+        option.series[0].data[0].value = toNorth;
+        gauge.setOption(option);
+        option.animation = false;
+        option.series[0].data[0].value = fromNorth;
+        gauge.setOption(option);
+        option.animation = currentAnimationSetting;
+        option.series[0].animationEasingUpdate = currentAnimationEasingUpdate;
         option.series[0].data[0].value = newValue;
-   }
-   gauge.setOption(option);
- }
+        gauge.setOption(option);
+    } else {
+        option.series[0].data[0].value = newValue;
+    }
+    gauge.setOption(option);
+}
 
 function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
     let option = chart.getOption();
@@ -150,7 +152,7 @@ function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalM
         if (!isNaN(value)) {
             addAggregatedChartValue(dataset, value, timestamp, aggregateIntervalMinutes);
             chart.setOption(option);
-            if(chart.chartId !== undefined) {
+            if (chart.chartId !== undefined) {
                 let chartElem = document.getElementById(chart.chartId + "_timestamp");
                 chartElem.innerHTML = formatDateTime(timestamp);
             }
@@ -180,7 +182,7 @@ function addValue(dataset, value, timestamp) {
         //some stations update windSpeed more often than gust: if current speed > gust, update gust, but only for current gauge value
         //other values will be updated when regular message arrives
         let windGustGauge = gauges.windGustGauge;
-        if(windGustGauge !== undefined && value > windGustGauge.getOption().series[0].data[0].value) {
+        if (windGustGauge !== undefined && value > windGustGauge.getOption().series[0].data[0].value) {
             setGaugeValue(windGustGauge, value, timestamp);
         }
     }
@@ -190,7 +192,7 @@ function addValue(dataset, value, timestamp) {
         value = getIntervalValue(type, currentIntervalData, value);
     }
     data.push([timestamp, value]);
-    if(dataset.chartId !== undefined) {
+    if (dataset.chartId !== undefined) {
         let chartElem = document.getElementById(dataset.chartId + "_timestamp");
         chartElem.innerHTML = formatDateTime(timestamp);
     }
@@ -306,11 +308,11 @@ function formatDateTime(timestamp) {
 }
 
 function checkAsyncReload() {
-    if(true || (Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
+    if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.js").then(function (u) {
             return u.json();
         }).then(function (serverData) {
-            if(Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
+            if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
                 lastGoodStamp = serverData.lastGoodStamp;
                 asyncReloadWeewxData();
             }
@@ -326,24 +328,27 @@ function asyncReloadWeewxData() {
     }).then(function (serverData) {
         weewxData = serverData;
         loadGauges();
-        if(typeof loadCharts === 'function') {
+        if (typeof loadCharts === 'function') {
             loadCharts();
         }
+        let date = new Date(lastGoodStamp * 1000);
+        let lastUpdate = document.getElementById("lastUpdate");
+        lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
     }).catch(err => {
         throw err
     });
 }
 
 function getValue(obj, path) {
-    if(path === undefined) {
+    if (path === undefined) {
         return;
     }
     let pathArray = path.split(".");
     let value = obj;
-    for(let i = 0; i < pathArray.length; i++) {
-        if(value !== undefined && value[pathArray[i]] !== undefined) {
-  	        value = value[pathArray[i]];
-  	    }
+    for (let i = 0; i < pathArray.length; i++) {
+        if (value !== undefined && value[pathArray[i]] !== undefined) {
+            value = value[pathArray[i]];
+        }
     }
     return value;
 }
