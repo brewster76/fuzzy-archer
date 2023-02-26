@@ -31,8 +31,8 @@
                                 </div>
                             </div>
                         </div>
-                        <img src="${imageName}.png" alt="" class="mw-100" data-bs-toggle="modal"
-                             data-bs-target="#large-${imageName}Modal" style="cursor: pointer;">
+                        <img src="${imageName}.png" alt="" title="$gettext('Click to enlarge')" class="mw-100"
+                             data-bs-toggle="modal" data-bs-target="#large-${imageName}Modal" style="cursor: pointer;">
                     </div>
                     #end if
                     #end for
