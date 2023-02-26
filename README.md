@@ -9,7 +9,7 @@ MQTT enabled Gauges and charts - live weather data!
 
 Statistics: daily/weewly/monthly/yearly/alltime, highs/lows, ...
 
-Historic data in colour coded html tables.
+Historic data in color coded html tables.
 
 Available in multiple languages.
 

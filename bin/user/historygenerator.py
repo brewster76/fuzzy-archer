@@ -3,7 +3,7 @@
 #
 # Distributed under the terms of the GNU GENERAL PUBLIC LICENSE
 #
-"""Extends the Cheetah generator search list to add html historic data tables in a nice colour scheme.
+"""Extends the Cheetah generator search list to add html historic data tables in a nice color scheme.
 
 Tested on Weewx release 4.10.1.
 Works with all databases.
@@ -23,7 +23,7 @@ Allows tags such as $alltime.outTemp.max for the all-time max
 temperature, or $seven_day.rain.sum for the total rainfall in the last
 seven days.
 
-2) Nice colourful tables summarising history data by month and year:
+2) Nice colorful tables summarising history data by month and year:
 
 Adding the section below to your skins.conf file will create these new tags:
    $min_temp_table
@@ -33,23 +33,23 @@ Adding the section below to your skins.conf file will create these new tags:
 
 ############################################################################################
 #
-# HTML month/year colour coded summary table generator
+# HTML month/year color coded summary table generator
 #
 [HistoryReport]
-    # minvalues, maxvalues and colours should contain the same number of elements.
+    # minvalues, maxvalues and colors should contain the same number of elements.
     #
     # For example,  the [min_temp] example below, if the minimum temperature measured in
-    # a month is between -50 and -10 (degC) then the cell will be shaded in html colour code #0029E5.
+    # a month is between -50 and -10 (degC) then the cell will be shaded in html color code #0029E5.
     #
-    # colours = background colour
-    # fontColours = foreground colour [optional, defaults to black if omitted]
+    # colors = background color
+    # fontColors = foreground color [optional, defaults to black if omitted]
 
 
     # Default is temperature scale
     minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
     maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
-    colours =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2", "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
-    fontColours =   "#FFFFFF", "#FFFFFF", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"
+    colors =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2", "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
+    fontColors =   "#FFFFFF", "#FFFFFF", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"
     monthnames = Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
     # The Raspberry Pi typically takes 15+ seconds to calculate all the summaries with a few years of weather date.
@@ -73,11 +73,11 @@ Adding the section below to your skins.conf file will create these new tags:
         aggregate_type = sum
         data_binding = alternative_binding
 
-        # Override default temperature colour scheme with rain specific scale
+        # Override default temperature color scheme with rain specific scale
         minvalues = 0, 25, 50, 75, 100, 150
         maxvalues = 25, 50, 75, 100, 150, 1000
-        colours = "#E0F8E0", "#A9F5A9", "#58FA58", "#2EFE2E", "#01DF01", "#01DF01"
-        fontColours = "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"
+        colors = "#E0F8E0", "#A9F5A9", "#58FA58", "#2EFE2E", "#01DF01", "#01DF01"
+        fontColors = "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"
 """
 
 from datetime import datetime
@@ -90,6 +90,7 @@ from configobj import ConfigObj
 from weewx.cheetahgenerator import SearchList
 from weewx.tags import TimespanBinder
 import weeutil.weeutil
+import weewx.units
 
 log = logging.getLogger(__name__)
 
@@ -98,6 +99,9 @@ class MyXSearch(SearchList):
         SearchList.__init__(self, generator)
 
         self.table_dict = generator.skin_dict['HistoryReport']
+        self.color_dict = generator.skin_dict['HistoryColors']
+
+        self.units_dict = generator.skin_dict['Units']
 
         # Calculate the tables once every refresh_interval mins
         self.refresh_interval = int(self.table_dict.get('refresh_interval', 5))
@@ -172,6 +176,7 @@ class MyXSearch(SearchList):
             t1 = time.time()
             ngen = 0
             self.search_list_extension["history_tables"] = []
+
             for table in self.table_dict.sections:
                 noaa = True if table == 'NOAA' else False
 
@@ -187,7 +192,7 @@ class MyXSearch(SearchList):
 
                 # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
                 # section in skin.conf then valid_timespan won't contain enough history data for
-                # the colourful summary tables. Use the data binding provided as table option.
+                # the colorful summary tables. Use the data binding provided as table option.
                 alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup(data_binding=binding).first_timestamp, db_lookup(data_binding=binding).last_timestamp)
 
 
@@ -209,8 +214,7 @@ class MyXSearch(SearchList):
                 else:
                     table_stats = all_stats
 
-                table_name = table + '_table'
-                self.search_list_extension["history_tables"].append(self._statsDict(table_options, table_stats, table_name, binding, NOAA=noaa))
+                self.search_list_extension["history_tables"].append(self._statsDict(table_options, table_stats, table, binding, NOAA=noaa))
                 ngen += 1
 
             t2 = time.time()
@@ -223,34 +227,69 @@ class MyXSearch(SearchList):
     def _parseTableOptions(self, table_options, table_name):
         """Create an orderly list containing lower and upper thresholds, cell background and foreground colors
         """
+        if table_name == 'NOAA':
+            return 'NOAA', None
+
+        obs_type = table_options.get('obs_type')
+        colors_key = obs_type
+
+        unit = self.units_dict["Groups"][weewx.units.obs_group_dict[obs_type]]
+        if "colors" in table_options:
+            colors_key = table_options.get("colors")[0]
+            unit = table_options.get("colors")[1]
+
+        table_colors = self.color_dict[colors_key][unit]
 
         # Check everything's the same length
-        l = len(table_options['minvalues'])
+        l = len(table_colors['minvalues'])
 
-        for i in [table_options['maxvalues'], table_options['colours']]:
+        for i in [table_colors['maxvalues'], table_colors['colors']]:
             if len(i) != l:
-                log.info("%s: minvalues, maxvalues and colours must have the same number of elements in table: %s"
+                log.info("%s: minvalues, maxvalues and colors must have the same number of elements in table: %s"
                          % (os.path.basename(__file__), table_name))
-                return None
+                return None, None
 
-        font_color_list = table_options['fontColours'] if 'fontColours' in table_options else ['#000000'] * l
+        summary_colors = None
+        if "summary" in self.color_dict[colors_key][unit]:
+            summary_colors = self.color_dict[colors_key][unit]["summary"]
 
-        return list(zip(table_options['minvalues'], table_options['maxvalues'], table_options['colours'], font_color_list))
-    def _statsDict(self, table_options, table_stats, table_name, binding, NOAA=False):
+            # Check everything's the same length
+            l = len(summary_colors['minvalues'])
+
+            for i in [summary_colors['maxvalues'], summary_colors['colors']]:
+                if len(i) != l:
+                    log.info("%s: minvalues, maxvalues and colors must have the same number of elements in table: %s[summary]"
+                             % (os.path.basename(__file__), table_name))
+                    return None, None
+
+        font_color_list = table_colors['fontColors'] if 'fontColors' in table_colors else ['#000000'] * l
+        cell_colors = list(zip(table_colors['minvalues'], table_colors['maxvalues'], table_colors['colors'], font_color_list))
+
+        summary_cell_colors = None
+        if None is not summary_colors:
+            font_color_list = summary_colors['fontColors'] if 'fontColors' in summary_colors else ['#000000'] * l
+            summary_cell_colors = list(zip(summary_colors['minvalues'], summary_colors['maxvalues'], summary_colors['colors'], font_color_list))
+
+        return cell_colors, summary_cell_colors
+
+    def _statsDict(self, table_options, table_stats, table, binding, NOAA=False):
         """
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """
-
         aggregation = False
 
-        cell_colours = self._parseTableOptions(table_options, table_name)
+        cell_colors, summary_cell_colors = self._parseTableOptions(table_options, table)
 
+        table_name = table + '_table'
         summary_column = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
 
-        if None is cell_colours:
+        if None is cell_colors:
             # Give up
             return None
+
+        if None is summary_cell_colors:
+            summary_cell_colors = cell_colors
 
         unit_formatted = ""
 
@@ -315,13 +354,16 @@ class MyXSearch(SearchList):
                 format_string = reading.formatter.unit_format_dict[unit_type]
 
         header_text = table_name + "header_text"
+
         if "header_text" in table_options:
             header_text = table_options["header_text"]
+
         table_dict = {
             "noaa": NOAA,
             "header_text": header_text,
             "header": {"head": unit_formatted, "values": ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']},
             "lines": []}
+
         if NOAA is False and summary_column:
             table_dict["header"]["summary"] = 'Year'
 
@@ -353,7 +395,7 @@ class MyXSearch(SearchList):
                     else:
                         value = converter.convert(getattr(obs_month, aggregate_type).value_t)
 
-                    line["values"].append(self._colorCell(value[0], format_string, cell_colours))
+                    line["values"].append(self._colorCell(value[0], format_string, cell_colors))
 
             if summary_column:
                 obs_year = getattr(year, obs_type)
@@ -367,21 +409,22 @@ class MyXSearch(SearchList):
                 else:
                     value = converter.convert(getattr(obs_year, aggregate_type).value_t)
 
-                line["summary"] = self._colorCell(value[0], format_string, cell_colours, summary=True, noaa=NOAA)
+                line["summary"] = self._colorCell(value[0], format_string, summary_cell_colors)
 
             table_dict["lines"].append(line)
+
         return table_dict
 
-    def _colorCell(self, value, format_string, cellColours, summary=False, noaa=False):
+    def _colorCell(self, value, format_string, cell_colors):
         """Returns a '<div style= background-color: XX; color: YY"> z.zz </div>' html table entry string.
 
         value: Numeric value for the observation
         format_string: How the numberic value should be represented in the table cell.
-        cellColours: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
+        cellColors: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
         cell = {"value": "", "bgcolor": "", "fontcolor": ""}
         if value is not None:
-            for c in cellColours:
+            for c in cell_colors:
                 if (value >= float(c[0])) and (value < float(c[1])):
                     cell["bgcolor"] = c[2]
                     cell["fontcolor"] = c[3]
