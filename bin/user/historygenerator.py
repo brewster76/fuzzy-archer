@@ -139,6 +139,9 @@ class MyXSearch(SearchList):
         else:
             log.debug("%s: No LiveCharts specific labels found" % os.path.basename(__file__))
 
+        if 'locale' in generator.skin_dict:
+            self.search_list_extension['locale'] = generator.skin_dict['locale']
+
         # Make ImageGenerator specific labels in config file available to templates
         image_dict = {}
         image_config_path = os.path.join(generator.config_dict['WEEWX_ROOT'], generator.config_dict['StdReport']['SKIN_ROOT'],

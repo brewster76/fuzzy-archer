@@ -5,4 +5,5 @@
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/live.css" rel="stylesheet">
+    <script type="text/javascript">let locale = "$locale";</script>
 </head>

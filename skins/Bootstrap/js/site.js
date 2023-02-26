@@ -5,7 +5,6 @@ let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
 let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
 let archiveIntervalSeconds;
-let locale;
 let localeWithDash;
 let lang;
 let eChartsLocale;
@@ -17,7 +16,6 @@ fetch(weewxDataUrl).then(function (u) {
 }).then(function (serverData) {
     weewxData = serverData;
     archiveIntervalSeconds = weewxData.config.archive_interval;
-    locale = weewxData.config.locale;
     localeWithDash = locale.replace("_", "-");
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
