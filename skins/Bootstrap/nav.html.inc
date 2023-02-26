@@ -1,10 +1,10 @@
 <nav aria-label="Nav" class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid">
         #set $station_url = $station.station_url
-        #if "location_href" in $Extras and $Extras.location_href != '#'
+        #if "location_href" in $Extras and $Extras.location_href != ''
             #set $station_url = $Extras.location_href
         #end if
-        <a class="navbar-brand" href="station_url">$station.location</a>
+        <a class="navbar-brand" href="$station_url">$station.location</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
                 aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
