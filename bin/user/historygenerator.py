@@ -280,7 +280,6 @@ class MyXSearch(SearchList):
         table_options: Dictionary containing skin.conf options for particluar table
         all_stats: Link to all_stats TimespanBinder
         """
-        aggregation = False
 
         cell_colors, summary_cell_colors = self._parseTableOptions(table_options, table)
 
@@ -308,7 +307,6 @@ class MyXSearch(SearchList):
             if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
                                   'sum_ge', 'sum_le', 'avg_ge', 'avg_le']:
 
-                aggregation = True
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
                 except KeyError:
@@ -319,7 +317,7 @@ class MyXSearch(SearchList):
                 threshold_units = table_options['aggregate_threshold'][1]
 
                 try:
-                    reading = getattr(reading_binder, aggregate_type)((threshold_value, threshold_units))
+                    reading = getattr(reading_binder, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type]))
                 except IndexError:
                     log.info("%s: Problem with aggregate_threshold units: %s" % (os.path.basename(__file__),
                                                                                  str(threshold_units)))
@@ -342,11 +340,8 @@ class MyXSearch(SearchList):
             if 'units' in table_options:
                 unit_formatted = table_options['units']
             else:
-                if (aggregation):
-                    unit_formatted = "Days"
-                else:
-                    if unit_type in reading.formatter.unit_label_dict:
-                        unit_formatted = reading.formatter.unit_label_dict[unit_type]
+                if unit_type in reading.formatter.unit_label_dict:
+                    unit_formatted = reading.formatter.unit_label_dict[unit_type]
 
             # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
 
@@ -390,11 +385,8 @@ class MyXSearch(SearchList):
                     # update the binding to access the right DB
                     obs_month = getattr(month, obs_type)
                     obs_month.data_binding = binding
-                    if aggregation:
-                        try:
-                            value = getattr(obs_month, aggregate_type)((threshold_value, threshold_units)).value_t
-                        except:
-                            value = [0, 'count']
+                    if unit_type == 'count':
+                        value = self.getCount(obs_month, aggregate_type,threshold_value, threshold_units, obs_type)
                     else:
                         value = converter.convert(getattr(obs_month, aggregate_type).value_t)
 
@@ -404,11 +396,8 @@ class MyXSearch(SearchList):
                 obs_year = getattr(year, obs_type)
                 obs_year.data_binding = binding
 
-                if aggregation:
-                    try:
-                        value = getattr(obs_year, aggregate_type)((threshold_value, threshold_units)).value_t
-                    except:
-                        value = [0, 'count']
+                if unit_type == 'count':
+                    value = self.getCount(obs_year, aggregate_type,threshold_value, threshold_units, obs_type)
                 else:
                     value = converter.convert(getattr(obs_year, aggregate_type).value_t)
 
@@ -417,6 +406,12 @@ class MyXSearch(SearchList):
             table_dict["lines"].append(line)
 
         return table_dict
+    
+    def getCount(self, obs_month, aggregate_type,threshold_value, threshold_units, obs_type):
+        try:
+           return getattr(obs_month, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
+        except:
+           return [0, 'count']
 
     def _colorCell(self, value, format_string, cell_colors):
         """Returns a '<div style= background-color: XX; color: YY"> z.zz </div>' html table entry string.
