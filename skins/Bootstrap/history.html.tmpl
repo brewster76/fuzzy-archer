@@ -22,7 +22,9 @@
                         #for $headervalue in $table.header.values
                         <th class="month">$gettext($headervalue)</th>
                         #end for
+                        #if "summary" in $table.header.keys()
                         <th class="year">$gettext($table.header.summary)</th>
+                        #end if
                     </tr>
                 </thead>
                 <tbody>
@@ -31,20 +33,19 @@
                     <th class="head">$line.head.value</th>
                     #for $linevalue in $line.values
                     #set $value = '-'
+                    #set $style = ''
                     #if $linevalue.value
                     #set $value = $linevalue.value
-                    #end if
-                    #set $style = ''
-                    #if $linevalue.bgcolor
                     #set $style = ' style="background-color:' + $linevalue.bgcolor + '; color:' + $linevalue.fontcolor + ';"'
                     #end if
                     <td class="month"$style>$value</td>
                     #end for
                     #set $style = ''
-                    #if $line.summary.bgcolor
+                    #if "summary" in $line.keys()
                     #set $style = ' style="background-color:' + $line.summary.bgcolor + '; color:' + $line.summary.fontcolor + ';"'
-                    #end if
                     <td class="year"$style>$line.summary.value</td>
+                    #end if
+
                 </tr>
                 #end for
                 </tbody>
