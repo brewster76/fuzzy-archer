@@ -1,7 +1,7 @@
 <div class="col-md-3">
     <div class="row">
-        <div class="col-md-12" align="center">
-            <h1 style="color: #777; font-family: sans-serif;">$gettext("Current Conditions")</h1>
+        <div class="col-md-12 text-center">
+            <h1 class="currentConditions">$gettext("Current Conditions")</h1>
         </div>
     </div>
     #set $count = 0
@@ -10,7 +10,7 @@
     #if $count % 2 == 0
     <div class="row">
     #end if
-        <div class="gaugecol col-md-6" align="center">
+        <div class="gaugecol col-md-6 d-flex justify-content-center">
             <div id="${gauge}Gauge" class="gauge"></div>
         </div>
     #if $count % 2 == 1 or $count == ($size - 1)

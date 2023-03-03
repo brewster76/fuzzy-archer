@@ -12,25 +12,28 @@
         #include "livegauges.html.inc"
         <!-- Stats panel -->
         <div class="col-md-9 main">
+            <table class="table table-hover statsTable">
             #for $obs_type, $statsItem in $Stats.items()
 
             #set $since_ever = True
             #if 'since_ever' in $statsItem and $statsItem.since_ever.lower == 'false'
             #set $since_ever = False
             #end if
-            <table class="table statsTable">
-                <thead>
+                <thead class="table-light">
                 <tr>
                     <th class="statsHeader">$Labels.Generic[$obs_type]</th>
                     <th>$gettext("Today")</th>
                     <th>$gettext("This week")</th>
                     <th>$gettext("This month")</th>
                     <th>$gettext("This year")</th>
+                    <th>
                     #if $since_ever
-                    <th>$gettext("Since ever")</th>
+                    $gettext("Since ever")
                     #end if
+                    </th>
                 </tr>
                 </thead>
+                <tbody class="table-group-divider">
                 #for $aggregate_type, $aggregate_type_item in $statsItem.items()
                 #if isinstance($aggregate_type_item, dict)
                 #set $aggregate_type_time = $aggregate_type + 'time'
@@ -66,9 +69,9 @@
                 #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
                 #set $show_today = False
                 #end if
-                <tbody>
                 <tr>
                     <th>$gettext($text)</th>
+
                     <td>
                         #if $show_today
                         $getattr($getattr($day, $obs_type), $aggregate_type)
@@ -96,8 +99,8 @@
                         <span class="statsTime">$getattr($getattr($year, $obs_type), $aggregate_type_time)</span>
                         #end if
                     </td>
-                    #if $since_ever
                     <td>
+                    #if $since_ever
                         #if $item_since_ever
                         $getattr($getattr($alltime, $obs_type), $aggregate_type)
                         #if $show_time
@@ -105,14 +108,14 @@
                         <span class="statsTime">$getattr($getattr($alltime, $obs_type), $aggregate_type_time)</span>
                         #end if
                         #end if
-                    </td>
                     #end if
+                    </td>
                 </tr>
-                </tbody>
                 #end if
                 #end for
-            </table>
+                </tbody>
             #end for
+            </table>
         </div>
     </div>
     #include "foot.html.inc"
