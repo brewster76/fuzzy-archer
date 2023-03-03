@@ -1,143 +1,125 @@
+#errorCatcher Echo
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$BootstrapLabels.title</title>
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/live.css" rel="stylesheet">
-</head>
+<html lang="$lang">
+#include "head.html.inc"
 <body>
 <!-- Menu navbar -->
-#include "nav.html.tmpl"
+#include "nav.html.inc"
 <!-- Main container -->
 <div class="container-fluid">
     <div class="row">
         <!-- Gauge panel -->
-        #include "livegauges.html.tmpl"
+        #include "livegauges.html.inc"
         <!-- Stats panel -->
         <div class="col-md-9 main">
-            <table class="table statsTable">
-                <thead>
+            <table class="table table-hover statsTable">
+            #for $obs_type, $statsItem in $Stats.items()
+
+            #set $since_ever = True
+            #if 'since_ever' in $statsItem and $statsItem.since_ever.lower == 'false'
+            #set $since_ever = False
+            #end if
+                <thead class="table-light">
                 <tr>
-                    <th class="statsHeader">$Labels.Generic.outTemp</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
+                    <th class="statsHeader">$Labels.Generic[$obs_type]</th>
+                    <th>$gettext("Today")</th>
+                    <th>$gettext("This week")</th>
+                    <th>$gettext("This month")</th>
+                    <th>$gettext("This year")</th>
+                    <th>
+                    #if $since_ever
+                    $gettext("Since ever")
+                    #end if
+                    </th>
                 </tr>
                 </thead>
-                <tbody>
+                <tbody class="table-group-divider">
+                #for $aggregate_type, $aggregate_type_item in $statsItem.items()
+                #if isinstance($aggregate_type_item, dict)
+                #set $aggregate_type_time = $aggregate_type + 'time'
+
+                #set $text = 'Translation missing'
+                #if 'label' in $aggregate_type_item.keys()
+                    #set $text = $aggregate_type_item.label
+                #elif $aggregate_type == 'max'
+                    #set $text = 'High'
+                #elif $aggregate_type == 'min'
+                    #set $text = 'Low'
+                #elif $aggregate_type == 'avg'
+                    #set $text = 'Average'
+                #elif $aggregate_type == 'sum'
+                    #set $text = 'Sum'
+                #elif $aggregate_type == 'maxmin'
+                    #set $text = 'Highest minimum'
+                #elif $aggregate_type == 'minmax'
+                    #set $text = 'Lowest maximum'
+                #end if
+
+                #set $item_since_ever = True
+                #if 'since_ever' in $aggregate_type_item and $aggregate_type_item.since_ever.lower == 'false'
+                #set $item_since_ever = False
+                #end if
+
+                #set $show_time = True
+                #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false'
+                #set $show_time = False
+                #end if
+
+                #set $show_today = True
+                #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
+                #set $show_today = False
+                #end if
                 <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
-                    <td>$day.outTemp.max<br><span class="statsTime">$day.outTemp.maxtime</span></td>
-                    <td>$week.outTemp.max<br><span class="statsTime">$week.outTemp.maxtime</span></td>
-                    <td>$month.outTemp.max<br><span class="statsTime">$month.outTemp.maxtime</span></td>
-                    <td>$year.outTemp.max<br><span class="statsTime">$year.outTemp.maxtime</span></td>
-                    <td>$alltime.outTemp.max<br><span class="statsTime">$alltime.outTemp.maxtime</span></td>
+                    <th>$gettext($text)</th>
+
+                    <td>
+                        #if $show_today
+                        $getattr($getattr($day, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($day, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($week, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($week, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($month, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($month, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>$getattr($getattr($year, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($year, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                    </td>
+                    <td>
+                    #if $since_ever
+                        #if $item_since_ever
+                        $getattr($getattr($alltime, $obs_type), $aggregate_type)
+                        #if $show_time
+                        <br>
+                        <span class="statsTime">$getattr($getattr($alltime, $obs_type), $aggregate_type_time)</span>
+                        #end if
+                        #end if
+                    #end if
+                    </td>
                 </tr>
-                <tr>
-                    <th>$BootstrapLabels.minmax.min</th>
-                    <td>$day.outTemp.min<br><span class="statsTime">$day.outTemp.mintime</span></td>
-                    <td>$week.outTemp.min<br><span class="statsTime">$week.outTemp.mintime</span></td>
-                    <td>$month.outTemp.min<br><span class="statsTime">$month.outTemp.mintime</span></td>
-                    <td>$year.outTemp.min<br><span class="statsTime">$year.outTemp.mintime</span></td>
-                    <td>$alltime.outTemp.min<br><span class="statsTime">$alltime.outTemp.mintime</span></td>
-                </tr>
+                #end if
+                #end for
                 </tbody>
-            </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.rain</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>&nbsp;</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$BootstrapLabels.stats.sum</th>
-                    <td>$day.rain.sum</td>
-                    <td>$week.rain.sum</td>
-                    <td>$month.rain.sum</td>
-                    <td>$year.rain.sum</td>
-                    <td>&nbsp;</td>
-                </tr>
-                </tbody>
-            </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.barometer</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
-                    <td>$day.barometer.max<br><span class="statsTime">$day.barometer.maxtime</span></td>
-                    <td>$week.barometer.max<br><span class="statsTime">$week.barometer.maxtime</span></td>
-                    <td>$month.barometer.max<br><span class="statsTime">$month.barometer.maxtime</span></td>
-                    <td>$year.barometer.max<br><span class="statsTime">$year.barometer.maxtime</span></td>
-                    <td>$alltime.barometer.max<br><span class="statsTime">$alltime.barometer.maxtime</span></td>
-                </tr>
-                <tr>
-                    <th>$BootstrapLabels.minmax.min</th>
-                    <td>$day.barometer.min<br><span class="statsTime">$day.barometer.mintime</span></td>
-                    <td>$week.barometer.min<br><span class="statsTime">$week.barometer.mintime</span></td>
-                    <td>$month.barometer.min<br><span class="statsTime">$month.barometer.mintime</span></td>
-                    <td>$year.barometer.min<br><span class="statsTime">$year.barometer.mintime</span></td>
-                    <td>$alltime.barometer.min<br><span class="statsTime">$alltime.barometer.mintime</span></td>
-                </tr>
-                </tbody>
-            </table>
-            <table class="table statsTable">
-                <thead>
-                <tr>
-                    <th class="statsHeader">$Labels.Generic.windSpeed</th>
-                    <th>$BootstrapLabels.timespans.today</th>
-                    <th>$BootstrapLabels.timespans.week</th>
-                    <th>$BootstrapLabels.timespans.month</th>
-                    <th>$BootstrapLabels.timespans.year</th>
-                    <th>$BootstrapLabels.timespans.ever</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <th>$BootstrapLabels.minmax.max</th>
-                    <td>$day.wind.max<br><span class="statsTime">$day.wind.maxtime</span></td>
-                    <td>$week.wind.max<br><span class="statsTime">$week.wind.maxtime</span></td>
-                    <td>$month.wind.max<br><span class="statsTime">$month.wind.maxtime</span></td>
-                    <td>$year.wind.max<br><span class="statsTime">$year.wind.maxtime</span></td>
-                    <td>$alltime.wind.max<br><span class="statsTime">$alltime.wind.maxtime</span></td>
-                </tr>
-                </tbody>
+            #end for
             </table>
         </div>
     </div>
-    <hr>
-    <footer>
-        <p>$BootstrapLabels.footer</p>
-    </footer>
+    #include "foot.html.inc"
 </div>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="js/jquery-3.6.3.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="js/bootstrap.bundle.min.js"></script>
-<script src="js/mqtt.min.js"></script>
-<script src="js/units.js"></script>
-<script src="js/site.js"></script>
-<script src="js/echarts.min.js"></script>
-<script src="js/lang.js"></script>
-<script src="js/gauges.js"></script>
+#include "script.html.inc"
 </body>
 </html>

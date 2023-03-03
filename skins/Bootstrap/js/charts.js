@@ -69,7 +69,7 @@ function loadCharts() {
         } else {
             chartOption = getLineChartOption(chartSeriesConfigs);
         }
-        
+
         chartSeriesConfigs.push(getDayNighSeries(chartId, start, end));
 
         chartOption.series[0].markArea = getMarkArea();
@@ -102,19 +102,19 @@ function loadCharts() {
 function getDayNighSeries(chartId, start, end) {
     let data = [];
 
-    if(weewxData['day_night_events'] === undefined) {
+    if (weewxData['day_night_events'] === undefined) {
         return data;
     }
-    
+
     weewxData['day_night_events'].forEach(
         (element, index) => {
             data.push([element[0], undefined]);
-         }
+        }
     );
-    if(start !== undefined && data[0] !== undefined) {
+    if (start !== undefined && data[0] !== undefined) {
         data[0][0] = start;
     }
-    if(end !== undefined && data[data.length - 1] !== undefined) {
+    if (end !== undefined && data[data.length - 1] !== undefined) {
         data[data.length - 1][0] = end;
     }
 
@@ -472,7 +472,7 @@ function getTimestampDiv(parentId, timestamp) {
 function getMarkArea() {
     let dayNightEvents = weewxData['day_night_events'];
     let data = [];
-    if(dayNightEvents === undefined) {
+    if (dayNightEvents === undefined) {
         return data;
     }
     dayNightEvents.forEach(
@@ -483,8 +483,8 @@ function getMarkArea() {
             let extentEnd = last !== undefined ? last[1] : element[1];
             let part = getPart(start, end, element[1], extentEnd);
             data.push(part);
-            
-         }
+
+        }
     );
 
     return {
@@ -524,5 +524,5 @@ function getPart(start, end, startDarkeningExtent, endDarkeningExtent) {
 function getColorModifier(extent) {
     return Math.round(
         Number('0x' + nightBackGroundColorModifier) * extent
-        ).toString(16).padStart(2, '0');
+    ).toString(16).padStart(2, '0');
 }

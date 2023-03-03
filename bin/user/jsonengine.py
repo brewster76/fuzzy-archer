@@ -3,7 +3,7 @@
 #    Author: Michael Kainzbauer (github: mkainzbauer)
 """generator for configuration and initializing live data skin
 
-Tested on Weewx release 4.3.0.
+Tested on Weewx release 4.10.1.
 Tested with sqlite, may not work with other databases.
 
 Directions for use:
@@ -70,6 +70,16 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         batch_records = db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
 
         self.transition_angle = 8
+        try:
+            self.transition_angle = int(self.chart_dict['transition_angle'])
+        except KeyError:
+            log.debug('Using default transition_angle %s' % self.transition_angle)
+
+        self.show_daynight = True
+        try:
+            self.show_daynight = weeutil.weeutil.to_bool(self.chart_dict['show_daynight'])
+        except KeyError:
+            log.debug('show_daynight is on')
 
         try:
             for rec in batch_records:
@@ -85,13 +95,19 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 self.record_dict_vtd[key] = None
 
     def gen_data(self):
-        """Generate data."""
         start_time = time.time()
         ngen = 0
+        unit_systems = {'US': weewx.units.USUnits, 'METRIC': weewx.units.MetricUnits, 'METRICWX': weewx.units.MetricWXUnits}
+        source_unit_system = self.config_dict['StdConvert']['target_unit']
+
         self.frontend_data['config'] = self.json_dict
         self.frontend_data['config']['archive_interval'] = self.config_dict['StdArchive']['archive_interval']
+
         self.frontend_data['gauges'] = self.gauge_dict
         self.frontend_data['charts'] = self.chart_dict
+        self.frontend_data['source_unit_system'] = {'type': source_unit_system}
+        for unit_system_item in unit_systems[source_unit_system].items():
+            self.frontend_data['source_unit_system'][unit_system_item[0]] = unit_system_item[1]
         self.frontend_data['units'] = self.units_dict
         self.frontend_data['labels'] = self.labels_dict
         live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)
@@ -133,10 +149,11 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         data_filename = 'weewxData.js'
         timestamp_filename = 'ts.js'
         html_root = os.path.join(self.config_dict['WEEWX_ROOT'], live_options['HTML_ROOT'])
-        if data_filename is not None:
-            self.write_json(os.path.join(html_root, data_filename))
-        if timestamp_filename is not None:
-            self.write_ts_file(os.path.join(html_root, timestamp_filename))
+
+        if not os.path.exists(html_root):
+            os.makedirs(html_root)
+        self.write_json(os.path.join(html_root, data_filename))
+        self.write_ts_file(os.path.join(html_root, timestamp_filename))
 
         finish_time = time.time()
 
@@ -226,18 +243,17 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
 
     def get_day_night_events(self, start, end, lon, lat, altitude_m):
-        if 'ephem' not in sys.modules:
+        if 'ephem' not in sys.modules or not self.show_daynight:
             return []
 
-        above_below_horizon_angle = 6
-        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(above_below_horizon_angle)
+        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(self.transition_angle)
         for event in events:
             event[0] = event[0] * 1000
             angle = event[1]
-            darkening_extent = abs(((event[1] - above_below_horizon_angle) / 2) / above_below_horizon_angle)
-            if angle >= above_below_horizon_angle:
+            darkening_extent = abs(((event[1] - self.transition_angle) / 2) / self.transition_angle)
+            if angle >= self.transition_angle:
                 darkening_extent = 0
-            if angle <= -above_below_horizon_angle:
+            if angle <= -self.transition_angle:
                 darkening_extent = 1
             event[1] = darkening_extent
         return events
