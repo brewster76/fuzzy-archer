@@ -2,12 +2,11 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v3.0) has been tested on Weewx version 4.8.0 on Ubuntu linux 18.04 LTS and Python 3.6.9.
-    Versions of Weewx before v3 will not work. The earlier release v2.01 is on github and works with Weewx 2.4 - 2.7.
+ 1) This release (v4.0) has been tested on Weewx version 4.10.2 and Python 3.9.2
+    Versions of Weewx before v3 will not work.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
-
-Installation - The easy way
+Basic installation - The easy way
 ===========================
 
 1) Get hold of the release archive from github:   https://github.com/brewster76/fuzzy-archer/releases
@@ -15,30 +14,75 @@ Installation - The easy way
 2) Install it using the Weewx extension installer.
 
   a) If you used the Debian installer:
-       sudo wee_extension --install=[wherever you've put the .tar.gz archive]
+       sudo wee_extension --install=[wherever you've put the archive]
 
   b) If you have installed weewx yourself:
        cd /home/weewx [or where your base install is]
-       bin/wee_extension --install=[wherever you've put the .tar.gz archive]
+       bin/wee_extension --install=[wherever you've put the archive]
 
-The installer will ask if you want to switch the themes to another language. You can change this later on
-via the [Language] section in skins/Bootstrap/skin.conf and skins/Images/skin.conf.
 
-Web content is stored in public_html/Bootstrap.
+Web content is stored in public_html/Bootstrap, if not specified otherwise.
 
-3) Set the page title and page footer through the [BootstrapLabels] section in skins/Bootstrap/skin.conf.
+3) Set the page title and page footer through the "Page Title" and "Footer Text" key in the [Texts] section of skins/Bootstrap/lang/xx.conf.
 
-   [BootstrapLabels]
+    If you want to have any other tags availabe to the templates, add them in [Extras] in skin.conf:
+    [Extras]
 
-       # Labels specific to the Bootstrap template
+        location_href = ["#" for nothing, or a hyperlink to some more information on your location]
 
-       title = "The weather, [where you are]"
-       location_href = ["#" for nothing, or a hyperlink to some more information on your location] 
-       footer = "&copy; [who you are]"
+4) Installing multiple languages at the same time
 
-4) Enjoy.... And let us know how you get on! 
+    Simply out a skin configuration item for each language in weewx.conf:
+
+    [StdReport]
+
+        [[Bootstrap-en]]
+            skin = Bootstrap
+            HTML_ROOT = /var/www/html/weewx/Bootstrap/en
+            lang = en
+            enable = true
+
+        [[Bootstrap-de]]
+            skin = Bootstrap
+            HTML_ROOT = /var/www/html/weewx/Bootstrap/de
+            lang = de
+            enable = true
+
+        [[Bootstrap-cn]]
+            skin = Bootstrap
+            HTML_ROOT = /var/www/html/weewx/Bootstrap/cn
+            lang = cn
+            enable = true
+5) Live Gauges and Charts
+
+    For enabling the Live Updates dowload and install weewx-mqtt: https://github.com/matthewwall/weewx-mqtt and
+    make sure you have the binding set to "loop" in weewx.conf :
+
+    [StdRESTful]
+        [[MQTT]]
+            server_url = "url_to_your_mqtt_server" # e.g.: mqtts://username:password@myserver.com:8883/
+            topic = weather
+            binding = loop
+            aggregation = aggregate
+
+    In Bootstrap/skin.conf configure the frontend client, protocol will be ws or wss for unecrypted/encrypted
+    wbebsocket client. Warning! This Data is exposed to the frontend! Configure your account in a safe way, for instance
+    create a token with read-only access to the topic. See also examples in skin.conf.
+
+    [JSONGenerator]
+        [[MQTT]]
+            [[[connections]]]
+                [[[[my_mqtt]]]]
+                    broker_connection = wss://myserver.com:443 # wss (encrypted)
+                    mqtt_username = my_public_token # data is exposed to frontend! make sure you use data that is not confidential, like tokens with ACL
+                    mqtt_password = my_public_token # data is exposed to frontend! make sure you use data that is not confidential, like tokens with ACL
+                    [[[[[topics]]]]]
+                          # JSON topics hold their value(s) in a JSON object. Every key can be matched to a gauge/chart dataset will work with weewx-mqtt, see: https://github.com/weewx/weewx/wiki/mqtt
+                          [[[[[[weather/loop]]]]]]
+                              type = JSON
+
+6) Enjoy.... And let us know how you get on!
    Just drop us an email at general@dajda.net and we'll add you to the list of happy sites at dajda.net/about.html.
-
 
 Frequently Asked Questions
 ==========================
@@ -54,29 +98,7 @@ Frequently Asked Questions
              # [[StandardReport]]
              # skin = Standard
 
-    Remember to leave in the [[SmallImages]], [[BigImages]] and [[HTMLPages]] sections which generate the 
-    Bootstrap template content.
-
-2) I've changed the units in skin.conf, but the original units persist on the webpage. [Pre weewx 4.0.0]
-     The skin has two skin.conf files:
-       skins/Bootstrap/skin.conf - This creates the gauges and the html files.
-       skins/Images/skin.conf    - This creates the (daily, weekly, ...) history graphs.
-
-      Make sure you've changed the units in both files.
-
-      The reason for splitting the config files out is Images/skin.conf is run twice. Once to create the images for the
-      webpage, and a second time for the expanded images which are shown when clicking on the webpage history graph.
-
-3) Text in graphs looks very small
-    Make sure you have fonts installed that support truetype scaling:
-      apt-get install ttf-freefont
-
-4) The colors on the History page do not vary much
-    The default color schemes are based around values in Fahrenheit and inches.
-    Color schemes for Celsius and mm are also included in the [HistoryReport] section
-    in skins/Bootstrap/skin.conf. Comment out the Fahrenheit and inches lines and uncomment the  Celsius and mm lines.
-
-5) I can see the static day, week, month and year graphs but cannot see the live graphs or gauges.
+2) I can see the static day, week, month and year graphs but cannot see the live graphs or gauges.
     The live gauges cannot connect to live readings over a file:// browser connection.
     One easy way view live gauges and charts on a local filesystem is to run a simple python webserver from your
     public_html folder and connect to that using your browser:
@@ -84,87 +106,6 @@ Frequently Asked Questions
       python -m http.server 8080
 
       In your browser, connect to http://localhost:8080/Bootstrap
-
-
-Installation - The involved way
-===============================
-
-Step 1 - Download from github:
-------------------------------
-
-To get the latest development code:
-   git clone git://github.com/brewster76/fuzzy-archer
-
-To get the latest stable(ish) release, point your browser here:
-   https://github.com/brewster76/fuzzy-archer/releases
-
-Move gaugeengine.py, gauges.py, historyengine,py and translateengine.py into the bin/user directory.
-Move the Bootstrap and Images directory into the skins directory.
-Move any language specific files you want into skins/languages.
-
-Step 2 - Add the skins to weewx.conf
-------------------------------------
-The [StdReport] section will need to look something like this:
-
-    [StdReport]
-        # This section specifies what reports, using which skins, to generate.
-
-        # Where the skins reside, relative to WEEWX_ROOT:
-        SKIN_ROOT = skins
-
-        # Where the generated reports should go, relative to WEEWX_ROOT:
-        HTML_ROOT = public_html
-
-        [[SmallImages]]
-            # These are the images used on the front page of the website.
-            # Dimensions are set in the Images/skin.conf file
-            #
-            skin = Images
-            HTML_ROOT = public_html/Bootstrap
-
-        [[BigImages]]
-            # These images are used when a small web page image is clicked on.
-            # So the skin.conf image_width and image_height are overridden here.
-            #
-            skin = Images
-            HTML_ROOT = public_html/Bootstrap/big_images/
-            [[[ImageGenerator]]]
-                image_width = 800
-                image_height = 500
-
-        [[HTMLPages]]
-            # This generates the webpages themselves.
-            #
-            skin = Bootstrap
-            HTML_ROOT = public_html/Bootstrap
-
-        [[FTP]]
-            skin = Ftp
-
-        [[RSYNC]]
-            skin = Rsync
-
-
-Step 3 - Add Bootstrap support files to your website
-----------------------------------------------------
-Add these files to weewx/public_html/js:
-    bootstrap.min.js
-    ekko-lightbox.min.js
-
-and this one to weewx/public_html/css:
-    css/bootstrap.min.css
-
-You can use the wget command to download these:
-    wget https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css
-    wget https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js
-    wget https://cdnjs.cloudflare.com/ajax/libs/ekko-lightbox/4.0.1/ekko-lightbox.min.js
-
-Step 4 - (Optional) Display skins in another language
------------------------------------------------------
-Just choose your language using the "language" setting in the [Languages] section of skin.conf.
-
-Remember to make changes to both skins/Bootstrap/skin.conf (for the html text) and skins/Images/skin.conf (for
-the graphs).
 
 
 Step 5 - Get in touch!

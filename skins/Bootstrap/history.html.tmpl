@@ -1,58 +1,84 @@
+#errorCatcher Echo
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>$BootstrapLabels.title</title>
-    <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/live.css" rel="stylesheet">
-</head>
+<html lang="$lang">
+#include "head.html.inc"
 <body>
 <!-- Menu navbar -->
-#include "nav.html.tmpl"
+#include "nav.html.inc"
 <!-- Main container -->
 <div class="container-fluid">
     <div class="row">
         <!-- Gauge panel -->
-        #include "livegauges.html.tmpl"
+        #include "livegauges.html.inc"
         <!-- Graph panel -->
         <div class="col-md-9 main">
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.min_temp</h3>
-            $min_temp_table
+            #for $table in $history_tables
+            <h3 class="historyHeader">$gettext($table.header_text)</h3>
+            <table class="table historyTable text-center">
+                #if $table.noaa is False
+                <thead>
+                    <tr>
+                        <th class="head">$table.header.head</th>
+                        #for $headervalue in $table.header.values
+                        <th class="month">$gettext($headervalue)</th>
+                        #end for
+                        #if "summary" in $table.header.keys()
+                        <th class="year">$gettext($table.header.summary)</th>
+                        #end if
+                    </tr>
+                </thead>
+                <tbody>
+                #for $line in $table.lines
+                <tr>
+                    <th class="head">$line.head.value</th>
+                    #for $linevalue in $line.values
+                    #set $value = '-'
+                    #set $style = ''
+                    #if $linevalue.value
+                    #set $value = $linevalue.value
+                    #set $style = ' style="background-color:' + $linevalue.bgcolor + '; color:' + $linevalue.fontcolor + ';"'
+                    #end if
+                    <td class="month"$style>$value</td>
+                    #end for
+                    #set $style = ''
+                    #if "summary" in $line.keys()
+                    #set $style = ' style="background-color:' + $line.summary.bgcolor + '; color:' + $line.summary.fontcolor + ';"'
+                    <td class="year"$style>$line.summary.value</td>
+                    #end if
 
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.avg_temp</h3>
-            $avg_temp_table
-
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.max_temp</h3>
-            $max_temp_table
-
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.rain</h3>
-            $rain_table
-
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.rain_days</h3>
-            $rain_days_table
-
-            <h3 class="historyHeader">$BootstrapLabels.history_tables.max_wind</h3>
-            $max_wind_table
-
-            $NOAA_table
+                </tr>
+                #end for
+                </tbody>
+                #else
+                <thead>
+                <tr>
+                    <th class="head">$table.header.head</th>
+                    #for $headervalue in $table.header.values
+                    <th>$headervalue</th>
+                    #end for
+                </tr>
+                </thead>
+                <tbody>
+                #for $line in $table.lines
+                <tr>
+                    <th class="noaa"><a href="$line.head.url" class="btn btn-sm btn-primary primaryLive btnNOAA">$line.head.value</a></th>
+                    #for $linevalue in $line.values
+                    #set $data = '-'
+                    #if $linevalue.value
+                    #set $data = '<a href="' + $linevalue.url + '" class="btn btn-sm btn-light primaryLight btnNOAA">' + $linevalue.value + '</a>'
+                    #end if
+                    <td class="noaa">$data</td>
+                    #end for
+                </tr>
+                #end for
+                </tbody>
+                #end if
+            </table>
+            #end for
         </div>
     </div>
-    <hr>
-    <footer>
-        <p>$BootstrapLabels.footer</p>
-    </footer>
+    #include "foot.html.inc"
 </div>
-<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-<script src="js/jquery-3.6.3.min.js"></script>
-<!-- Include all compiled plugins (below), or include individual files as needed -->
-<script src="js/bootstrap.bundle.min.js"></script>
-<script src="js/mqtt.min.js"></script>
-<script src="js/units.js"></script>
-<script src="js/site.js"></script>
-<script src="js/echarts.min.js"></script>
-<script src="js/lang.js"></script>
-<script src="js/gauges.js"></script>
+#include "script.html.inc"
 </body>
 </html>
