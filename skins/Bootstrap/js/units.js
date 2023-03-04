@@ -114,7 +114,7 @@ let observationGroups = {
     yearRain: "group_rain",
 }
 
-function convert(itemConfig, value, sourceUnit, targetUnit) {
+function convert(itemConfig, value) {
     if(isNaN(value)) {
       return;
     }
@@ -125,20 +125,13 @@ function convert(itemConfig, value, sourceUnit, targetUnit) {
         return convertFunction(value);
     }
 
-    if(sourceUnit === undefined) {
-        sourceUnit = weewxData.source_unit_system[itemConfig.obs_group];
-    }
-    
+    let sourceUnit = weewxData.source_unit_system[itemConfig.obs_group];
     if(sourceUnit === undefined && sourceUnit !== null && sourceUnit !== "") {
         return value;
     }
 
     let group = observationGroups[itemConfig.observationType];
-    
-    if (targetUnit === undefined) {
-        targetUnit = weewxData.units.Groups[group];
-    }
-    
+    let targetUnit = weewxData.units.Groups[group];
     if(sourceUnit === targetUnit) {
       return value;
     }
