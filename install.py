@@ -87,7 +87,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
                     'Bootstrap': {
                         'skin':'Bootstrap',
                         'enable':'true',
-                        'lang':'en',
+                        'lang':'de',
                         'HTML_ROOT':'Bootstrap'}}},
             files=files)
 
