@@ -1,5 +1,5 @@
 let weewxData;
-let weewxDataUrl = "weewxData.js";
+let weewxDataUrl = "weewxData.json";
 let gauges = {};
 let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
@@ -307,7 +307,7 @@ function formatDateTime(timestamp) {
 
 function checkAsyncReload() {
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
-        fetch("ts.js").then(function (u) {
+        fetch("ts.json").then(function (u) {
             return u.json();
         }).then(function (serverData) {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {

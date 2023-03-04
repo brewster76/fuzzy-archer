@@ -24,8 +24,8 @@ function loadGauges() {
         gauges[documentGaugeId] = gauge;
         let colors = [];
         let gaugePitchPrecision = gauge.weewxData["gauge_pitch_precision"] === undefined ? 1 : gauge.weewxData["gauge_pitch_precision"];
-        let minvalue = round(convert(gauge.weewxData, gauge.weewxData.minvalue), gaugePitchPrecision);
-        let maxvalue = round(convert(gauge.weewxData, gauge.weewxData.maxvalue), gaugePitchPrecision);
+        let minvalue = gauge.weewxData.minvalue;
+        let maxvalue = gauge.weewxData.maxvalue;
         let splitnumber = gauge.weewxData.splitnumber;
         let axisTickSplitNumber = 5;
         if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
@@ -55,7 +55,7 @@ function loadGauges() {
                         untilValue = maxvalue;
                     }
                 } else {
-                    untilValue = round(convert(gauge.weewxData, untilValue), gaugePitchPrecision);
+                    untilValue = untilValue;
                 }
                 colors.push([(untilValue - minvalue) / range, lineColors[i]]);
             }

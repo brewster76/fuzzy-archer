@@ -146,8 +146,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.frontend_data['day_night_events'] = events
 
         # Write JSON self.frontend_data output if a filename is specified
-        data_filename = 'weewxData.js'
-        timestamp_filename = 'ts.js'
+        data_filename = 'weewxData.json'
+        timestamp_filename = 'ts.json'
         html_root = os.path.join(self.config_dict['WEEWX_ROOT'], live_options['HTML_ROOT'])
 
         if not os.path.exists(html_root):
