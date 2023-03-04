@@ -5,7 +5,7 @@
 #
 """Extends the Cheetah generator search list to add html historic data tables in a nice color scheme.
 
-Tested on Weewx release 4.10.1.
+Tested on Weewx release 4.10.2.
 Works with all databases.
 Observes the units of measure and display formats specified in skin.conf.
 
@@ -23,61 +23,9 @@ Allows tags such as $alltime.outTemp.max for the all-time max
 temperature, or $seven_day.rain.sum for the total rainfall in the last
 seven days.
 
-2) Nice colorful tables summarising history data by month and year:
+2) Nice colorful tables summarising history data by month and year
 
-Adding the section below to your skins.conf file will create these new tags:
-   $min_temp_table
-   $max_temp_table
-   $avg_temp_table
-   $rain_table
-
-############################################################################################
-#
-# HTML month/year color coded summary table generator
-#
-[HistoryReport]
-    # minvalues, maxvalues and colors should contain the same number of elements.
-    #
-    # For example,  the [min_temp] example below, if the minimum temperature measured in
-    # a month is between -50 and -10 (degC) then the cell will be shaded in html color code #0029E5.
-    #
-    # colors = background color
-    # fontColors = foreground color [optional, defaults to black if omitted]
-
-
-    # Default is temperature scale
-    minvalues = -50, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35
-    maxvalues =  -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 60
-    colors =   "#0029E5", "#0186E7", "#02E3EA", "#04EC97", "#05EF3D2", "#2BF207", "#8AF408", "#E9F70A", "#F9A90B", "#FC4D0D", "#FF0F2D"
-    fontColors =   "#FFFFFF", "#FFFFFF", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"
-    monthnames = Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
-
-    # The Raspberry Pi typically takes 15+ seconds to calculate all the summaries with a few years of weather date.
-    # refresh_interval is how often in minutes the tables are calculated.
-    refresh_interval = 60
-
-    [[min_temp]]                           # Create a new Cheetah tag which will have a _table suffix: $min_temp_table
-        obs_type = outTemp                 # obs_type can be any weewx observation, e.g. outTemp, barometer, wind, ...
-        aggregate_type = min               # Any of these: 'sum', 'count', 'avg', 'max', 'min'
-
-    [[max_temp]]
-        obs_type = outTemp
-        aggregate_type = max
-
-    [[avg_temp]]
-        obs_type = outTemp
-        aggregate_type = avg
-
-    [[rain]]
-        obs_type = rain
-        aggregate_type = sum
-        data_binding = alternative_binding
-
-        # Override default temperature color scheme with rain specific scale
-        minvalues = 0, 25, 50, 75, 100, 150
-        maxvalues = 25, 50, 75, 100, 150, 1000
-        colors = "#E0F8E0", "#A9F5A9", "#58FA58", "#2EFE2E", "#01DF01", "#01DF01"
-        fontColors = "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"
+Check out the preconfigured skin.conf [HistoryReport] Section
 """
 
 from datetime import datetime
@@ -211,14 +159,17 @@ class MyXSearch(SearchList):
                 # Show all time unless starting date specified
                 startdate = table_options.get('startdate', None)
                 if startdate is not None:
+                    startdate = weeutil.weeutil.startOfDay(int(startdate))
                     table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup(binding).last_timestamp)
                     table_stats = TimespanBinder(table_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
                                                  converter=self.generator.converter)
                 else:
                     table_stats = all_stats
 
-                self.search_list_extension["history_tables"].append(self._statsDict(table_options, table_stats, table, binding, NOAA=noaa))
-                ngen += 1
+                new_table = self._statsDict(table_options, table_stats, table, binding, NOAA=noaa)
+                if new_table is not None:
+                    self.search_list_extension["history_tables"].append(new_table)
+                    ngen += 1
 
             t2 = time.time()
 
@@ -287,13 +238,14 @@ class MyXSearch(SearchList):
         summary_column = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
 
         if None is cell_colors:
-            # Give up
+            log.error("Cell colors are not defined for [HistoryTable]%s" % table)
             return None
 
         if None is summary_cell_colors:
             summary_cell_colors = cell_colors
 
         unit_formatted = ""
+        unit_type = None
 
         if NOAA is False:
             obs_type = table_options['obs_type']
@@ -346,7 +298,7 @@ class MyXSearch(SearchList):
             # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
 
             # Don't catch error here - we absolutely need the string format
-            if unit_type == 'count':
+            if None is unit_type or unit_type == 'count':
                 format_string = '%d'
             else:
                 format_string = reading.formatter.unit_format_dict[unit_type]
@@ -387,8 +339,11 @@ class MyXSearch(SearchList):
                     obs_month.data_binding = binding
                     if unit_type == 'count':
                         value = self.getCount(obs_month, aggregate_type,threshold_value, threshold_units, obs_type)
-                    else:
+                    elif unit_type is not None:
                         value = converter.convert(getattr(obs_month, aggregate_type).value_t)
+                    else:
+                        log.error("Error in [HistoryReport][[%s]]: check units" % table)
+                        return None
 
                     line["values"].append(self._colorCell(value[0], format_string, cell_colors))
 

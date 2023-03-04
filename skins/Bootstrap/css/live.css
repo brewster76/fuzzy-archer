@@ -95,3 +95,9 @@ td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
   border-left-style: double;
   border-left-width: 4px;
 }
+
+h3 small {
+  color: #555;
+  font-size: 0.6em;
+  margin-left: 0.5em;
+}

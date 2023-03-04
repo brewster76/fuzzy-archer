@@ -77,7 +77,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="3.1",
+            version="4.0",
             name='bootstrap',
             description='A skin based around the bootstrap 5.2.0 framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",
