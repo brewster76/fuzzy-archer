@@ -159,6 +159,7 @@ class MyXSearch(SearchList):
                 # Show all time unless starting date specified
                 startdate = table_options.get('startdate', None)
                 if startdate is not None:
+                    startdate = weeutil.weeutil.startOfDay(int(startdate))
                     table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup(binding).last_timestamp)
                     table_stats = TimespanBinder(table_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
                                                  converter=self.generator.converter)
