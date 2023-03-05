@@ -1,3 +1,7 @@
+.main {
+  hyphens: auto;
+}
+
 .currentConditions {
   color: #555;
   font-family: sans-serif;
@@ -84,6 +88,7 @@ thead.table-light th {
 td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
   padding: 2px;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .month {
