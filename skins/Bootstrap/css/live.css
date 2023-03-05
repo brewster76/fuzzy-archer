@@ -1,3 +1,7 @@
+.main {
+  hyphens: auto;
+}
+
 .currentConditions {
   color: #555;
   font-family: sans-serif;
