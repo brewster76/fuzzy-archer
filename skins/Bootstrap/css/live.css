@@ -1,5 +1,5 @@
-.main {
-  hyphens: auto;
+body {
+  hyphens: manual;
 }
 
 .currentConditions {
