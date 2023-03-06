@@ -5,5 +5,12 @@
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/live.css" rel="stylesheet">
-    <script type="text/javascript">let locale = "$locale";</script>
+    <script type="text/javascript">
+    let locale = "$locale";
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+    </script>
 </head>

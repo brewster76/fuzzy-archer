@@ -89,6 +89,7 @@ function loadGauges() {
     }
 }
 function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineColor, unit, weewxData) {
+    name = decodeHtml(name);
     let decimals = Number(weewxData.decimals);
     let value;
     let data = weewxData.dataset.data;
