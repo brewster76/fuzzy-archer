@@ -31,7 +31,7 @@ function loadCharts() {
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
             var obs_group = category.obs_group;
             let chartSeriesConfig = {
-                name: weewxData.labels.Generic[categoryId],
+                name: decodeHtml(weewxData.labels.Generic[categoryId]),
                 payloadKey: category.payload_key,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
@@ -136,7 +136,7 @@ function getLineChartOption(seriesConfigs) {
             seriesConfig.data = [];
         }
         let serie = {
-            name: seriesConfig.name,
+            name: decodeHtml(seriesConfig.name),
             payloadKey: seriesConfig.payloadKey,
             weewxColumn: seriesConfig.weewxColumn,
             type: "line",
@@ -277,7 +277,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             seriesConfig.data = [];
         }
         let serie = {
-            name: seriesConfig.name,
+            name: decodeHtml(seriesConfig.name),
             payloadKey: seriesConfig.payloadKey,
             weewxColumn: seriesConfig.weewxColumn,
             type: "bar",
