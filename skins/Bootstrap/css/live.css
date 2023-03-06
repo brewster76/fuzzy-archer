@@ -2,6 +2,10 @@ body {
   hyphens: manual;
 }
 
+.statsHeader th, .year th {
+  hyphens: auto;
+}
+
 .currentConditions {
   color: #555;
   font-family: sans-serif;
