@@ -2,7 +2,7 @@ body {
   hyphens: manual;
 }
 
-.statsHeader th, .year th {
+.statsHeader {
   hyphens: auto;
 }
 
