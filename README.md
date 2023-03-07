@@ -13,6 +13,8 @@ Historic data in color coded html tables.
 
 Available in multiple languages.
 
+Read the upgrading guide, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki/Upgrading-to-v4
+
 New in v4.0:
 
 - Complete and thorough overhaul of the skin, many breaking changes. It is recommended to start over with a fresh install
