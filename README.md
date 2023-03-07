@@ -26,8 +26,10 @@ New in v4.0:
 - Bug fixes and other enhancements
 
 See it in action with live data (~30s. refresh interval): 
+
 [Das Wetter in Rif](https://www.kainzbauer.net/weather/Rif/)
 ![Example_Rif](https://kainzbauer.net/example_rif.png)
+
 See it in action (legacy v2.x): [dajda.net](http://dajda.net/)
 
 Gauge with 3 Needles / Markers examples:
