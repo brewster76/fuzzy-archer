@@ -61,7 +61,7 @@
                 #end if
 
                 #set $show_time = True
-                #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false'
+                #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false' or $aggregate_type in ["sum"]
                 #set $show_time = False
                 #end if
 

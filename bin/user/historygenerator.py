@@ -192,7 +192,11 @@ class MyXSearch(SearchList):
             colors_key = table_options.get("colors")[0]
             unit = table_options.get("colors")[1]
 
-        table_colors = self.color_dict[colors_key][unit]
+        if colors_key in self.color_dict and unit in self.color_dict[colors_key]:
+            table_colors = self.color_dict[colors_key][unit]
+        else:
+            log.info("No colors defined for %s" % table_name)
+            table_colors = {"minvalues": [0], "maxvalues": [0], "colors": ["#ffffff"]}
 
         # Check everything's the same length
         l = len(table_colors['minvalues'])
@@ -204,7 +208,7 @@ class MyXSearch(SearchList):
                 return None, None
 
         summary_colors = None
-        if "summary" in self.color_dict[colors_key][unit]:
+        if colors_key in self.color_dict and unit in self.color_dict[colors_key] and "summary" in self.color_dict[colors_key][unit]:
             summary_colors = self.color_dict[colors_key][unit]["summary"]
 
             # Check everything's the same length
