@@ -57,38 +57,14 @@ class MyXSearch(SearchList):
 
         self.search_list_extension = {}
 
-        # Make bootstrap specific labels in config file available to templates
-        if 'BootstrapLabels' in generator.skin_dict:
-            self.search_list_extension['BootstrapLabels'] = generator.skin_dict['BootstrapLabels']
-        else:
-            log.debug("%s: No bootstrap specific labels found" % os.path.basename(__file__))
-
-        # Make observation labels available to templates
-        if 'Labels' in generator.skin_dict:
-            self.search_list_extension['Labels'] = generator.skin_dict['Labels']
-        else:
-            log.debug("%s: No observation labels found" % os.path.basename(__file__))
-
-        # Make LiveGauges specific labels in config file available to templates
-        if 'LiveGauges' in generator.skin_dict:
-            self.search_list_extension['LiveGauges'] = generator.skin_dict['LiveGauges']
-        else:
-            log.debug("%s: No LiveGauges specific labels found" % os.path.basename(__file__))
-
-        # Make Stats specific labels in config file available to templates
-        if 'Stats' in generator.skin_dict:
-            self.search_list_extension['Stats'] = generator.skin_dict['Stats']
-        else:
-            log.debug("%s: No Stats specific labels found" % os.path.basename(__file__))
-
-        # Make LiveCharts specific labels in config file available to templates
-        if 'LiveCharts' in generator.skin_dict:
-            self.search_list_extension['LiveCharts'] = generator.skin_dict['LiveCharts']
-        else:
-            log.debug("%s: No LiveCharts specific labels found" % os.path.basename(__file__))
-
-        if 'locale' in generator.skin_dict:
-            self.search_list_extension['locale'] = generator.skin_dict['locale']
+        # Make some config available to templates
+        self.add_to_extension_list('BootstrapLabels', generator.skin_dict)
+        self.add_to_extension_list('Labels', generator.skin_dict)
+        self.add_to_extension_list('Units', generator.skin_dict)
+        self.add_to_extension_list('LiveGauges', generator.skin_dict)
+        self.add_to_extension_list('Stats', generator.skin_dict)
+        self.add_to_extension_list('LiveCharts', generator.skin_dict)
+        self.add_to_extension_list('locale', generator.skin_dict)
 
         # Make ImageGenerator specific labels in config file available to templates
         image_dict = {}
@@ -99,10 +75,13 @@ class MyXSearch(SearchList):
         except:
             log.info("%s: Could not import image dictionary %s" %
                      os.path.basename(__file__), image_config_path)
-        if 'ImageGenerator' in image_dict:
-            self.search_list_extension['ImageGenerator'] = image_dict['ImageGenerator']
+        self.add_to_extension_list('ImageGenerator', image_dict)
+
+    def add_to_extension_list(self, key, source):
+        if key in source:
+            self.search_list_extension[key] = source[key]
         else:
-            log.debug("%s: No ImageGenerator specific labels found" % os.path.basename(__file__))
+            log.debug("%s: No %s specific labels found" % (key, os.path.basename(__file__)))
 
     def get_extension_list(self, valid_timespan, db_lookup):
         """For weewx V3.x extensions. Should return a list

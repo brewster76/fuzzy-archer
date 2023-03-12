@@ -14,11 +14,6 @@
         <div class="col-md-9 main">
             <table class="table table-hover statsTable">
             #for $obs_type, $statsItem in $Stats.items()
-
-            #set $since_ever = True
-            #if 'since_ever' in $statsItem and $statsItem.since_ever.lower == 'false'
-            #set $since_ever = False
-            #end if
                 <thead class="table-light">
                 <tr>
                     <th class="statsHeader">$Labels.Generic[$obs_type]</th>
@@ -26,18 +21,13 @@
                     <th>$gettext("This week")</th>
                     <th>$gettext("This month")</th>
                     <th>$gettext("This year")</th>
-                    <th>
-                    #if $since_ever
-                    $gettext("Since ever")
-                    #end if
-                    </th>
+                    <th>$gettext("Since ever")</th>
                 </tr>
                 </thead>
                 <tbody class="table-group-divider">
                 #for $aggregate_type, $aggregate_type_item in $statsItem.items()
                 #if isinstance($aggregate_type_item, dict)
                 #set $aggregate_type_time = $aggregate_type + 'time'
-
                 #set $text = 'Translation missing'
                 #if 'label' in $aggregate_type_item.keys()
                     #set $text = $aggregate_type_item.label
@@ -54,62 +44,43 @@
                 #elif $aggregate_type == 'minmax'
                     #set $text = 'Lowest maximum'
                 #end if
-
-                #set $item_since_ever = True
+                #set $since_ever = True
                 #if 'since_ever' in $aggregate_type_item and $aggregate_type_item.since_ever.lower == 'false'
-                #set $item_since_ever = False
+                #set $since_ever = False
                 #end if
-
                 #set $show_time = True
                 #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false' or $aggregate_type in ["sum"]
                 #set $show_time = False
                 #end if
-
                 #set $show_today = True
                 #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
                 #set $show_today = False
                 #end if
+
+                #set $cols = [[$day, $show_today, "%X"], [$week, True, "%x"], [$month, True, "%x"], [$year, True, "%x"], [$alltime, $since_ever, "%x"]]
                 <tr>
                     <th>$gettext($text)</th>
-
+                    #for $col in $cols
                     <td>
-                        #if $show_today
-                        $getattr($getattr($day, $obs_type), $aggregate_type)
+                        #if $col[1]
+                        $getattr($getattr($col[0], $obs_type), $aggregate_type)
                         #if $show_time
-                        <br>
-                        <span class="statsTime">$getattr($getattr($day, $obs_type), $aggregate_type_time)</span>
+                        <br><span class="statsTime">
+                        #if $aggregate_type in ["maxsum", "minsum"]
+                        #set $format = $col[2]
+                        #set $dailysumContext = "dailysum" + $col[0].context
+                        #if $dailysumContext in $Units.TimeFormats
+                        #set $format = $Units.TimeFormats[$dailysumContext]
                         #end if
+                        $getattr($getattr($col[0], $obs_type), $aggregate_type_time).format($format)
+                        #else
+                        $getattr($getattr($col[0], $obs_type), $aggregate_type_time)
+                        #end if
+                        #end if
+                        </span>
                         #end if
                     </td>
-                    <td>$getattr($getattr($week, $obs_type), $aggregate_type)
-                        #if $show_time
-                        <br>
-                        <span class="statsTime">$getattr($getattr($week, $obs_type), $aggregate_type_time)</span>
-                        #end if
-                    </td>
-                    <td>$getattr($getattr($month, $obs_type), $aggregate_type)
-                        #if $show_time
-                        <br>
-                        <span class="statsTime">$getattr($getattr($month, $obs_type), $aggregate_type_time)</span>
-                        #end if
-                    </td>
-                    <td>$getattr($getattr($year, $obs_type), $aggregate_type)
-                        #if $show_time
-                        <br>
-                        <span class="statsTime">$getattr($getattr($year, $obs_type), $aggregate_type_time)</span>
-                        #end if
-                    </td>
-                    <td>
-                    #if $since_ever
-                        #if $item_since_ever
-                        $getattr($getattr($alltime, $obs_type), $aggregate_type)
-                        #if $show_time
-                        <br>
-                        <span class="statsTime">$getattr($getattr($alltime, $obs_type), $aggregate_type_time)</span>
-                        #end if
-                        #end if
-                    #end if
-                    </td>
+                    #end for
                 </tr>
                 #end if
                 #end for
