@@ -57,7 +57,7 @@
                 #set $show_today = False
                 #end if
 
-                #set $cols = [[$day, $show_today, "%X"], [$week, True, "%x"], [$month, True, "%x"], [$year, True, "%x"], [$alltime, $since_ever, "%x"]]
+                #set $cols = [[$day, $show_today, "%X"], [$week, True, "%A"], [$month, True, "%x"], [$year, True, "%x"], [$alltime, $since_ever, "%x"]]
                 <tr>
                     <th>$gettext($text)</th>
                     #for $col in $cols
