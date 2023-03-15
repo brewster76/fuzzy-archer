@@ -11,7 +11,18 @@ Statistics: daily/weewly/monthly/yearly/alltime, highs/lows, ...
 
 Historic data in color coded html tables.
 
-Available in multiple languages.
+Available in multiple languages. Help wanted! We need help with translations for:
+
+- traditional chinese
+- czech
+- spanish
+- finnish (there isn't even a language file stub yet)
+- french
+- greek
+- italian
+- korean (there isn't even a language file stub yet)
+- dutch
+- thai
 
 Read the upgrading guide, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki/Upgrading-to-v4
 
