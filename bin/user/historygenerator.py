@@ -237,11 +237,11 @@ class MyXSearch(SearchList):
 
             # obs_type
             reading_binder = getattr(table_stats, obs_type)
-
+            aggregation = False
             # Some aggregate come with an argument
             if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
                                   'sum_ge', 'sum_le', 'avg_ge', 'avg_le']:
-
+                aggregation = True
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
                 except KeyError:
@@ -281,7 +281,7 @@ class MyXSearch(SearchList):
             # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
 
             # Don't catch error here - we absolutely need the string format
-            if None is unit_type or unit_type == 'count':
+            if None is unit_type or aggregation:
                 format_string = '%d'
             else:
                 format_string = reading.formatter.unit_format_dict[unit_type]
@@ -320,8 +320,8 @@ class MyXSearch(SearchList):
                     # update the binding to access the right DB
                     obs_month = getattr(month, obs_type)
                     obs_month.data_binding = binding
-                    if unit_type == 'count':
-                        value = self.getCount(obs_month, aggregate_type,threshold_value, threshold_units, obs_type)
+                    if aggregation:
+                        value = self.getCount(obs_month, aggregate_type, threshold_value, threshold_units, obs_type)
                     elif unit_type is not None:
                         value = converter.convert(getattr(obs_month, aggregate_type).value_t)
                     else:
@@ -334,7 +334,7 @@ class MyXSearch(SearchList):
                 obs_year = getattr(year, obs_type)
                 obs_year.data_binding = binding
 
-                if unit_type == 'count':
+                if aggregation:
                     value = self.getCount(obs_year, aggregate_type,threshold_value, threshold_units, obs_type)
                 else:
                     value = converter.convert(getattr(obs_year, aggregate_type).value_t)
@@ -345,9 +345,9 @@ class MyXSearch(SearchList):
 
         return table_dict
     
-    def getCount(self, obs_month, aggregate_type,threshold_value, threshold_units, obs_type):
+    def getCount(self, obs_period, aggregate_type, threshold_value, threshold_units, obs_type):
         try:
-           return getattr(obs_month, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
+           return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
         except:
            return [0, 'count']
 

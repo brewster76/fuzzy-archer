@@ -14,8 +14,7 @@ def loader():
     return BootstrapInstaller()
 
 class BootstrapInstaller(setup.ExtensionInstaller):
-    _skin_conf_files = ['Bootstrap/skin.conf',
-                        'Images/skin.conf']
+    _skin_conf_files = ['Bootstrap/skin.conf']
 
     def __init__(self):
         files=[('skins/Bootstrap',
@@ -39,7 +38,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
            ('skins/Bootstrap/NOAA',
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
              'skins/Bootstrap/NOAA/NOAA-YYYY-MM.txt.tmpl']),
-           ('skins/Images',
+           ('skins/Bootstrap/font',
             ['skins/Bootstrap/font/FreeMonoBold.ttf',
             'skins/Bootstrap/font/GNU_FreeFont.txt',
             'skins/Bootstrap/font/Kanit-Bold.ttf',
