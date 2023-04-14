@@ -240,7 +240,8 @@ class MyXSearch(SearchList):
             aggregation = False
             # Some aggregate come with an argument
             if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
-                                  'sum_ge', 'sum_le', 'avg_ge', 'avg_le']:
+                                  'sum_ge', 'sum_le', 'avg_ge', 'avg_le',
+                                  'avg_gt', 'avg_lt']:
                 aggregation = True
                 try:
                     threshold_value = float(table_options['aggregate_threshold'][0])
