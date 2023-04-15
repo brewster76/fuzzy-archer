@@ -14,6 +14,10 @@
         <div class="col-md-9 main">
             <table class="table table-hover statsTable">
             #for $obs_type, $statsItem in $Stats.items()
+                #set $binding = 'wx_binding'
+                #if 'data_binding' in $statsItem.keys()
+                #set $binding = $statsItem.data_binding
+                #end if
                 <thead class="table-light">
                 <tr>
                     <th class="statsHeader">$Labels.Generic[$obs_type]</th>
@@ -57,7 +61,7 @@
                 #set $show_today = False
                 #end if
 
-                #set $cols = [[$day, $show_today, "%X"], [$week, True, "%A"], [$month, True, "%x"], [$year, True, "%x"], [$alltime, $since_ever, "%x"]]
+                #set $cols = [[$day($data_binding=$binding), $show_today, "%X"], [$week($data_binding=$binding), True, "%x"], [$month($data_binding=$binding), True, "%x"], [$year($data_binding=$binding), True, "%x"], [$alltime($data_binding=$binding), $since_ever, "%x"]]
                 <tr>
                     <th>$gettext($text)</th>
                     #for $col in $cols
