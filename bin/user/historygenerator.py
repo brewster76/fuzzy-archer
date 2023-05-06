@@ -329,7 +329,7 @@ class MyXSearch(SearchList):
                         log.error("Error in [HistoryReport][[%s]]: check units" % table)
                         return None
 
-                    line["values"].append(self._colorCell(value[0], format_string, cell_colors))
+                    line["values"].append(self._colorCell(value, format_string, cell_colors))
 
             if summary_column:
                 obs_year = getattr(year, obs_type)
@@ -340,12 +340,12 @@ class MyXSearch(SearchList):
                 else:
                     value = converter.convert(getattr(obs_year, aggregate_type).value_t)
 
-                line["summary"] = self._colorCell(value[0], format_string, summary_cell_colors)
+                line["summary"] = self._colorCell(value, format_string, summary_cell_colors)
 
             table_dict["lines"].append(line)
 
         return table_dict
-    
+
     def getCount(self, obs_period, aggregate_type, threshold_value, threshold_units, obs_type):
         try:
            return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
@@ -360,11 +360,12 @@ class MyXSearch(SearchList):
         cellColors: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
         """
         cell = {"value": "", "bgcolor": "", "fontcolor": ""}
-        if value is not None:
+        if value[0] is not None:
+            vh = weewx.units.ValueHelper(value)
             for c in cell_colors:
-                if (value >= float(c[0])) and (value < float(c[1])):
+                if (value[0] >= float(c[0])) and (value[0] < float(c[1])):
                     cell["bgcolor"] = c[2]
                     cell["fontcolor"] = c[3]
                     break
-            cell["value"] = format_string % value
+            cell["value"] = vh.format(format_string, None, False, True)
         return cell
