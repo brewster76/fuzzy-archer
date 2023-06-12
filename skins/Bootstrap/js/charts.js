@@ -70,10 +70,11 @@ function loadCharts() {
             chartOption = getLineChartOption(chartSeriesConfigs);
         }
 
-        chartSeriesConfigs.push(getDayNighSeries(chartId, start, end));
+        chartSeriesConfigs.push(getDayNightSeries(chartId, start, end));
 
         chartOption.series[0].markArea = getMarkArea();
 
+        chartOption.yAxis.scale = true;
         if (obs_group === "group_speed") {
             chartOption.yAxis.min = 0;
         }
@@ -99,7 +100,7 @@ function loadCharts() {
     }
 }
 
-function getDayNighSeries(chartId, start, end) {
+function getDayNightSeries(chartId, start, end) {
     let data = [];
 
     if (weewxData['day_night_events'] === undefined) {
@@ -131,70 +132,7 @@ function getLineChartOption(seriesConfigs) {
     let colors = [];
     let configs = seriesConfigs;
     for (let seriesConfig of seriesConfigs) {
-        colors.push(seriesConfig.lineColor);
-        if (seriesConfig.data === undefined) {
-            seriesConfig.data = [];
-        }
-        let serie = {
-            name: decodeHtml(seriesConfig.name),
-            payloadKey: seriesConfig.payloadKey,
-            weewxColumn: seriesConfig.weewxColumn,
-            type: "line",
-            symbol: seriesConfig.symbol === undefined ? 'none' : seriesConfig.symbol,
-            lineStyle: {
-                width: seriesConfig.lineStyle === undefined || seriesConfig.lineStyle.width === undefined ? 1 : seriesConfig.lineStyle.width,
-            },
-            data: seriesConfig.data,
-        };
-
-
-        if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
-            let markPoint = {};
-            markPoint.symbolSize = 0;
-            markPoint.data = [];
-            if (seriesConfig.showMaxMarkPoint) {
-                markPoint.data.push({
-                    type: "max",
-                    name: "Max",
-                    label: {
-                        show: true,
-                        position: "top",
-                        formatter: function (value) {
-                            return value.data.value.toFixed(seriesConfig.decimals);
-                        },
-                    }
-                });
-            }
-            if (seriesConfig.showMinMarkPoint) {
-                markPoint.data.push({
-                    type: "min",
-                    name: "Min",
-                    label: {
-                        show: true,
-                        position: "bottom",
-                        formatter: function (value, ticket) {
-                            return value.data.value.toFixed(seriesConfig.decimals);
-                        },
-                    }
-                });
-            }
-            serie.markPoint = markPoint;
-        }
-        if (seriesConfig.showAvgMarkLine) {
-            serie.markLine = {
-                precision: seriesConfig.decimals,
-                data: [{
-                    type: "average",
-                    name: "Avg",
-                    label: {
-                        formatter: "{c}" + yAxisName
-                    }
-                }
-                ]
-            };
-        }
-
-        series.push(serie);
+        getSeriesConfig(seriesConfig, yAxisName, series, colors, "line", undefined);
     }
 
     return {
@@ -252,7 +190,6 @@ function getLineChartOption(seriesConfigs) {
         yAxis: {
             name: yAxisName,
             type: "value",
-            scale: true,
             minInterval: undefined,
             nameTextStyle: {
                 fontWeight: 'bold',
@@ -265,73 +202,85 @@ function getLineChartOption(seriesConfigs) {
     }
 }
 
+function getSeriesConfig(seriesConfig, yAxisName, series, colors, type, aggregateIntervalMinutes) {
+    colors.push(seriesConfig.lineColor);
+    if (seriesConfig.data === undefined) {
+        seriesConfig.data = [];
+    }
+    if(aggregateIntervalMinutes !== undefined) {
+        seriesConfig.data = aggregate(seriesConfig.data, aggregateIntervalMinutes)
+    }
+    let serie = {
+        name: decodeHtml(seriesConfig.name),
+        payloadKey: seriesConfig.payloadKey,
+        weewxColumn: seriesConfig.weewxColumn,
+        type: type,
+        barWidth: '100%', //only applies to barchart
+        barGap: '-100%', //only applies to barchart
+        symbol: seriesConfig.symbol === undefined ? 'none' : seriesConfig.symbol,
+        lineStyle: {
+            width: seriesConfig.lineStyle === undefined || seriesConfig.lineStyle.width === undefined ? 1 : seriesConfig.lineStyle.width,
+        },
+        data: seriesConfig.data,
+    };
+
+
+    if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
+        let markPoint = {};
+        markPoint.symbolSize = 0;
+        markPoint.data = [];
+        if (seriesConfig.showMaxMarkPoint) {
+            markPoint.data.push({
+                type: "max",
+                name: "Max",
+                label: {
+                    show: true,
+                    position: "top",
+                    formatter: function (value) {
+                        return value.data.value.toFixed(seriesConfig.decimals);
+                    },
+                }
+            });
+        }
+        if (seriesConfig.showMinMarkPoint) {
+            markPoint.data.push({
+                type: "min",
+                name: "Min",
+                label: {
+                    show: true,
+                    position: "bottom",
+                    formatter: function (value, ticket) {
+                        return value.data.value.toFixed(seriesConfig.decimals);
+                    },
+                }
+            });
+        }
+        serie.markPoint = markPoint;
+    }
+    if (seriesConfig.showAvgMarkLine) {
+        serie.markLine = {
+            precision: seriesConfig.decimals,
+            data: [{
+                type: "average",
+                name: "Avg",
+                label: {
+                    formatter: "{c}" + yAxisName
+                }
+            }
+            ]
+        };
+    }
+
+    series.push(serie);
+}
+
 function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
     let colors = [];
     let configs = seriesConfigs;
-    let aggregateInterval = aggregateIntervalMinutes
     for (let seriesConfig of seriesConfigs) {
-        colors.push(seriesConfig.lineColor);
-        if (seriesConfig.data === undefined) {
-            seriesConfig.data = [];
-        }
-        let serie = {
-            name: decodeHtml(seriesConfig.name),
-            payloadKey: seriesConfig.payloadKey,
-            weewxColumn: seriesConfig.weewxColumn,
-            type: "bar",
-            barWidth: '100%',
-            data: aggregate(seriesConfig.data, aggregateIntervalMinutes),
-        };
-
-        if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
-            let markPoint = {};
-            markPoint.symbolSize = 0;
-            markPoint.data = [];
-            if (seriesConfig.showMaxMarkPoint) {
-                markPoint.data.push({
-                    type: "max",
-                    name: "Max",
-                    label: {
-                        show: true,
-                        position: "top",
-                        formatter: function (value) {
-                            return value.data.value.toFixed(seriesConfig.decimals);
-                        },
-                    }
-                });
-            }
-            if (seriesConfig.showMinMarkPoint) {
-                markPoint.data.push({
-                    type: "min",
-                    name: "Min",
-                    label: {
-                        show: true,
-                        position: "bottom",
-                        formatter: function (value, ticket) {
-                            return value.data.value.toFixed(seriesConfig.decimals);
-                        },
-                    }
-                });
-            }
-            serie.markPoint = markPoint;
-        }
-        if (seriesConfig.showAvgMarkLine) {
-            serie.markLine = {
-                precision: seriesConfig.decimals,
-                data: [{
-                    type: "average",
-                    name: "Avg",
-                    label: {
-                        formatter: "{c}" + yAxisName
-                    }
-                }
-                ]
-            };
-        }
-
-        series.push(serie);
+        getSeriesConfig(seriesConfig, yAxisName, series, colors, "bar", aggregateIntervalMinutes);
     }
 
     return {
@@ -360,7 +309,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
             show: true,
             position: "inside",
             formatter: function (params, ticket, callback) {
-                let halfAggregateInterval = aggregateInterval * 60000 / 2;
+                let halfAggregateInterval = aggregateIntervalMinutes * 60000 / 2;
                 let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
                 let toDate = new Date(params[0].axisValue + halfAggregateInterval);
                 let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
@@ -393,7 +342,6 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
         yAxis: {
             name: yAxisName,
             type: "value",
-            min: 0,
             minInterval: undefined,
             nameTextStyle: {
                 fontWeight: 'bold',
