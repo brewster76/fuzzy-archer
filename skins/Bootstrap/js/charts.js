@@ -32,6 +32,9 @@ function loadCharts() {
             var obs_group = category.obs_group;
             let chartSeriesConfig = {
                 name: decodeHtml(weewxData.labels.Generic[categoryId]),
+                plotType: category.plotType,
+                aggregateType: category.aggregateType,
+                aggregateInterval: category.aggregateInterval,
                 payloadKey: category.payload_key,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
@@ -132,7 +135,7 @@ function getLineChartOption(seriesConfigs) {
     let colors = [];
     let configs = seriesConfigs;
     for (let seriesConfig of seriesConfigs) {
-        getSeriesConfig(seriesConfig, yAxisName, series, colors, "line", undefined);
+        getSeriesConfig(seriesConfig, yAxisName, series, colors, undefined);
     }
 
     return {
@@ -202,13 +205,23 @@ function getLineChartOption(seriesConfigs) {
     }
 }
 
-function getSeriesConfig(seriesConfig, yAxisName, series, colors, type, aggregateIntervalMinutes) {
+function getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateIntervalMinutes) {
     colors.push(seriesConfig.lineColor);
     if (seriesConfig.data === undefined) {
         seriesConfig.data = [];
     }
-    if(aggregateIntervalMinutes !== undefined) {
-        seriesConfig.data = aggregate(seriesConfig.data, aggregateIntervalMinutes)
+    let type = seriesConfig.plotType;
+    /* Begin Legacy Support */
+    if(type === undefined && aggregateIntervalMinutes !== undefined) {
+        type = "bar";
+        seriesConfig.aggregateInterval = aggregateIntervalMinutes * 60;
+    }
+    if(type === undefined) {
+        type = "line";
+    }
+    /* End Legacy Support */
+    if(seriesConfig.aggregateInterval !== undefined) {
+        seriesConfig.data = aggregate(seriesConfig)
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),
@@ -280,7 +293,7 @@ function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
     let colors = [];
     let configs = seriesConfigs;
     for (let seriesConfig of seriesConfigs) {
-        getSeriesConfig(seriesConfig, yAxisName, series, colors, "bar", aggregateIntervalMinutes);
+        getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateIntervalMinutes);
     }
 
     return {
@@ -379,12 +392,19 @@ function getDecimalSeparator(locale) {
     return n;
 }
 
-function aggregate(data, aggregateIntervalMinutes) {
+function aggregate(seriesConfig) {
     let aggregatedData = [];
-    for (let entry of data) {
+    for (let entry of seriesConfig.data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
         if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateIntervalMinutes, aggregatedData);
+            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig, aggregatedData);
+        }
+    }
+    if(seriesConfig.aggregateType === "avg" && aggregatedData.length > 0) {
+        for (let entry of aggregatedData) {
+            if(entry[2] !== 0) {
+                entry[1] = entry[1]/entry[2];
+            }
         }
     }
     return aggregatedData;

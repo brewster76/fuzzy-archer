@@ -81,11 +81,11 @@ fetch(weewxDataUrl).then(function (u) {
                 for (let chartId of Object.keys(charts)) {
                     let chart = charts[chartId];
                     chart.chartId = chartId;
-                    if (chart.weewxData.aggregate_interval_minutes !== undefined) {
-                        addAggregatedChartValues(chart, jPayload, timestamp, chart.weewxData.aggregate_interval_minutes);
-                    } else {
+                    //if (chart.weewxData.aggregate_interval_minutes !== undefined || chart.weewxData.aggregate_interval_minutes) {
+                    //    addAggregatedChartValues(chart, jPayload, timestamp);
+                    //} else {
                         addValues(chart, jPayload, timestamp);
-                    }
+                    //}
                 }
                 let lastUpdate = document.getElementById("lastUpdate");
                 lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
@@ -143,12 +143,13 @@ function updateGaugeValue(newValue, gauge) {
     gauge.setOption(option);
 }
 
-function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalMinutes) {
+function addAggregatedChartValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
+    let intervalSeconds = chart.weewxData.aggregate_interval_minutes * 60;
     for (let dataset of option.series) {
         let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
         if (!isNaN(value)) {
-            addAggregatedChartValue(dataset, value, timestamp, aggregateIntervalMinutes);
+            addAggregatedChartValue(dataset, value, timestamp, intervalSeconds);
             chart.setOption(option);
             if (chart.chartId !== undefined) {
                 let chartElem = document.getElementById(chart.chartId + "_timestamp");
@@ -160,14 +161,31 @@ function addAggregatedChartValues(chart, jPayload, timestamp, aggregateIntervalM
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
+    let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
     for (let dataset of option.series) {
+        if(chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
+            intervalSeconds = chart.weewxData[dataset.weewxColumn].aggregateInterval;
+        }
         dataset.chartId = chart.chartId;
         let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
         if (!isNaN(value)) {
-            addValue(dataset, value, timestamp);
+            if(intervalSeconds !== undefined) {
+                addAggregatedChartValue(dataset, value, timestamp, intervalSeconds);
+            } else {
+                addValue(dataset, value, timestamp);
+            }
             chart.setOption(option);
         }
+        if(intervalSeconds !== undefined && chart.weewxData[dataset.weewxColumn].aggregateType === "avg" && dataset.data.length > 0) {
+            for (let entry of dataset.data) {
+                if(entry[2] !== 0) {
+                    entry[1] = entry[1]/entry[2];
+                }
+            }
+        }
     }
+
+    
 }
 
 function addValue(dataset, value, timestamp) {
@@ -238,19 +256,20 @@ function getAverageIntervalValue(currentIntervalData, value) {
     return value / (currentIntervalData.values.length + 1);
 }
 
-function addAggregatedChartValue(dataset, value, timestamp, intervalMinutes) {
-    setAggregatedChartEntry(value, timestamp, intervalMinutes, dataset.data);
+function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds) {
+    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data);
     rotateData(dataset.data);
 }
 
-function setAggregatedChartEntry(value, timestamp, intervalMinutes, data) {
-    let duration = intervalMinutes * 60000;
+function setAggregatedChartEntry(value, timestamp, seriesConfig, data) {
+    let duration = seriesConfig.aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
         let intervalSum = Number.parseFloat(data[data.length - 1][1]) + value;
         data[data.length - 1][1] = intervalSum;
+        data[data.length - 1][2]++;
     } else {
-        data.push([intervalStart, value]);
+        data.push([intervalStart, value, 0]);
     }
 }
 
