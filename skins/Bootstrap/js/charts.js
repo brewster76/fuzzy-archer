@@ -397,7 +397,7 @@ function aggregate(seriesConfig) {
     for (let entry of seriesConfig.data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
         if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig, aggregatedData);
+            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig.aggregateInterval, aggregatedData);
         }
     }
     if(seriesConfig.aggregateType === "avg" && aggregatedData.length > 0) {

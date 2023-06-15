@@ -175,6 +175,11 @@ function addValues(chart, jPayload, timestamp) {
                 addValue(dataset, value, timestamp);
             }
             chart.setOption(option);
+
+            if (dataset.chartId !== undefined) {
+                let chartElem = document.getElementById(dataset.chartId + "_timestamp");
+                chartElem.innerHTML = formatDateTime(timestamp);
+            }
         }
         if(intervalSeconds !== undefined && chart.weewxData[dataset.weewxColumn].aggregateType === "avg" && dataset.data.length > 0) {
             for (let entry of dataset.data) {
@@ -208,10 +213,6 @@ function addValue(dataset, value, timestamp) {
         value = getIntervalValue(type, currentIntervalData, value);
     }
     data.push([timestamp, value]);
-    if (dataset.chartId !== undefined) {
-        let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-        chartElem.innerHTML = formatDateTime(timestamp);
-    }
     rotateData(dataset.data);
 }
 
@@ -232,7 +233,7 @@ function getIntervalValue(type, currentIntervalData, value) {
     if (type === "windGust") {
         return getMaxIntervalValue(currentIntervalData, value);
     }
-    if (type === "windDir") {
+    if (type === "windDir" && intervalData.windSpeed !== undefined) {
         return calcWindDir(currentIntervalData, intervalData.windSpeed);
     }
     return getAverageIntervalValue(currentIntervalData, value);
@@ -261,8 +262,8 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds) {
     rotateData(dataset.data);
 }
 
-function setAggregatedChartEntry(value, timestamp, seriesConfig, data) {
-    let duration = seriesConfig.aggregateInterval * 1000;
+function setAggregatedChartEntry(value, timestamp, aggregateInterval, data) {
+    let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
         let intervalSum = Number.parseFloat(data[data.length - 1][1]) + value;
