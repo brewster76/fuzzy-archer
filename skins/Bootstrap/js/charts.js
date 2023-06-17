@@ -224,7 +224,7 @@ function getTooltip(seriesConfigs) {
                 if (aggregateInterval !== undefined) {
                     let halfAggregateInterval = aggregateInterval * 1000 / 2;
                     let aggregateAxisValue = params[0].axisValue;
-                    if(dataValue === undefined) {
+                    if (dataValue === undefined) {
                         aggregateAxisValue = getAggregateAxisValue(params[0].axisValue, seriesItem.data, halfAggregateInterval);
                         dataValue = getDataValue(aggregateAxisValue, seriesItem.data);
                     }
@@ -263,19 +263,21 @@ function getDataValue(axisValue, data) {
 }
 
 function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
-    if(data.length < 1) {
+    if (data.length < 1) {
         return;
     }
     let aggregateAxisValue = data[0][0];
     let diff = Math.abs(axisValue - aggregateAxisValue);
-    let lastDiff = diff;
-    for(let item of data) {
-        if(diff < halfAggregateInterval || diff > lastDiff) {
+    for (let item of data) {
+        if (diff < halfAggregateInterval) {
             return aggregateAxisValue;
         } else {
             aggregateAxisValue = item[0];
-            lastDiff = diff;
-            diff = Math.abs(axisValue - aggregateAxisValue);
+            if (diff != halfAggregateInterval) {
+                diff = Math.abs(axisValue - aggregateAxisValue);
+            } else {
+                diff = 0;
+            }
         }
     }
     return aggregateAxisValue;
