@@ -84,7 +84,7 @@ fetch(weewxDataUrl).then(function (u) {
                     //if (chart.weewxData.aggregate_interval_minutes !== undefined || chart.weewxData.aggregate_interval_minutes) {
                     //    addAggregatedChartValues(chart, jPayload, timestamp);
                     //} else {
-                        addValues(chart, jPayload, timestamp);
+                    addValues(chart, jPayload, timestamp);
                     //}
                 }
                 let lastUpdate = document.getElementById("lastUpdate");
@@ -161,16 +161,22 @@ function addAggregatedChartValues(chart, jPayload, timestamp) {
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
-    let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
+
     for (let dataset of option.series) {
-        if(chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
+        let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
+        if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
             intervalSeconds = chart.weewxData[dataset.weewxColumn].aggregateInterval;
         }
+        let aggregateType = "sum";
+        if (chart.weewxData[dataset.weewxColumn].aggregateType !== undefined) {
+            aggregateType = chart.weewxData[dataset.weewxColumn].aggregateType;
+        }
+
         dataset.chartId = chart.chartId;
         let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
         if (!isNaN(value)) {
-            if(intervalSeconds !== undefined) {
-                addAggregatedChartValue(dataset, value, timestamp, intervalSeconds);
+            if (intervalSeconds !== undefined) {
+                addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType);
             } else {
                 addValue(dataset, value, timestamp);
             }
@@ -181,16 +187,16 @@ function addValues(chart, jPayload, timestamp) {
                 chartElem.innerHTML = formatDateTime(timestamp);
             }
         }
-        if(intervalSeconds !== undefined && chart.weewxData[dataset.weewxColumn].aggregateType === "avg" && dataset.data.length > 0) {
+        /*if(intervalSeconds !== undefined && chart.weewxData[dataset.weewxColumn].aggregateType === "avg" && dataset.data.length > 0) {
             for (let entry of dataset.data) {
                 if(entry[2] !== 0) {
                     entry[1] = entry[1]/entry[2];
                 }
             }
-        }
+        }*/
     }
 
-    
+
 }
 
 function addValue(dataset, value, timestamp) {
@@ -257,12 +263,12 @@ function getAverageIntervalValue(currentIntervalData, value) {
     return value / (currentIntervalData.values.length + 1);
 }
 
-function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds) {
-    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data);
+function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType) {
+    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data, aggregateType);
     rotateData(dataset.data);
 }
 
-function setAggregatedChartEntry(value, timestamp, aggregateInterval, data) {
+function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
     let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {

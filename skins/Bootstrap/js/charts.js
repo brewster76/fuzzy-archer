@@ -1,3 +1,6 @@
+const bgRegex = /background-color:.*;/;
+const dayNightKey = "dayNight_";
+
 let baseColor = '#111111';
 let backGroundColor = baseColor + '0a';
 let nightBackGroundColorModifier = '1a';
@@ -30,11 +33,16 @@ function loadCharts() {
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
             var obs_group = category.obs_group;
+
+            let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? "line" : category.plotType;
+            let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? "sum" : category.aggregateType;
+            let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
+
             let chartSeriesConfig = {
                 name: decodeHtml(weewxData.labels.Generic[categoryId]),
-                plotType: category.plotType,
-                aggregateType: category.aggregateType,
-                aggregateInterval: category.aggregateInterval,
+                plotType: plotType,
+                aggregateType: aggregateType,
+                aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
@@ -65,12 +73,12 @@ function loadCharts() {
         let chartOption;
         let start;
         let end;
-        if (chart.weewxData.aggregate_interval_minutes !== undefined) {
-            chartOption = getBarChartOption(chartSeriesConfigs, chart.weewxData.aggregate_interval_minutes);
-            start = chartOption.series[0].data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
-            end = chartOption.series[0].data[chartOption.series[0].data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
-        } else {
-            chartOption = getLineChartOption(chartSeriesConfigs);
+        chartOption = getChartOption(chartSeriesConfigs);
+        for (let serie of chartOption.series) {
+            let currenStart = serie.data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
+            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
+            start = start === undefined || start >= currenStart ? currenStart : start;
+            end = end === undefined || end <= currentEnd ? currentEnd : end;
         }
 
         chartSeriesConfigs.push(getDayNightSeries(chartId, start, end));
@@ -123,19 +131,18 @@ function getDayNightSeries(chartId, start, end) {
     }
 
     return {
-        name: "dayNight_" + chartId,
+        name: dayNightKey + chartId,
         data: data
     }
 }
 
 
-function getLineChartOption(seriesConfigs) {
+function getChartOption(seriesConfigs) {
     let yAxisName = seriesConfigs[0].unit;
     let series = [];
     let colors = [];
-    let configs = seriesConfigs;
     for (let seriesConfig of seriesConfigs) {
-        getSeriesConfig(seriesConfig, yAxisName, series, colors, undefined);
+        getSeriesConfig(seriesConfig, yAxisName, series, colors);
     }
 
     return {
@@ -155,27 +162,10 @@ function getLineChartOption(seriesConfigs) {
                 }
             }
         },
-        tooltip: {
-            trigger: "axis",
-            axisPointer: {
-                type: "line"
-            },
-            show: true,
-            position: "inside",
-            formatter: function (params, ticket, callback) {
-                let date = new Date(params[0].axisValue);
-                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
-                let show = false;
-                params.forEach(item => {
-                    let unitString = configs[item.seriesIndex].unit === undefined ? "" : configs[item.seriesIndex].unit;
-                    if (!isNaN(item.data[1])) {
-                        show = true;
-                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + unitString + '</td></tr>');
-                    }
-                });
-                return show ? tooltipHTML + '</table>' : "";
-            }
-        },
+        tooltip: getTooltip(seriesConfigs),
+        /*label: {
+            align: 'left'
+        },*/
         xAxis: {
             show: true,
             minInterval: getXMinInterval(),
@@ -205,22 +195,144 @@ function getLineChartOption(seriesConfigs) {
     }
 }
 
-function getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateIntervalMinutes) {
+function getTooltip(seriesConfigs) {
+    return {
+        trigger: "axis",
+        axisPointer: {
+            type: "line"
+        },
+        show: true,
+        position: "inside",
+        formatter: function (params, ticket, callback) {
+            let tooltipHTML = '<table>';
+            let show = true;
+            let marker = params[0].marker;
+            let itemIndex = params[0].seriesIndex;
+            let axisValue = params[0].axisValue;
+            let intervals = [];
+            for (let i = 0; i < seriesConfigs.length; i++) {
+                let seriesItem = seriesConfigs[i];
+                if (seriesItem.name.startsWith(dayNightKey)) {
+                    continue;
+                }
+                let unitString = seriesItem.unit === undefined ? "" : seriesConfigs[i].unit;
+                let aggregateInterval = seriesItem.aggregateInterval;
+                intervals.push(aggregateInterval);
+
+                let formattedValue = "-";
+                let dataValue = getDataValue(axisValue, seriesItem.data);
+                if (aggregateInterval !== undefined) {
+                    let halfAggregateInterval = aggregateInterval * 1000 / 2;
+                    let aggregateAxisValue = params[0].axisValue;
+                    if(dataValue === undefined) {
+                        aggregateAxisValue = getAggregateAxisValue(params[0].axisValue, seriesItem.data, halfAggregateInterval);
+                        dataValue = getDataValue(aggregateAxisValue, seriesItem.data);
+                    }
+                    let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
+                    let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
+                    let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
+                    let to = toDate.toLocaleTimeString(localeWithDash);
+                    if (i == 0 || aggregateInterval !== intervals[i - 1]) {
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
+                    }
+                } else {
+                    let date = new Date(params[0].axisValue);
+                    if (i == 0 || aggregateInterval !== intervals[i - 1]) {
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
+                    }
+                }
+
+                if (dataValue !== undefined) {
+                    formattedValue = format(dataValue, seriesItem.decimals) + unitString;
+                }
+                tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(bgRegex, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
+
+            }
+            return show ? tooltipHTML + '</table>' : "";
+        }
+    }
+}
+
+function getDataValue(axisValue, data) {
+    for (let item of data) {
+        if (item[0] === axisValue) {
+            return item[1];
+        }
+    }
+    return undefined;
+}
+
+function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
+    if(data.length < 1) {
+        return;
+    }
+    let aggregateAxisValue = data[0][0];
+    let diff = Math.abs(axisValue - aggregateAxisValue);
+    let lastDiff = diff;
+    for(let item of data) {
+        if(diff < halfAggregateInterval || diff > lastDiff) {
+            return aggregateAxisValue;
+        } else {
+            aggregateAxisValue = item[0];
+            lastDiff = diff;
+            diff = Math.abs(axisValue - aggregateAxisValue);
+        }
+    }
+    return aggregateAxisValue;
+}
+
+function getTooltipOld(seriesConfigs) {
+    return {
+        trigger: "axis",
+        axisPointer: {
+            type: "line"
+        },
+        show: true,
+        position: "inside",
+        formatter: function (params, ticket, callback) {
+            let tooltipHTML = '<table>';
+            let show = true;
+            let intervals = [];
+            params.forEach(item => {
+                let unitString = seriesConfigs[item.seriesIndex].unit === undefined ? "" : seriesConfigs[item.seriesIndex].unit;
+                if (seriesConfigs[item.seriesIndex].aggregateInterval !== undefined) {
+                    let interval = seriesConfigs[item.seriesIndex].aggregateInterval;
+                    intervals.push(interval);
+                    let halfAggregateInterval = interval * 1000 / 2;
+                    let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
+                    let toDate = new Date(params[0].axisValue + halfAggregateInterval);
+                    let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
+                    let to = toDate.toLocaleTimeString(localeWithDash);
+                    if (item.seriesIndex == 0 || interval !== intervals[item.seriesIndex - 1]) {
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
+                    }
+                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], seriesConfigs[item.seriesIndex].decimals) + unitString + '</td></tr>');
+                } else {
+                    intervals.push(undefined);
+                    let date = new Date(params[0].axisValue);
+                    show = false;
+                    let unitString = seriesConfigs[item.seriesIndex].unit === undefined ? "" : seriesConfigs[item.seriesIndex].unit;
+                    if (!isNaN(item.data[1])) {
+                        show = true;
+                        if (item.seriesIndex == 0 || intervals[item.seriesIndex - 1] !== undefined) {
+                            tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
+                        }
+                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], seriesConfigs[item.seriesIndex].decimals) + unitString + '</td></tr>');
+                    }
+                }
+            });
+            return show ? tooltipHTML + '</table>' : "";
+        }
+    }
+}
+
+function getSeriesConfig(seriesConfig, yAxisName, series, colors) {
     colors.push(seriesConfig.lineColor);
     if (seriesConfig.data === undefined) {
         seriesConfig.data = [];
     }
     let type = seriesConfig.plotType;
-    /* Begin Legacy Support */
-    if(type === undefined && aggregateIntervalMinutes !== undefined) {
-        type = "bar";
-        seriesConfig.aggregateInterval = aggregateIntervalMinutes * 60;
-    }
-    if(type === undefined) {
-        type = "line";
-    }
-    /* End Legacy Support */
-    if(seriesConfig.aggregateInterval !== undefined) {
+    if (seriesConfig.aggregateInterval !== undefined) {
         seriesConfig.data = aggregate(seriesConfig)
     }
     let serie = {
@@ -236,6 +348,8 @@ function getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateInter
         },
         data: seriesConfig.data,
     };
+
+    seriesConfig.serie = serie;
 
 
     if (seriesConfig.showMaxMarkPoint || seriesConfig.showMinMarkPoint) {
@@ -287,87 +401,6 @@ function getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateInter
     series.push(serie);
 }
 
-function getBarChartOption(seriesConfigs, aggregateIntervalMinutes) {
-    let yAxisName = seriesConfigs[0].unit;
-    let series = [];
-    let colors = [];
-    let configs = seriesConfigs;
-    for (let seriesConfig of seriesConfigs) {
-        getSeriesConfig(seriesConfig, yAxisName, series, colors, aggregateIntervalMinutes);
-    }
-
-    return {
-        aggregateIntervalMinutes, aggregateIntervalMinutes,
-        legend: {
-            type: "plain"
-        },
-        textStyle: {
-            fontSize: 10,
-        },
-        color: colors,
-        backgroundColor: backGroundColor,
-        toolbox: {
-            show: true,
-            feature: {
-                dataZoom: {
-                    yAxisIndex: "none"
-                }
-            }
-        },
-        tooltip: {
-            trigger: "axis",
-            axisPointer: {
-                type: "line"
-            },
-            show: true,
-            position: "inside",
-            formatter: function (params, ticket, callback) {
-                let halfAggregateInterval = aggregateIntervalMinutes * 60000 / 2;
-                let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
-                let toDate = new Date(params[0].axisValue + halfAggregateInterval);
-                let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
-                let to = toDate.toLocaleTimeString(localeWithDash);
-                let tooltipHTML = '<table><tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
-                params.forEach(item => {
-                    let unitString = configs[item.seriesIndex].unit === undefined ? "" : configs[item.seriesIndex].unit;
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], configs[item.seriesIndex].decimals) + unitString + '</td></tr>');
-                });
-                return tooltipHTML + '</table>';
-            }
-        },
-        label: {
-            align: 'left'
-        },
-        xAxis: {
-            show: true,
-            minInterval: getXMinInterval(),
-            axisLine: {
-                show: false
-            },
-            axisTick: {
-                show: false
-            },
-            type: "time",
-            splitLine: {
-                show: true
-            }
-        },
-        yAxis: {
-            name: yAxisName,
-            type: "value",
-            minInterval: undefined,
-            nameTextStyle: {
-                fontWeight: 'bold',
-            },
-            axisLabel: {
-                formatter: "{value}"
-            }
-        },
-        series: series
-    }
-
-}
-
 var noReadingString = "--";
 function format(number, digits) {
     if (number === noReadingString) {
@@ -400,10 +433,10 @@ function aggregate(seriesConfig) {
             setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig.aggregateInterval, aggregatedData);
         }
     }
-    if(seriesConfig.aggregateType === "avg" && aggregatedData.length > 0) {
+    if (seriesConfig.aggregateType === "avg" && aggregatedData.length > 0) {
         for (let entry of aggregatedData) {
-            if(entry[2] !== 0) {
-                entry[1] = entry[1]/entry[2];
+            if (entry[2] !== 0) {
+                entry[1] = entry[1] / entry[2];
             }
         }
     }
