@@ -273,7 +273,7 @@ function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
             return aggregateAxisValue;
         } else {
             aggregateAxisValue = item[0];
-            if (diff != halfAggregateInterval) {
+            if (diff != halfAggregateInterval || aggregateAxisValue == data[0][0]) {
                 diff = Math.abs(axisValue - aggregateAxisValue);
             } else {
                 diff = 0;
