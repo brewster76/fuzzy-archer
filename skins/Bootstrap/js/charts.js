@@ -32,18 +32,19 @@ function loadCharts() {
             }
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
-            var obs_group = category.obs_group;
 
             let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? "line" : category.plotType;
-            let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? "sum" : category.aggregateType;
+            let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? SUM : category.aggregateType;
             let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
 
             let chartSeriesConfig = {
                 name: decodeHtml(weewxData.labels.Generic[categoryId]),
                 plotType: plotType,
+                yAxisIndex: category.yAxisIndex,
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
+                obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
                 showMaxMarkPoint: category.showMaxMarkPoint.toLowerCase() === 'true',
@@ -81,37 +82,15 @@ function loadCharts() {
             end = end === undefined || end <= currentEnd ? currentEnd : end;
         }
 
-        chartSeriesConfigs.push(getDayNightSeries(chartId, start, end));
-
-        chartOption.series[0].markArea = getMarkArea();
-
-        chartOption.yAxis.scale = true;
-        if (obs_group === "group_speed") {
-            chartOption.yAxis.min = 0;
-        }
-        if (obs_group === "group_percent") {
-            chartOption.yAxis.min = 0;
-            chartOption.yAxis.max = 100;
-        }
-        if (chart.weewxData.yAxis_minInterval !== undefined) {
-            chartOption.yAxis.minInterval = Number(chart.weewxData.yAxis_minInterval);
-        }
-        if (chart.weewxData.yAxis_axisLabel_align !== undefined) {
-            chartOption.yAxis.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
-        }
-        if (obs_group === "group_direction") {
-            chartOption.yAxis.min = 0;
-            chartOption.yAxis.max = 360;
-            chartOption.yAxis.minInterval = 90;
-            chartOption.yAxis.maxInterval = 90;
-        }
+        chartSeriesConfigs.push(getDayNightSeries(chartOption, chartId, start, end));
+        
         chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
         chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
 }
 
-function getDayNightSeries(chartId, start, end) {
+function getDayNightSeries(chartOption, chartId, start, end) {
     let data = [];
 
     if (weewxData['day_night_events'] === undefined) {
@@ -130,19 +109,58 @@ function getDayNightSeries(chartId, start, end) {
         data[data.length - 1][0] = end;
     }
 
+    chartOption.series[0].markArea = getDayNightMarkArea();
+
     return {
         name: dayNightKey + chartId,
-        data: data
+        data: data,
     }
 }
 
 
 function getChartOption(seriesConfigs) {
-    let yAxisName = seriesConfigs[0].unit;
     let series = [];
     let colors = [];
+    let obs_groups = [];
     for (let seriesConfig of seriesConfigs) {
-        getSeriesConfig(seriesConfig, yAxisName, series, colors);
+        getSeriesConfig(seriesConfig, series, colors);
+        obs_groups[seriesConfig.obs_group] = seriesConfig.unit;
+    }
+
+    let yAxis = [];
+    for(let obs_group of Object.keys(obs_groups)) {
+        let yAxisItem = {
+            name: obs_groups[obs_group],
+            type: "value",
+            minInterval: undefined,
+            nameTextStyle: {
+                fontWeight: 'bold',
+            },
+            axisLabel: {
+                formatter: "{value}"
+            },
+            scale: true,
+        };
+        if (obs_group === "group_speed") {
+            yAxisItem.min = 0;
+        }
+        if (obs_group === "group_percent") {
+            yAxisItem.min = 0;
+            yAxisItem.max = 100;
+        }
+        /*if (chart.weewxData.yAxis_minInterval !== undefined) {
+            yAxisItem.minInterval = Number(chart.weewxData.yAxis_minInterval);
+        }
+        if (chart.weewxData.yAxis_axisLabel_align !== undefined) {
+            yAxisItem.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
+        }*/
+        if (obs_group === "group_direction") {
+            yAxisItem.min = 0;
+            yAxisItem.max = 360;
+            yAxisItem.minInterval = 90;
+            yAxisItem.maxInterval = 90;
+        }
+        yAxis.push(yAxisItem);
     }
 
     return {
@@ -180,17 +198,7 @@ function getChartOption(seriesConfigs) {
                 show: true
             }
         },
-        yAxis: {
-            name: yAxisName,
-            type: "value",
-            minInterval: undefined,
-            nameTextStyle: {
-                fontWeight: 'bold',
-            },
-            axisLabel: {
-                formatter: "{value}"
-            }
-        },
+        yAxis: yAxis,
         series: series
     }
 }
@@ -328,7 +336,7 @@ function getTooltipOld(seriesConfigs) {
     }
 }
 
-function getSeriesConfig(seriesConfig, yAxisName, series, colors) {
+function getSeriesConfig(seriesConfig, series, colors) {
     colors.push(seriesConfig.lineColor);
     if (seriesConfig.data === undefined) {
         seriesConfig.data = [];
@@ -349,6 +357,7 @@ function getSeriesConfig(seriesConfig, yAxisName, series, colors) {
             width: seriesConfig.lineStyle === undefined || seriesConfig.lineStyle.width === undefined ? 1 : seriesConfig.lineStyle.width,
         },
         data: seriesConfig.data,
+        yAxisIndex: seriesConfig.yAxisIndex,
     };
 
     seriesConfig.serie = serie;
@@ -393,7 +402,7 @@ function getSeriesConfig(seriesConfig, yAxisName, series, colors) {
                 type: "average",
                 name: "Avg",
                 label: {
-                    formatter: "{c}" + yAxisName
+                    formatter: "{c}" + seriesConfig.unit
                 }
             }
             ]
@@ -435,7 +444,7 @@ function aggregate(seriesConfig) {
             setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig.aggregateInterval, aggregatedData);
         }
     }
-    if (seriesConfig.aggregateType === "avg" && aggregatedData.length > 0) {
+    if (seriesConfig.aggregateType === AVG && aggregatedData.length > 0) {
         for (let entry of aggregatedData) {
             if (entry[2] !== 0) {
                 entry[1] = entry[1] / entry[2];
@@ -472,7 +481,7 @@ function getTimestampDiv(parentId, timestamp) {
     return outerDiv;
 }
 
-function getMarkArea() {
+function getDayNightMarkArea() {
     let dayNightEvents = weewxData['day_night_events'];
     let data = [];
     if (dayNightEvents === undefined) {

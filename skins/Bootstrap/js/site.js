@@ -1,3 +1,6 @@
+const AVG = "avg";
+const SUM = "sum";
+
 let weewxData;
 let weewxDataUrl = "weewxData.json";
 let gauges = {};
@@ -81,11 +84,7 @@ fetch(weewxDataUrl).then(function (u) {
                 for (let chartId of Object.keys(charts)) {
                     let chart = charts[chartId];
                     chart.chartId = chartId;
-                    //if (chart.weewxData.aggregate_interval_minutes !== undefined || chart.weewxData.aggregate_interval_minutes) {
-                    //    addAggregatedChartValues(chart, jPayload, timestamp);
-                    //} else {
                     addValues(chart, jPayload, timestamp);
-                    //}
                 }
                 let lastUpdate = document.getElementById("lastUpdate");
                 lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
@@ -167,7 +166,7 @@ function addValues(chart, jPayload, timestamp) {
         if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
             intervalSeconds = chart.weewxData[dataset.weewxColumn].aggregateInterval;
         }
-        let aggregateType = "sum";
+        let aggregateType = SUM;
         if (chart.weewxData[dataset.weewxColumn].aggregateType !== undefined) {
             aggregateType = chart.weewxData[dataset.weewxColumn].aggregateType;
         }
@@ -187,13 +186,6 @@ function addValues(chart, jPayload, timestamp) {
                 chartElem.innerHTML = formatDateTime(timestamp);
             }
         }
-        /*if(intervalSeconds !== undefined && chart.weewxData[dataset.weewxColumn].aggregateType === "avg" && dataset.data.length > 0) {
-            for (let entry of dataset.data) {
-                if(entry[2] !== 0) {
-                    entry[1] = entry[1]/entry[2];
-                }
-            }
-        }*/
     }
 
 
@@ -231,7 +223,7 @@ function getIntervalData(type, intervalStart) {
         intervalData[type] = currentIntervalData;
         return currentIntervalData;
     } else {
-        return currentIntervalData = intervalData[type];
+        return intervalData[type];
     }
 }
 
@@ -269,6 +261,10 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, agg
 }
 
 function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
+    //TODO: fix avg in live feed
+    if(aggregateType === AVG) {
+        return;
+    }
     let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
