@@ -1,5 +1,7 @@
-const bgRegex = /background-color:.*;/;
-const dayNightKey = "dayNight_";
+const BG_REGEX = /background-color:.*;/;
+const DAY_NIGHT_KEY = "dayNight_";
+const BAR = "bar";
+const LINE = "line";
 
 let baseColor = '#111111';
 let backGroundColor = baseColor + '0a';
@@ -33,7 +35,7 @@ function loadCharts() {
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
 
-            let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? "line" : category.plotType;
+            let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? LINE : category.plotType;
             let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? SUM : category.aggregateType;
             let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
 
@@ -44,12 +46,13 @@ function loadCharts() {
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
+                showTooltipValueNone: getBooleanOrDefault(category.showTooltipValueNone, plotType === BAR ? true : false),
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
-                showMaxMarkPoint: category.showMaxMarkPoint.toLowerCase() === 'true',
-                showMinMarkPoint: category.showMinMarkPoint.toLowerCase() === 'true',
-                showAvgMarkLine: category.showAvgMarkLine.toLowerCase() === 'true',
+                showMaxMarkPoint: getBooleanOrDefault(category.showMaxMarkPoint, false),
+                showMinMarkPoint: getBooleanOrDefault(category.showMinMarkPoint, false),
+                showAvgMarkLine: getBooleanOrDefault(category.showAvgMarkLine, false),
                 lineColor: category.lineColor,
                 data: weewxData[categoryId],
                 unit: weewxData.units.Labels[category.target_unit],
@@ -90,6 +93,10 @@ function loadCharts() {
     }
 }
 
+function getBooleanOrDefault(value, defaultValue) {
+    return value === undefined ? defaultValue : value.toLowerCase() === 'true';
+}
+
 function getDayNightSeries(chartOption, chartId, start, end) {
     let data = [];
 
@@ -112,7 +119,7 @@ function getDayNightSeries(chartOption, chartId, start, end) {
     chartOption.series[0].markArea = getDayNightMarkArea();
 
     return {
-        name: dayNightKey + chartId,
+        name: DAY_NIGHT_KEY + chartId,
         data: data,
     }
 }
@@ -207,7 +214,7 @@ function getTooltip(seriesConfigs) {
     return {
         trigger: "axis",
         axisPointer: {
-            type: "line"
+            type: LINE
         },
         show: true,
         position: "inside",
@@ -220,7 +227,7 @@ function getTooltip(seriesConfigs) {
             let intervals = [];
             for (let i = 0; i < seriesConfigs.length; i++) {
                 let seriesItem = seriesConfigs[i];
-                if (seriesItem.name.startsWith(dayNightKey)) {
+                if (seriesItem.name.startsWith(DAY_NIGHT_KEY)) {
                     continue;
                 }
                 let unitString = seriesItem.unit === undefined ? "" : seriesConfigs[i].unit;
@@ -229,6 +236,9 @@ function getTooltip(seriesConfigs) {
 
                 let formattedValue = "-";
                 let dataValue = getDataValue(axisValue, seriesItem.data);
+                if(dataValue === undefined && !seriesItem.showTooltipValueNone) {
+                    continue;
+                }
                 if (aggregateInterval !== undefined) {
                     let halfAggregateInterval = aggregateInterval * 1000 / 2;
                     let aggregateAxisValue = params[0].axisValue;
@@ -253,7 +263,7 @@ function getTooltip(seriesConfigs) {
                 if (dataValue !== undefined) {
                     formattedValue = format(dataValue, seriesItem.decimals) + unitString;
                 }
-                tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(bgRegex, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
+                tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(BG_REGEX, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
 
             }
             return show ? tooltipHTML + '</table>' : "";
@@ -295,7 +305,7 @@ function getTooltipOld(seriesConfigs) {
     return {
         trigger: "axis",
         axisPointer: {
-            type: "line"
+            type: LINE
         },
         show: true,
         position: "inside",
