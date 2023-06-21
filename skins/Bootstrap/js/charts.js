@@ -278,7 +278,7 @@ function getTooltip(seriesConfigs) {
                     }
                 }
 
-                if (dataValue !== undefined) {
+                if (dataValue !== undefined && dataValue !== null) {
                     formattedValue = format(dataValue, seriesItem.decimals) + unitString;
                 }
                 tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(BG_REGEX, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
@@ -354,8 +354,8 @@ function getSeriesConfig(seriesConfig, series, colors) {
             decimals.push(weewxData.charts[seriesConfig.chartId][dataReference].decimals);
             for (let i = 0; i < seriesConfig.data.length; i++) {
                 let entry = seriesConfig.data[i];
-                for(let referencedData of weewxData[dataReference]) {
-                    if(referencedData[0] === entry[0]) {
+                for (let referencedData of weewxData[dataReference]) {
+                    if (referencedData[0] === entry[0]) {
                         entry.push(referencedData[1]);
                     }
                 }
@@ -372,10 +372,10 @@ function getSeriesConfig(seriesConfig, series, colors) {
                 formatter: function (param) {
                     //let date = new Date(param.data[0]);
                     let value = "";
-                    for(let i = 0; i < seriesConfig.dataReferences.length; i++) {
+                    for (let i = 0; i < seriesConfig.dataReferences.length; i++) {
                         value += format(param.data[i + 2], decimals[i + 1]) + weewxData.units.Labels[groups[i + 1]]
                     }
-                    
+
                     return value + " / " + format(param.data[1], decimals[0]) + weewxData.units.Labels[groups[0]];
                 },
                 position: 'top'
