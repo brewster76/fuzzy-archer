@@ -17,7 +17,7 @@
             <div class="row">
                 #for $chartName, value in $LiveCharts.items()
                 #if isinstance($value, dict)
-                <div id="${chartName}Chart" class="chart"></div>
+                <div id="${chartName}Chart" class="chart" onmouseover="toggleToolbox(this)" onmouseout="toggleToolbox(this)"></div>
                 #end if
                 #end for
             </div>

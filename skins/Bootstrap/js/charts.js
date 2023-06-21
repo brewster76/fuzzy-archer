@@ -193,7 +193,7 @@ function getChartOption(seriesConfigs) {
         color: colors,
         backgroundColor: backGroundColor,
         toolbox: {
-            show: true,
+            show: false,
             feature: {
                 dataZoom: {
                     yAxisIndex: "none"
@@ -562,12 +562,9 @@ function getColorModifier(extent) {
     ).toString(16).padStart(2, '0');
 }
 
-function showToolbox(chartDiv) {
-    /*charts[chartDiv.id].getOption().toolbox[0].show = true;
-    console.log("toolbox " + charts[chartDiv.id].getOption().toolbox[0].show);*/
-}
-
-function hideToolbox(chartDiv) {
-    /*charts[chartDiv.id].getOption().toolbox[0].show = false;
-    console.log("toolbox " + charts[chartDiv.id].getOption().toolbox[0].show);*/
+function toggleToolbox(chartDiv) {
+    let chart = charts[chartDiv.id];
+    chart.setOption({
+        toolbox: { show: !chart.getOption().toolbox[0].show }
+    });
 }
