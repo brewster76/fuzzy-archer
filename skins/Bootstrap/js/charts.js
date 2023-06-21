@@ -39,10 +39,16 @@ function loadCharts() {
             let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? SUM : category.aggregateType;
             let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
 
+            let dataReferences = undefined ? undefined : category.dataReferences;
+            if (dataReferences !== undefined && !Array.isArray(dataReferences)) {
+                dataReferences = [dataReferences];
+            }
+
             let chartSeriesConfig = {
                 name: decodeHtml(weewxData.labels.Generic[categoryId]),
                 plotType: plotType,
-                yAxisIndex: category.yAxisIndex,
+                dataReferences: dataReferences === undefined ? [] : dataReferences,
+                yAxisIndex: category.yAxisIndex === undefined ? 0 : category.yAxisIndex,
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
@@ -58,6 +64,7 @@ function loadCharts() {
                 unit: weewxData.units.Labels[category.target_unit],
                 symbol: category.symbol,
                 symbolSize: category.symbolSize,
+                chartId: chartId,
             }
             if (category.lineWidth !== undefined) {
                 chartSeriesConfig.lineStyle = {
@@ -86,7 +93,7 @@ function loadCharts() {
         }
 
         chartSeriesConfigs.push(getDayNightSeries(chartOption, chartId, start, end));
-        
+
         chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
         chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
@@ -128,16 +135,22 @@ function getDayNightSeries(chartOption, chartId, start, end) {
 function getChartOption(seriesConfigs) {
     let series = [];
     let colors = [];
-    let obs_groups = [];
+    let yAxisIndices = [];
     for (let seriesConfig of seriesConfigs) {
+        if (seriesConfig.plotType === "scatter" && seriesConfig.dataReferences.length < 1) {
+            continue;
+        }
         getSeriesConfig(seriesConfig, series, colors);
-        obs_groups[seriesConfig.obs_group] = seriesConfig.unit;
+        yAxisIndices[seriesConfig.yAxisIndex] = seriesConfig.yAxisIndex;
+        yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
+        yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
     }
 
     let yAxis = [];
-    for(let obs_group of Object.keys(obs_groups)) {
+    for (let yAxisIndex of Object.keys(yAxisIndices)) {
+        let obs_group = yAxisIndices[yAxisIndex]["obs_group"]
         let yAxisItem = {
-            name: obs_groups[obs_group],
+            name: yAxisIndices[yAxisIndex]["unit"],
             type: "value",
             minInterval: undefined,
             nameTextStyle: {
@@ -148,7 +161,7 @@ function getChartOption(seriesConfigs) {
             },
             scale: true,
         };
-        if (obs_group === "group_speed") {
+        if (obs_group === "group_speed" || obs_group === "group_distance") {
             yAxisItem.min = 0;
         }
         if (obs_group === "group_percent") {
@@ -211,6 +224,11 @@ function getChartOption(seriesConfigs) {
 }
 
 function getTooltip(seriesConfigs) {
+    for (let seriesConfig of seriesConfigs) {
+        if (seriesConfig.plotType === "scatter") {
+            return;
+        }
+    }
     return {
         trigger: "axis",
         axisPointer: {
@@ -236,7 +254,7 @@ function getTooltip(seriesConfigs) {
 
                 let formattedValue = "-";
                 let dataValue = getDataValue(axisValue, seriesItem.data);
-                if(dataValue === undefined && !seriesItem.showTooltipValueNone) {
+                if (dataValue === undefined && !seriesItem.showTooltipValueNone) {
                     continue;
                 }
                 if (aggregateInterval !== undefined) {
@@ -301,51 +319,6 @@ function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
     return aggregateAxisValue;
 }
 
-function getTooltipOld(seriesConfigs) {
-    return {
-        trigger: "axis",
-        axisPointer: {
-            type: LINE
-        },
-        show: true,
-        position: "inside",
-        formatter: function (params, ticket, callback) {
-            let tooltipHTML = '<table>';
-            let show = true;
-            let intervals = [];
-            params.forEach(item => {
-                let unitString = seriesConfigs[item.seriesIndex].unit === undefined ? "" : seriesConfigs[item.seriesIndex].unit;
-                if (seriesConfigs[item.seriesIndex].aggregateInterval !== undefined) {
-                    let interval = seriesConfigs[item.seriesIndex].aggregateInterval;
-                    intervals.push(interval);
-                    let halfAggregateInterval = interval * 1000 / 2;
-                    let fromDate = new Date(params[0].axisValue - halfAggregateInterval);
-                    let toDate = new Date(params[0].axisValue + halfAggregateInterval);
-                    let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
-                    let to = toDate.toLocaleTimeString(localeWithDash);
-                    if (item.seriesIndex == 0 || interval !== intervals[item.seriesIndex - 1]) {
-                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
-                    }
-                    tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], seriesConfigs[item.seriesIndex].decimals) + unitString + '</td></tr>');
-                } else {
-                    intervals.push(undefined);
-                    let date = new Date(params[0].axisValue);
-                    show = false;
-                    let unitString = seriesConfigs[item.seriesIndex].unit === undefined ? "" : seriesConfigs[item.seriesIndex].unit;
-                    if (!isNaN(item.data[1])) {
-                        show = true;
-                        if (item.seriesIndex == 0 || intervals[item.seriesIndex - 1] !== undefined) {
-                            tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
-                        }
-                        tooltipHTML += ('<tr style="font-size: small;"><td>' + item.marker + item.seriesName + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + format(item.data[1], seriesConfigs[item.seriesIndex].decimals) + unitString + '</td></tr>');
-                    }
-                }
-            });
-            return show ? tooltipHTML + '</table>' : "";
-        }
-    }
-}
-
 function getSeriesConfig(seriesConfig, series, colors) {
     colors.push(seriesConfig.lineColor);
     if (seriesConfig.data === undefined) {
@@ -359,6 +332,8 @@ function getSeriesConfig(seriesConfig, series, colors) {
         name: decodeHtml(seriesConfig.name),
         payloadKey: seriesConfig.payloadKey,
         weewxColumn: seriesConfig.weewxColumn,
+        unit: seriesConfig.unit,
+        decimals: seriesConfig.decimals,
         type: type,
         barWidth: '100%', //only applies to barchart
         barGap: '-100%', //only applies to barchart
@@ -369,6 +344,44 @@ function getSeriesConfig(seriesConfig, series, colors) {
         data: seriesConfig.data,
         yAxisIndex: seriesConfig.yAxisIndex,
     };
+
+    if (seriesConfig.plotType === "scatter") {
+        let groups = [weewxData.units.Groups[seriesConfig.obs_group]];
+        let decimals = [seriesConfig.decimals];
+        for (let dataReference of seriesConfig.dataReferences) {
+            serie.name = weewxData.labels.Generic[dataReference] + " / " + serie.name;
+            groups.push(weewxData.units.Groups[weewxData.charts[seriesConfig.chartId][dataReference].obs_group]);
+            decimals.push(weewxData.charts[seriesConfig.chartId][dataReference].decimals);
+            for (let i = 0; i < seriesConfig.data.length; i++) {
+                let entry = seriesConfig.data[i];
+                for(let referencedData of weewxData[dataReference]) {
+                    if(referencedData[0] === entry[0]) {
+                        entry.push(referencedData[1]);
+                    }
+                }
+            }
+        }
+
+        serie.symbolSize = function (data) {
+            return 5 * Math.sqrt(data[2] / Math.PI);
+        };
+        serie.emphasis = {
+            focus: 'series',
+            label: {
+                show: true,
+                formatter: function (param) {
+                    //let date = new Date(param.data[0]);
+                    let value = "";
+                    for(let i = 0; i < seriesConfig.dataReferences.length; i++) {
+                        value += format(param.data[i + 2], decimals[i + 1]) + weewxData.units.Labels[groups[i + 1]]
+                    }
+                    
+                    return value + " / " + format(param.data[1], decimals[0]) + weewxData.units.Labels[groups[0]];
+                },
+                position: 'top'
+            }
+        }
+    }
 
     seriesConfig.serie = serie;
 
@@ -547,4 +560,14 @@ function getColorModifier(extent) {
     return Math.round(
         Number('0x' + nightBackGroundColorModifier) * extent
     ).toString(16).padStart(2, '0');
+}
+
+function showToolbox(chartDiv) {
+    /*charts[chartDiv.id].getOption().toolbox[0].show = true;
+    console.log("toolbox " + charts[chartDiv.id].getOption().toolbox[0].show);*/
+}
+
+function hideToolbox(chartDiv) {
+    /*charts[chartDiv.id].getOption().toolbox[0].show = false;
+    console.log("toolbox " + charts[chartDiv.id].getOption().toolbox[0].show);*/
 }

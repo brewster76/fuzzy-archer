@@ -213,7 +213,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 else:
                     history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
                 try:
-                    history_list.append(float(history_value))
+                    if history_value is None:
+                        history_list.append(None)
+                    else:
+                        history_list.append(float(history_value))
                     time_list.append(rec['dateTime'] * 1000)
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
