@@ -141,7 +141,7 @@ function getChartOption(seriesConfigs) {
             continue;
         }
         getSeriesConfig(seriesConfig, series, colors);
-        yAxisIndices[seriesConfig.yAxisIndex] = seriesConfig.yAxisIndex;
+        yAxisIndices[seriesConfig.yAxisIndex] = Array();
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
     }
