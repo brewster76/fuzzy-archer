@@ -156,7 +156,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                 formatter: function (value) {
                     let unitString = unit === undefined ? "" : unit;
                     if (decimals !== undefined && decimals >= 0) {
-                        return value.toFixed(decimals) + unitString;
+                        return format(value, decimals) + unitString;
                     } else {
                         return value + unitString;
                     }

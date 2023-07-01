@@ -144,11 +144,12 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex] = Array();
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
+        yAxisIndices[seriesConfig.yAxisIndex]["decimals"] = seriesConfig.decimals;
     }
 
     let yAxis = [];
     for (let yAxisIndex of Object.keys(yAxisIndices)) {
-        let obs_group = yAxisIndices[yAxisIndex]["obs_group"]
+        let obs_group = yAxisIndices[yAxisIndex]["obs_group"];
         let yAxisItem = {
             name: yAxisIndices[yAxisIndex]["unit"],
             type: "value",
@@ -157,7 +158,14 @@ function getChartOption(seriesConfigs) {
                 fontWeight: 'bold',
             },
             axisLabel: {
-                formatter: "{value}"
+                formatter: function (value, index) {
+                  if (value < 1000) {
+                    format(value, yAxisIndices[yAxisIndex]["decimals"]);
+                  } else if (value % 1 != 0) {
+                    return "";
+                  }
+                  return  value.toFixed();
+                }
             },
             scale: true,
         };
@@ -194,6 +202,7 @@ function getChartOption(seriesConfigs) {
         backgroundColor: backGroundColor,
         toolbox: {
             show: false,
+            top: 10,
             feature: {
                 dataZoom: {
                     yAxisIndex: "none"
@@ -398,7 +407,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
                     show: true,
                     position: "top",
                     formatter: function (value) {
-                        return value.data.value.toFixed(seriesConfig.decimals);
+                        return format(value.data.value, seriesConfig.decimals);
                     },
                 }
             });
@@ -411,7 +420,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
                     show: true,
                     position: "bottom",
                     formatter: function (value, ticket) {
-                        return value.data.value.toFixed(seriesConfig.decimals);
+                        return format(value.data.value, seriesConfig.decimals);
                     },
                 }
             });
@@ -425,7 +434,9 @@ function getSeriesConfig(seriesConfig, series, colors) {
                 type: "average",
                 name: "Avg",
                 label: {
-                    formatter: "{c}" + seriesConfig.unit
+                    formatter: function (value, ticket) {
+                        return format(value.data.value, seriesConfig.decimals) + seriesConfig.unit;
+                    }
                 }
             }
             ]
