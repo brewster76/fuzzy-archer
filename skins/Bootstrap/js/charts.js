@@ -160,7 +160,7 @@ function getChartOption(seriesConfigs) {
             axisLabel: {
                 formatter: function (value, index) {
                   if (value < 1000) {
-                    format(value, yAxisIndices[yAxisIndex]["decimals"]);
+                    return format(value, yAxisIndices[yAxisIndex]["decimals"]);
                   } else if (value % 1 != 0) {
                     return "";
                   }
