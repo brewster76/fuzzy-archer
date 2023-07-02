@@ -154,12 +154,10 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                 fontSize: weewxData.detailFontSize === undefined ? 12 : weewxData.detailFontSize,
                 color: '#777',
                 formatter: function (value) {
-                    let unitString = unit === undefined ? "" : unit;
                     if (decimals !== undefined && decimals >= 0) {
-                        return format(value, decimals) + unitString;
-                    } else {
-                        return value + unitString;
+                        value = format(value, decimals);
                     }
+                    return value + getUnitString(value, unit);
                 },
                 offsetCenter: ['0', '70%']
             },

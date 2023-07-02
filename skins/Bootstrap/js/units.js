@@ -359,3 +359,13 @@ function degree_F_To_degree_C(value) {
 function degree_C_To_degree_F(value) {
     return (value * 9 / 5) + 32;
 }
+
+function getUnitString(shownValue, unit) {
+    if(unit === undefined) {
+        return "";
+    }
+    if(Array.isArray(unit) && unit.length > 1 && Number(shownValue) !== 1) {
+        return unit[1];
+    }
+    return unit[0];
+}

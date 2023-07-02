@@ -153,8 +153,9 @@ function getChartOption(seriesConfigs) {
     let yAxis = [];
     for (let yAxisIndex of Object.keys(yAxisIndices)) {
         let obs_group = yAxisIndices[yAxisIndex]["obs_group"];
+        let unit = yAxisIndices[yAxisIndex]["unit"];
         let yAxisItem = {
-            name: yAxisIndices[yAxisIndex]["unit"],
+            name: Array.isArray(unit) && unit.length > 1 ? unit[1] : unit,
             type: "value",
             minInterval: undefined,
             nameTextStyle: {
@@ -288,7 +289,7 @@ function getTooltip(seriesConfigs) {
                 }
 
                 if (dataValue !== undefined && dataValue !== null) {
-                    formattedValue = format(dataValue, seriesItem.decimals) + unitString;
+                    formattedValue = format(dataValue, seriesItem.decimals) + getUnitString(dataValue, unitString);
                 }
                 tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(BG_REGEX, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
 
@@ -435,7 +436,8 @@ function getSeriesConfig(seriesConfig, series, colors) {
                 name: "Avg",
                 label: {
                     formatter: function (value, ticket) {
-                        return format(value.data.value, seriesConfig.decimals) + seriesConfig.unit;
+                        value = format(value.data.value, seriesConfig.decimals);
+                        return value + getUnitString(value, seriesConfig.unit);
                     }
                 }
             }
