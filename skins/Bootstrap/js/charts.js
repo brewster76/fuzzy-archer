@@ -95,6 +95,9 @@ function loadCharts() {
         chartSeriesConfigs.push(getDayNightSeries(chartOption, chartId, start, end));
 
         chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
+        chartOption.textStyle = {
+            fontSize: chart.weewxData.fontSize === undefined ? 10 : chart.weewxData.fontSize,
+        },
         chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
@@ -194,9 +197,6 @@ function getChartOption(seriesConfigs) {
     return {
         legend: {
             type: "plain"
-        },
-        textStyle: {
-            fontSize: 10,
         },
         color: colors,
         backgroundColor: backGroundColor,
@@ -444,30 +444,6 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
 
     series.push(serie);
-}
-
-var noReadingString = "--";
-function format(number, digits) {
-    if (number === noReadingString) {
-        return number;
-    }
-    number = Number(number);
-    let localeInfo = locale.replace("_", "-");
-    let numString = parseFloat(number.toFixed(digits)).toLocaleString(localeInfo);
-    let decimalSeparator = getDecimalSeparator(localeInfo);
-    if (digits > 0 && !numString.includes(decimalSeparator)) {
-        numString += decimalSeparator;
-        for (let i = 0; i < digits; i++) {
-            numString += "0";
-        }
-    }
-    return numString;
-}
-
-function getDecimalSeparator(locale) {
-    let n = 1.1;
-    n = n.toLocaleString(locale).substring(1, 2);
-    return n;
 }
 
 function aggregate(seriesConfig) {

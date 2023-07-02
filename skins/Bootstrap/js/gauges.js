@@ -70,7 +70,7 @@ function loadGauges() {
                 gaugeOption.series[1].endAngle = -270;
             }
             gaugeOption.series[0].axisLabel.distance = 10;
-            gaugeOption.series[0].axisLabel.fontSize = 12;
+            gaugeOption.series[0].axisLabel.fontSize = gauge.weewxData.labelFontSize === undefined ? 12 : gauge.weewxData.labelFontSize;
             gaugeOption.series[0].axisLabel.fontWeight = 'bold';
             gaugeOption.series[0].axisLabel.formatter = function (value) {
                 if (value === 0)
@@ -137,7 +137,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             },
             axisLabel: {
                 fontWeight: 'normal',
-                fontSize: 8,
+                fontSize: weewxData.labelFontSize === undefined ? 8 : weewxData.labelFontSize,
                 color: '#777',
                 formatter: function (value, index) {
                     return round(value, 1);
@@ -145,13 +145,13 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             },
             title: {
                 fontWeight: 'normal',
-                fontSize: 10,
+                fontSize: weewxData.titleFontSize === undefined ? 10 : weewxData.titleFontSize,
                 color: '#777',
                 offsetCenter: ['0', '28%']
             },
             detail: {
                 fontWeight: 'bold',
-                fontSize: 12,
+                fontSize: weewxData.detailFontSize === undefined ? 12 : weewxData.detailFontSize,
                 color: '#777',
                 formatter: function (value) {
                     let unitString = unit === undefined ? "" : unit;
@@ -247,4 +247,28 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
         until += ticksWidth;
     }
     return color;
+}
+
+function getDecimalSeparator(locale) {
+    let n = 1.1;
+    n = n.toLocaleString(locale).substring(1, 2);
+    return n;
+}
+
+var noReadingString = "--";
+function format(number, digits) {
+    if (number === noReadingString) {
+        return number;
+    }
+    number = Number(number);
+    let localeInfo = locale.replace("_", "-");
+    let numString = parseFloat(number.toFixed(digits)).toLocaleString(localeInfo);
+    let decimalSeparator = getDecimalSeparator(localeInfo);
+    if (digits > 0 && !numString.includes(decimalSeparator)) {
+        numString += decimalSeparator;
+        for (let i = 0; i < digits; i++) {
+            numString += "0";
+        }
+    }
+    return numString;
 }
