@@ -163,12 +163,18 @@ function getChartOption(seriesConfigs) {
             },
             axisLabel: {
                 formatter: function (value, index) {
-                  if (value < 1000) {
-                    return format(value, yAxisIndices[yAxisIndex]["decimals"]);
-                  } else if (value % 1 != 0) {
-                    return "";
+                  let decimals = yAxisIndices[yAxisIndex]["decimals"];
+                  let formattedValue = format(value, decimals);
+                  if(value * Math.pow(10,decimals) % 1 != 0) {
+                    formattedValue = "";
                   }
-                  return  value.toFixed();
+                  if (value >= 1000) {
+                    formattedValue = value.toFixed();
+                    if(value % 1 != 0) {
+                      formattedValue = "";
+                    }
+                  }
+                  return formattedValue;
                 }
             },
             scale: true,
