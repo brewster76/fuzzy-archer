@@ -204,12 +204,13 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     logging.exception("Could not get db_manager for binding %s" % binding_name)
                 else:
                     logging.exception("Could not get db_manager for default binding")
-            start = self.lastGoodStamp - timespan * 60 * 60 + int(self.config_dict['StdArchive']['archive_interval'])
-            batch_records = db_manager.genBatchRecords(start, self.lastGoodStamp)
+
+            batch_records = db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
+
             for rec in batch_records:
-                if(len(time_list) < 1 and rec['dateTime'] > start):
-                    history_list.append(None)
-                    time_list.append(start * 1000)
+
+
+
 
                 db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
                 if target_unit == "":
@@ -221,10 +222,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     time_list.append(rec['dateTime'] * 1000)
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
-            if(time_list[len(time_list) - 1] < self.lastGoodStamp * 1000):
-                    history_list.append(None)
-                    time_list.append(self.lastGoodStamp * 1000)
-            
+
+
+
+
 
         log.debug("returning history list")
         return 1, list(zip(time_list, history_list))
