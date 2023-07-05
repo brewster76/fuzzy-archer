@@ -52,6 +52,7 @@ function loadCharts() {
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
+                labelFontSize: category.labelFontSize === undefined ? 11 : category.labelFontSize,
                 showTooltipValueNone: getBooleanOrDefault(category.showTooltipValueNone, plotType === BAR ? true : false),
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
@@ -148,6 +149,7 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
         yAxisIndices[seriesConfig.yAxisIndex]["decimals"] = seriesConfig.decimals;
+        yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
     }
 
     let yAxis = [];
@@ -175,7 +177,8 @@ function getChartOption(seriesConfigs) {
                     }
                   }
                   return formattedValue;
-                }
+                },
+                fontSize: yAxisIndices[yAxisIndex]["labelFontSize"]
             },
             scale: true,
         };
@@ -269,15 +272,21 @@ function getTooltip(seriesConfigs) {
                 intervals.push(aggregateInterval);
 
                 let formattedValue = "-";
-                let dataValue = getDataValue(axisValue, seriesItem.data);
+                let dataValue;
+                if(params[i] !== undefined) {
+                  dataValue = params[i]["data"][1];//getDataValue(axisValue, seriesItem.data);
+                } else {
+                  dataValue = getDataValue(axisValue, seriesItem.data);
+                }
                 if (dataValue === undefined && !seriesItem.showTooltipValueNone) {
                     continue;
                 }
+                let aggregateAxisValue = params[0].axisValue;
                 if (aggregateInterval !== undefined) {
                     let halfAggregateInterval = aggregateInterval * 1000 / 2;
-                    let aggregateAxisValue = params[0].axisValue;
+
                     if (dataValue === undefined) {
-                        aggregateAxisValue = getAggregateAxisValue(params[0].axisValue, seriesItem.data, halfAggregateInterval);
+                        aggregateAxisValue = getAggregateAxisValue(aggregateAxisValue, seriesItem.data, halfAggregateInterval);
                         dataValue = getDataValue(aggregateAxisValue, seriesItem.data);
                     }
                     let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
@@ -288,7 +297,7 @@ function getTooltip(seriesConfigs) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
-                    let date = new Date(params[0].axisValue);
+                    let date = new Date(aggregateAxisValue);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
                     }
