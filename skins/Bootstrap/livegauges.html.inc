@@ -4,9 +4,10 @@
             <h1 class="currentConditions">$gettext("Current Conditions")</h1>
         </div>
     </div>
+    #set $live_gauge_items = $to_list($LiveGauges.get('live_gauge_items', ['outTemp', 'barometer', 'windDir', 'outHumidity', 'windSpeed', 'windGust']))
     #set $count = 0
     #set $size = len($LiveGauges)
-    #for $gauge in $LiveGauges
+    #for $gauge in $live_gauge_items
     #if $count % 2 == 0
     <div class="row">
     #end if

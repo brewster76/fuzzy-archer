@@ -1,4 +1,5 @@
 #errorCatcher Echo
+#set $live_chart_items = $to_list(LiveCharts.get('live_chart_items', ['outTemp', 'barometer', 'rain', 'outHumidity', 'wind', 'windDir']))
 <!DOCTYPE html>
 <html lang="$lang">
 #include "head.html.inc"
@@ -15,7 +16,8 @@
             <p></p>
             #include "graphMenu.html.inc"
             <div class="row">
-                #for $chartName, value in $LiveCharts.items()
+                #for $chartName in $live_chart_items
+                #set $value = $LiveCharts[$chartName]
                 #if isinstance($value, dict)
                 <div id="${chartName}Chart" class="chart" onmouseover="toggleToolbox(this)" onmouseout="toggleToolbox(this)"></div>
                 #end if

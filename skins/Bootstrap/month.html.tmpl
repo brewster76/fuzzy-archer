@@ -1,3 +1,4 @@
 #errorCatcher Echo
 #set global $global_type = 'month'
+#set global $image_items = $to_list($ImageGenerator[$global_type + '_images'].get('image_items', ['monthtempchill-Bootstrap', 'monthbarometer-Bootstrap', 'monthrain-Bootstrap', 'monthhumidity-Bootstrap', 'monthwind-Bootstrap', 'monthwinddir-Bootstrap']))
 #include "chartimages.html.inc"

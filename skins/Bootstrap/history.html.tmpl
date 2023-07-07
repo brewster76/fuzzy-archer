@@ -1,4 +1,5 @@
 #errorCatcher Echo
+#set $history_items = $to_list($HistoryReport.get('history_items', ['min_temp', 'avg_temp', 'max_temp', 'rain', 'rain_days', 'max_wind', 'NOAA']))
 <!DOCTYPE html>
 <html lang="$lang">
 #include "head.html.inc"
@@ -12,20 +13,21 @@
         #include "livegauges.html.inc"
         <!-- Graph panel -->
         <div class="col-md-9 main">
-            #for $table in $history_tables
+            #for $history_item in $history_items
+            #set $table = $history_tables[$history_item]
             <h3 class="historyHeader">$gettext($table.header_text)</h3>
             <table class="table historyTable text-center">
                 #if $table.noaa is False
                 <thead>
-                    <tr>
-                        <th class="head">$table.header.head</th>
-                        #for $headervalue in $table.header.values
-                        <th class="month">$gettext($headervalue)</th>
-                        #end for
-                        #if "summary" in $table.header.keys()
-                        <th class="year">$gettext($table.header.summary)</th>
-                        #end if
-                    </tr>
+                <tr>
+                    <th class="head">$table.header.head</th>
+                    #for $headervalue in $table.header.values
+                    <th class="month">$gettext($headervalue)</th>
+                    #end for
+                    #if "summary" in $table.header.keys()
+                    <th class="year">$gettext($table.header.summary)</th>
+                    #end if
+                </tr>
                 </thead>
                 <tbody>
                 #for $line in $table.lines
