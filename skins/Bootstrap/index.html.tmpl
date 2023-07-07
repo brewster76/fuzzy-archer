@@ -1,5 +1,5 @@
 #errorCatcher Echo
-#set $live_chart_items = $to_list(LiveCharts.get('live_chart_items', ['outTemp', 'barometer', 'rain', 'outHumidity', 'wind', 'windDir']))
+#set $live_chart_items = $to_list($LiveCharts.get('live_chart_items', ['outTemp', 'barometer', 'rain', 'outHumidity', 'wind', 'windDir']))
 <!DOCTYPE html>
 <html lang="$lang">
 #include "head.html.inc"
