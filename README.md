@@ -26,6 +26,14 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guide, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki/Upgrading-to-v4
 
+New in v4.1:
+
+- Mixed charts: you can now mix "line" series with "bar" series. A mixed radiation/UV chart is already in the configs, you can enable it by adding it to live_chart_items
+- New chart type "sactter". A scatter chart for lightning strikes and distance is already in the configs, you can enable it by adding it to live_chart_items
+- Configurable news items
+- More config options for charts
+- Bugfixes and enhancements
+
 New in v4.0:
 
 - Complete and thorough overhaul of the skin, many breaking changes. It is recommended to start over with a fresh install
