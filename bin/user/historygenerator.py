@@ -65,6 +65,7 @@ class MyXSearch(SearchList):
         self.add_to_extension_list('Units', generator.skin_dict)
         self.add_to_extension_list('LiveGauges', generator.skin_dict)
         self.add_to_extension_list('Stats', generator.skin_dict)
+        self.add_to_extension_list('News', generator.skin_dict)
         self.add_to_extension_list('LiveCharts', generator.skin_dict)
         self.add_to_extension_list('locale', generator.skin_dict)
 
