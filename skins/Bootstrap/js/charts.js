@@ -243,24 +243,36 @@ function getChartOption(seriesConfigs) {
 }
 
 function getTooltip(seriesConfigs) {
+    let containsScatter = false;
     for (let seriesConfig of seriesConfigs) {
         if (seriesConfig.plotType === "scatter") {
-            return;
+            containsScatter = true;
         }
     }
     return {
-        trigger: "axis",
+        trigger: containsScatter ? "item" :"axis",
         axisPointer: {
             type: LINE
         },
         show: true,
-        position: "inside",
+        position: containsScatter ? "top" :"inside",
         formatter: function (params, ticket, callback) {
             let tooltipHTML = '<table>';
             let show = true;
-            let marker = params[0].marker;
-            let itemIndex = params[0].seriesIndex;
-            let axisValue = params[0].axisValue;
+            let marker;
+            let itemIndex;
+            let axisValue;
+
+            if(Array.isArray(params)) {
+              marker = params[0].marker;
+              itemIndex = params[0].seriesIndex;
+              axisValue = params[0].axisValue;
+            } else {
+              marker = params.marker;
+              itemIndex = params.seriesIndex;
+              axisValue = params.data[0];
+            }
+
             let intervals = [];
             for (let i = 0; i < seriesConfigs.length; i++) {
                 let seriesItem = seriesConfigs[i];
@@ -273,15 +285,18 @@ function getTooltip(seriesConfigs) {
 
                 let formattedValue = "-";
                 let dataValue;
-                if(params[i] !== undefined) {
-                  dataValue = params[i]["data"][1];//getDataValue(axisValue, seriesItem.data);
+                if(Array.isArray(params) && params[i] !== undefined) {
+                  dataValue = params[i]["data"][1];
                 } else {
                   dataValue = getDataValue(axisValue, seriesItem.data);
+                }
+                if(!Array.isArray(params)) {
+                  dataValue = params["data"][1];
                 }
                 if (dataValue === undefined && !seriesItem.showTooltipValueNone) {
                     continue;
                 }
-                let aggregateAxisValue = params[0].axisValue;
+                let aggregateAxisValue = axisValue;
                 if (aggregateInterval !== undefined) {
                     let halfAggregateInterval = aggregateInterval * 1000 / 2;
 
