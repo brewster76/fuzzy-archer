@@ -12,15 +12,6 @@
         #include "livegauges.html.inc"
         <!-- Graph panel -->
         <div class="col-md-9 main">
-            <!--
-            ---
-            --- Use the following format for reasonably smart news / blog posts:
-            ---
-            --- <h3>Title (leaving a space at the end) <small>Your name, date</small></h3>
-            ---
-            --- ... Body text goes here. Enclose every paragraph in a set of <p> ... </p> tags.
-            ----
-            -->
             #for $date, $newsItem in $News.items()
             #if len($News) == 1 or $date != 'Put date here...'
             <h3>$newsItem.header <small>$date</small></h3>
@@ -32,7 +23,6 @@
             #end if
             #end if
             #end for
-
             <!-- End of blog posts -->
         </div>
     </div>
