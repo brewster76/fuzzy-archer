@@ -3,7 +3,9 @@ Theme for Weewx weather station software.
 Gauge graphics showing current conditions.
 
 See it in action with live data (10s. refresh interval):
+
 [Weather test page english](https://www.kainzbauer.net/weather/Rif/en)
+
 [Wetter Testseite Deutsch](https://www.kainzbauer.net/weather/Rif/de)
 
 Interactive charts showing conditions over a timespan
