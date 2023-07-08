@@ -2,6 +2,7 @@ const BG_REGEX = /background-color:.*;/;
 const DAY_NIGHT_KEY = "dayNight_";
 const BAR = "bar";
 const LINE = "line";
+const SCATTER = "scatter";
 
 let baseColor = '#111111';
 let backGroundColor = baseColor + '0a';
@@ -141,7 +142,7 @@ function getChartOption(seriesConfigs) {
     let colors = [];
     let yAxisIndices = [];
     for (let seriesConfig of seriesConfigs) {
-        if (seriesConfig.plotType === "scatter" && seriesConfig.dataReferences.length < 1) {
+        if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
         }
         getSeriesConfig(seriesConfig, series, colors);
@@ -245,7 +246,7 @@ function getChartOption(seriesConfigs) {
 function getTooltip(seriesConfigs) {
     let containsScatter = false;
     for (let seriesConfig of seriesConfigs) {
-        if (seriesConfig.plotType === "scatter") {
+        if (seriesConfig.plotType === SCATTER) {
             containsScatter = true;
         }
     }
@@ -385,7 +386,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
         yAxisIndex: seriesConfig.yAxisIndex,
     };
 
-    if (seriesConfig.plotType === "scatter") {
+    if (seriesConfig.plotType === SCATTER) {
         let groups = [weewxData.units.Groups[seriesConfig.obs_group]];
         let decimals = [seriesConfig.decimals];
         for (let dataReference of seriesConfig.dataReferences) {
