@@ -13,7 +13,7 @@ Interactive charts showing conditions over a timespan
 MQTT enabled Gauges and charts - live weather data! 
 (Live data needs extra extensions and configurations for publishing and subscribing MQTT messages and topics) see: https://github.com/brewster76/fuzzy-archer/wiki/MQTT-setup
 
-Statistics: daily/weewly/monthly/yearly/alltime, highs/lows, ...
+Statistics: daily/weekly/monthly/yearly/alltime, highs/lows, ...
 
 Historic data in color coded html tables.
 
