@@ -35,9 +35,10 @@ Read the upgrading guide, if you already have an older version installed: https:
 New in v4.1:
 
 - Mixed charts: you can now mix "line" series with "bar" series. A mixed radiation/UV chart is already in the configs, you can enable it by adding it to live_chart_items
-- New chart type "sactter". A scatter chart for lightning strikes and distance is already in the configs, you can enable it by adding it to live_chart_items
+- New chart type "scatter". A scatter chart for lightning strikes and distance is already in the configs, you can enable it by adding it to live_chart_items
 - Configurable news items
 - More config options for charts
+- localization throughout charts and gauges (the stats and history page still depends on the systems locale, see https://github.com/weewx/weewx/issues/867)
 - Bugfixes and enhancements
 
 New in v4.0:
