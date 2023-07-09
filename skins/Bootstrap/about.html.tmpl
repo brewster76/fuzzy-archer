@@ -42,7 +42,7 @@
                 For more information concerning localisation see the official <a href="http://www.weewx.com/docs/customizing.htm#localization">WeeWX docs</a>.
             </p>
             <h3>Example:</h3>
-            <p>The following example is an excerpt of weewx.conf. It will result in a english translated page, using the en_US locale, kilometers per hour instead of miles per hour for group_speed and setting the Footer text to "My custom footer text". Also, two news items will be shown on the "News" page.</p>
+            <p>The following example is an excerpt of weewx.conf. It will result in a english translated page, using the en_US locale, kilometers per hour instead of miles per hour for group_speed and setting the Footer text to "My custom footer text". Also, two news items will be shown on the "News" page. Also, a custom chart "inTemp", appearing as first chart, and the preconfigured "radiation" chart, as the last chart, is configured.</p>
             <pre>
 [StdReport]
     [[Bootstrap]]
@@ -69,6 +69,17 @@
             [[[[December 7, 2022]]]]
                 header = "News"
                 body = "We have news, but no pictures."
+
+        [[[LiveCharts]]]
+            live_chart_items = inTemp, outTemp, barometer, rain, outHumidity, wind, windDir, radiation # radiation is already preconfigured in skin.conf
+            [[[[inTemp]]]]
+                [[[[[inTemp]]]]]
+                    payload_key = inTemp_F
+                    showMaxMarkPoint = true
+                    showMinMarkPoint = true
+                    showAvgMarkLine = true
+                    lineColor = '#b44242'
+                    decimals = 1
             </pre>
         </div>
     </div>
