@@ -38,6 +38,7 @@ New in v4.1:
 - New chart type "scatter". A scatter chart for lightning strikes and distance is already in the configs, you can enable it by adding it to live_chart_items
 - Configurable news items
 - More config options for charts
+- Gauges, charts, stats and history items are now shown and ordered explicitly using a configuration list.
 - localization throughout charts and gauges (the stats and history page still depends on the systems locale, see https://github.com/weewx/weewx/issues/867)
 - Bugfixes and enhancements
 
