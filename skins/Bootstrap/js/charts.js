@@ -291,8 +291,8 @@ function getTooltip(seriesConfigs) {
                 } else {
                   dataValue = getDataValue(axisValue, seriesItem.data);
                 }
-                if(!Array.isArray(params)) {
-                  dataValue = params["data"][1];
+                if(!Array.isArray(params) && params["data"][i + 1] !== undefined) {
+                  dataValue = params["data"][i + 1];
                 }
                 if (dataValue === undefined && !seriesItem.showTooltipValueNone) {
                     continue;
