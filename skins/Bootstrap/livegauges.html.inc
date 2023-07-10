@@ -6,7 +6,7 @@
     </div>
     #set $live_gauge_items = $to_list($LiveGauges.get('live_gauge_items', ['outTemp', 'barometer', 'windDir', 'outHumidity', 'windSpeed', 'windGust']))
     #set $count = 0
-    #set $size = len($LiveGauges)
+    #set $size = len($live_gauge_items)
     #for $gauge in $live_gauge_items
     #if $count % 2 == 0
     <div class="row">
