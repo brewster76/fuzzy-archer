@@ -33,6 +33,7 @@ import weewx.reportengine
 from weewx.units import convert
 
 from user.sunevents import SunEvents
+from weeutil.config import merge_config
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.gauge_dict = self.skin_dict['LiveGauges']
         self.chart_dict = self.skin_dict['LiveCharts']
         self.units_dict = self.skin_dict['Units']
+        merge_config(self.units_dict, self.config_dict['StdReport']['Defaults']['Units'])
         self.labels_dict = self.skin_dict['Labels']
+        merge_config(self.labels_dict, self.config_dict['StdReport']['Defaults']['Labels'])
         self.frontend_data = {}
 
         # Create a converter to get this into the desired units
