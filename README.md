@@ -2,7 +2,9 @@ Theme for Weewx weather station software.
 ============
 Gauge and Chart graphics showing current conditions.
 
-![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)
+English example             |  German example with combined line/bar chart and scatter chart
+:-------------------------:|:-------------------------:
+![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/d3d948ff-763e-42cd-a653-e40f3e6fdacb)  |  ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)
 
 See it in action with live data (10s. refresh interval):
 
