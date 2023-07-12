@@ -1,6 +1,8 @@
 Theme for Weewx weather station software.
 ============
-Gauge graphics showing current conditions.
+Gauge and Chart graphics showing current conditions.
+
+![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)
 
 See it in action with live data (10s. refresh interval):
 
@@ -9,6 +11,7 @@ See it in action with live data (10s. refresh interval):
 [Wetter Testseite Deutsch](https://www.kainzbauer.net/weather/Rif/de)
 
 Interactive charts showing conditions over a timespan
+
 
 MQTT enabled Gauges and charts - live weather data! 
 (Live data needs extra extensions and configurations for publishing and subscribing MQTT messages and topics) see: https://github.com/brewster76/fuzzy-archer/wiki/MQTT-setup
