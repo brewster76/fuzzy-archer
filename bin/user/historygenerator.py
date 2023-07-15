@@ -58,6 +58,8 @@ class MyXSearch(SearchList):
         self.search_list_extension = {}
 
         # Make some config available to templates
+        self.add_to_extension_list('Navigation', generator.skin_dict)
+        self.add_to_extension_list('TranslationLinks', generator.skin_dict)
         self.add_to_extension_list('HistoryReport', generator.skin_dict)
         self.add_to_extension_list('ImageGenerator', generator.skin_dict)
         self.add_to_extension_list('BootstrapLabels', generator.skin_dict)
