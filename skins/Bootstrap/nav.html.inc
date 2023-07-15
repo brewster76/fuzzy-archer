@@ -17,7 +17,7 @@
                 </li>
                 #end for
             </ul>
-            #if $TranslationLinks
+            #if $varExists('TranslationLinks')
             <ul id="navbarLang" class="navbar-nav ms-auto mb-2 mb-lg-0 me-4">
               <li class="dropdown nav-item">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
