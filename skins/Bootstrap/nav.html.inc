@@ -17,8 +17,9 @@
                 </li>
                 #end for
             </ul>
+            #set $msAuto = 'ms-auto'
             #if $varExists('TranslationLinks')
-            <ul id="navbarLang" class="navbar-nav ms-auto mb-lg-0 me-4">
+            <ul id="navbarLang" class="navbar-nav $msAuto mb-2 mb-lg-0 me-4">
               <li class="dropdown nav-item">
                 <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                   $lang
@@ -32,8 +33,9 @@
                 </ul>
               </li>
             </ul>
+            #set $msAuto = ''
             #end if
-            <span class="navbar-text">$gettext("Last update") <span id="lastUpdate">$current.dateTime</span></span>
+            <div class="navbar-text $msAuto">$gettext("Last update") <span id="lastUpdate">$current.dateTime</span></div>
         </div>
     </div>
     <script type="text/javascript">
