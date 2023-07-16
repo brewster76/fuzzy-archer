@@ -75,7 +75,7 @@ function loadCharts() {
             }
             chartSeriesConfigs.push(chartSeriesConfig);
 
-            if (weewxData[categoryId] !== undefined && weewxData[categoryId].length > 1) {
+            if (weewxData[categoryId] !== undefined && weewxData[categoryId] !== null && weewxData[categoryId].length > 1) {
                 let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
                 if (categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
                     timestamp = categoryTimestamp;
@@ -87,7 +87,11 @@ function loadCharts() {
         let start;
         let end;
         chartOption = getChartOption(chartSeriesConfigs);
+        
         for (let serie of chartOption.series) {
+            if(serie.dataOption === undefined || serie.data === null) {
+                continue;
+            }
             let currenStart = serie.data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
             let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
             start = start === undefined || start >= currenStart ? currenStart : start;
@@ -505,6 +509,9 @@ function getXMinInterval() {
 }
 
 function addUndefinedIfCurrentMissing(data) {
+    if(data === undefined || data ===null) {
+        return;
+    }
     let latestTimestamp = 0;
     if (data.length > 0) {
         latestTimestamp = data[data.length - 1][0];

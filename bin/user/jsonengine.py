@@ -212,7 +212,12 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             batch_records = db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
 
             for rec in batch_records:
-                db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
+                try:
+                    db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
+                except:
+                    log.debug("JSONGenerator: Ignoring data for column '%s', is this column in the database table?" % (column_name))
+                    return 0, None
+
                 if target_unit == "":
                     history_value = rec[column_name]
                 else:

@@ -160,7 +160,9 @@ function addAggregatedChartValues(chart, jPayload, timestamp) {
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
-
+    if(option === undefined || option === null) {
+        return;
+    }
     for (let dataset of option.series) {
         let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
         if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
