@@ -41,6 +41,7 @@ New in v4.1:
 
 - Mixed charts: you can now mix "line" series with "bar" series. A mixed radiation/UV chart is already in the configs, you can enable it by adding it to live_chart_items
 - New chart type "scatter". A scatter chart for lightning strikes and distance is already in the configs, you can enable it by adding it to live_chart_items
+- Configurable custom pages
 - Configurable news items
 - More config options for charts
 - Gauges, charts, stats and history items are now shown and ordered explicitly using a configuration list.
