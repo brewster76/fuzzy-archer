@@ -223,11 +223,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 else:
                     history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
                 try:
-                    if history_value == None and plotType == 'scatter':
+                    if history_value is None:
                         history_list.append(history_value)
                     else:
-                        if history_value != None:
-                            history_list.append(float(history_value))
+                        history_list.append(float(history_value))
                     time_list.append(rec['dateTime'] * 1000)
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
