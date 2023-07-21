@@ -15,6 +15,7 @@
 #raw
     let graphMenu = document.getElementById("graphMenu");
     if(graphMenu != null) {
+      document.getElementById("indexHtml").classList.add("active");
       let listItems = document.evaluate("a", graphMenu, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
       for(let i = 0; i < listItems.snapshotLength; i++) {
         let item = listItems.snapshotItem(i);
