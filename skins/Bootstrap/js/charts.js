@@ -591,10 +591,3 @@ function getColorModifier(extent) {
         Number('0x' + nightBackGroundColorModifier) * extent
     ).toString(16).padStart(2, '0');
 }
-
-function toggleToolbox(chartDiv) {
-    let chart = charts[chartDiv.id];
-    chart.setOption({
-        toolbox: { show: !chart.getOption().toolbox[0].show }
-    });
-}

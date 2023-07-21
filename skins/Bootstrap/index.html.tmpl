@@ -19,7 +19,7 @@
                 #for $chartName in $live_chart_items
                 #set $value = $LiveCharts[$chartName]
                 #if isinstance($value, dict)
-                <div id="${chartName}Chart" class="chart" onmouseover="toggleToolbox(this)" onmouseout="toggleToolbox(this)"></div>
+                <div id="${chartName}Chart" class="chart" onmouseover="setToolboxVisibility(this, true)" onmouseout="setToolboxVisibility(this, false)"></div>
                 #end if
                 #end for
             </div>

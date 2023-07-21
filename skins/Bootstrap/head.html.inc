@@ -12,5 +12,15 @@
         txt.innerHTML = html;
         return txt.value;
     }
+    function setToolboxVisibility(chartDiv, show) {
+        try {
+            let chart = charts[chartDiv.id];
+            chart.setOption({
+                toolbox: { show: show }
+            });
+        } catch(e) {
+            //not ready
+        }
+    }
     </script>
 </head>
