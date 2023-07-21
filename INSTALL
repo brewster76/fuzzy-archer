@@ -2,7 +2,7 @@ Installation
 ============
 
 Before we begin...
- 1) This release (v4.0) has been tested on Weewx version 4.10.2 and Python 3.9.2
+ 1) This release (v4.1) has been tested on Weewx version 4.10.2 and Python 3.9.2
     Versions of Weewx before v3 will not work.
  2) This has been tested on sqlite databases. Mysql and any other Weewx supported databases should work too.
 
