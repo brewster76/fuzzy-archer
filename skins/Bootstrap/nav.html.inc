@@ -12,8 +12,14 @@
         <div class="collapse navbar-collapse" id="navbarText">
             <ul id="navbarList" class="navbar-nav mb-2 mb-lg-0">
                 #for $nav_item in $Navigation['navigation_items']
+                #set $active = ''
+                #set $href = $Navigation[$nav_item]['href']
+                #if $nav_item in $filename
+                #set $active = ' active'
+                #set $href = '#'
+                #end if
                 <li class="nav-item">
-                    <a id="${nav_item}Html" class="nav-link" href="$Navigation[$nav_item]['href']">$gettext($Navigation[$nav_item]['text'])</a>
+                    <a id="${nav_item}Html" class="nav-link${active}" href="$href">$gettext($Navigation[$nav_item]['text'])</a>
                 </li>
                 #end for
             </ul>
@@ -27,7 +33,7 @@
                 <ul class="dropdown-menu">
                   #set $i = 0
                   #for $link in $TranslationLinks
-                  <li><a class="dropdown-item" href="$TranslationLinks[$link]">$link</a></li>
+                  <li><a class="dropdown-item" href="$TranslationLinks[$link]/$filename">$link</a></li>
                   #set $i = $i + 1
                   #end for
                 </ul>
@@ -38,25 +44,4 @@
             <div class="navbar-text $msAuto">$gettext("Last update") <span id="lastUpdate">$current.dateTime</span></div>
         </div>
     </div>
-    <script type="text/javascript">
-    ## 'raw' makes Cheetah skip this section so it doesn't get confused by the dollar characters in the js
-    #raw
-        let href = window.location.href;
-
-        if(href.endsWith("/")) {
-            document.getElementById("indexHtml").classList.add("active");
-        } else {
-            let listItems = document.evaluate("li/a", document.getElementById("navbarList"), null, XPathResult.UNORDERED_NODE_ITERATOR_TYPE, null);
-            let item = listItems.iterateNext();
-            while(item != null) {
-                if(href.includes(item.href)) {
-                item.classList.add("active");
-                item.href = "#";
-                break;
-                }
-                item = listItems.iterateNext();
-            }
-        }
-    #end raw
-    </script>
 </nav>
