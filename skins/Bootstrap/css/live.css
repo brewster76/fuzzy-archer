@@ -17,8 +17,8 @@ body {
   height:160px;
 }
 .gaugecol {
-  min-width: 160px;
-  min-height:160px;
+  min-width: 175px;
+  min-height:175px;
 }
 .chart {
   width: 400px;
