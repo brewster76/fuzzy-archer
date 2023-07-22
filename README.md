@@ -35,7 +35,7 @@ Available in multiple languages. Help wanted! We need help with translations for
 - dutch
 - thai
 
-Read the upgrading guide, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki/Upgrading-to-v4
+Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
 New in v4.1:
 
@@ -45,6 +45,7 @@ New in v4.1:
 - Configurable news items
 - More config options for charts
 - Gauges, charts, stats and history items are now shown and ordered explicitly using a configuration list.
+- Mulit-language linking support: you can switch languages vie dropdown in multi-language installations
 - localization throughout charts and gauges (the stats and history page still depends on the systems locale, see https://github.com/weewx/weewx/issues/867)
 - Bugfixes and enhancements
 
