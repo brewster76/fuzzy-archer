@@ -44,9 +44,9 @@ function loadCharts() {
             if (dataReferences !== undefined && !Array.isArray(dataReferences)) {
                 dataReferences = [dataReferences];
             }
-
+            let seriesName = category.seriesName === undefined ? weewxData.labels.Generic[categoryId] : category.seriesName;
             let chartSeriesConfig = {
-                name: decodeHtml(weewxData.labels.Generic[categoryId]),
+                name: decodeHtml(seriesName),
                 plotType: plotType,
                 dataReferences: dataReferences === undefined ? [] : dataReferences,
                 yAxisIndex: category.yAxisIndex === undefined ? 0 : category.yAxisIndex,

@@ -27,6 +27,7 @@ function loadGauges() {
         let minvalue = gauge.weewxData.minvalue;
         let maxvalue = gauge.weewxData.maxvalue;
         let splitnumber = gauge.weewxData.splitnumber;
+        let gaugeName = gauge.weewxData.gaugeName === undefined ? weewxData.labels.Generic[gaugeId] : gauge.weewxData.gaugeName;
         let axisTickSplitNumber = 5;
         if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
             gauge.weewxData.heatMapEnabled = false;
@@ -60,7 +61,7 @@ function loadGauges() {
                 colors.push([(untilValue - minvalue) / range, lineColors[i]]);
             }
         }
-        let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
+        let gaugeOption = getGaugeOption(gaugeName, minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
         if (gauge.weewxData.obs_group === "group_direction") {
             gauge.isCircular = true;
             gaugeOption.series[0].startAngle = 90;
