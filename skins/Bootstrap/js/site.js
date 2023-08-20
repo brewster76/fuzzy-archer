@@ -160,7 +160,7 @@ function addAggregatedChartValues(chart, jPayload, timestamp) {
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
-    if(option === undefined || option === null) {
+    if (option === undefined || option === null) {
         return;
     }
     for (let dataset of option.series) {
@@ -258,19 +258,22 @@ function getAverageIntervalValue(currentIntervalData, value) {
 }
 
 function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType) {
-    //TODO: fix avg in live feed
-    if (aggregateType !== AVG) {
-        setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data, aggregateType);
-        rotateData(dataset.data);
-    }
+    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data, aggregateType);
+    rotateData(dataset.data);
 }
 
 function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
     let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
-        let intervalSum = Number.parseFloat(data[data.length - 1][1]) + value;
-        data[data.length - 1][1] = intervalSum;
+        let aggregatedValue;
+        if (aggregateType === AVG) {
+            let valueCount = data[data.length - 1][2];
+            aggregatedValue = (Number.parseFloat(data[data.length - 1][1]) * valueCount + value) / (valueCount + 1);
+        } else {
+            aggregatedValue = Number.parseFloat(data[data.length - 1][1]) + value;
+        }
+        data[data.length - 1][1] = aggregatedValue;
         data[data.length - 1][2]++;
     } else {
         data.push([intervalStart, value, 1]);
