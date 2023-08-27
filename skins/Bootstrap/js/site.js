@@ -1,5 +1,6 @@
 const AVG = "avg";
 const SUM = "sum";
+const CHART = "Chart";
 
 let weewxData;
 let weewxDataUrl = "weewxData.json";
@@ -350,6 +351,21 @@ function asyncReloadWeewxData() {
     fetch(weewxDataUrl).then(function (u) {
         return u.json();
     }).then(function (serverData) {
+        for (let chartItem of weewxData["charts"].live_chart_items) {
+            for (let seriesName of Object.keys(weewxData["charts"][chartItem])) {
+                let newestServerTimestamp = serverData[seriesName].slice(-1)[0][0];
+                let newerItems = [];
+                let seriesData = getSeriesData(chartItem, seriesName);
+                if (seriesData !== undefined) {
+                    let aItem = seriesData.pop();
+                    while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+                        newerItems.unshift(aItem);
+                        aItem = seriesData.pop();
+                    }
+                    serverData[seriesName].concat(newerItems);
+                }
+            }
+        }
         weewxData = serverData;
         loadGauges();
         if (typeof loadCharts === 'function') {
@@ -375,4 +391,13 @@ function getValue(obj, path) {
         }
     }
     return value;
+}
+
+function getSeriesData(chartItem, seriesName) {
+    for (let series of charts[chartItem + CHART].getOption().series) {
+        if (series.weewxColumn !== undefined && series.weewxColumn === seriesName) {
+            return series.data;
+        }
+    }
+    return undefined;
 }

@@ -10,7 +10,7 @@ let nightBackGroundColorModifier = '1a';
 
 function loadCharts() {
     for (let chartId of Object.keys(weewxData.charts)) {
-        let documentChartId = chartId + "Chart";
+        let documentChartId = chartId + CHART;
 
         if (charts[documentChartId] !== undefined) {
             charts[documentChartId].dispose();
@@ -87,9 +87,9 @@ function loadCharts() {
         let start;
         let end;
         chartOption = getChartOption(chartSeriesConfigs);
-        
+
         for (let serie of chartOption.series) {
-            if(serie.dataOption === undefined || serie.data === null) {
+            if (serie.dataOption === undefined || serie.data === null) {
                 continue;
             }
             let currenStart = serie.data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
@@ -104,7 +104,7 @@ function loadCharts() {
         chartOption.textStyle = {
             fontSize: chart.weewxData.fontSize === undefined ? 10 : chart.weewxData.fontSize,
         },
-        chart.setOption(chartOption);
+            chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
 }
@@ -170,18 +170,18 @@ function getChartOption(seriesConfigs) {
             },
             axisLabel: {
                 formatter: function (value, index) {
-                  let decimals = yAxisIndices[yAxisIndex]["decimals"];
-                  let formattedValue = format(value, decimals);
-                  if(value * Math.pow(10,decimals) % 1 != 0) {
-                    formattedValue = "";
-                  }
-                  if (value >= 1000) {
-                    formattedValue = value.toFixed();
-                    if(value % 1 != 0) {
-                      formattedValue = "";
+                    let decimals = yAxisIndices[yAxisIndex]["decimals"];
+                    let formattedValue = format(value, decimals);
+                    if (value * Math.pow(10, decimals) % 1 != 0) {
+                        formattedValue = "";
                     }
-                  }
-                  return formattedValue;
+                    if (value >= 1000) {
+                        formattedValue = value.toFixed();
+                        if (value % 1 != 0) {
+                            formattedValue = "";
+                        }
+                    }
+                    return formattedValue;
                 },
                 fontSize: yAxisIndices[yAxisIndex]["labelFontSize"]
             },
@@ -255,12 +255,12 @@ function getTooltip(seriesConfigs) {
         }
     }
     return {
-        trigger: containsScatter ? "item" :"axis",
+        trigger: containsScatter ? "item" : "axis",
         axisPointer: {
             type: LINE
         },
         show: true,
-        position: containsScatter ? "top" :"inside",
+        position: containsScatter ? "top" : "inside",
         formatter: function (params, ticket, callback) {
             let tooltipHTML = '<table>';
             let show = true;
@@ -268,14 +268,14 @@ function getTooltip(seriesConfigs) {
             let itemIndex;
             let axisValue;
 
-            if(Array.isArray(params)) {
-              marker = params[0].marker;
-              itemIndex = params[0].seriesIndex;
-              axisValue = params[0].axisValue;
+            if (Array.isArray(params)) {
+                marker = params[0].marker;
+                itemIndex = params[0].seriesIndex;
+                axisValue = params[0].axisValue;
             } else {
-              marker = params.marker;
-              itemIndex = params.seriesIndex;
-              axisValue = params.data[0];
+                marker = params.marker;
+                itemIndex = params.seriesIndex;
+                axisValue = params.data[0];
             }
 
             let intervals = [];
@@ -290,13 +290,13 @@ function getTooltip(seriesConfigs) {
 
                 let formattedValue = "-";
                 let dataValue;
-                if(Array.isArray(params) && params[i] !== undefined) {
-                  dataValue = params[i]["data"][1];
+                if (Array.isArray(params) && params[i] !== undefined) {
+                    dataValue = params[i]["data"][1];
                 } else {
-                  dataValue = getDataValue(axisValue, seriesItem.data);
+                    dataValue = getDataValue(axisValue, seriesItem.data);
                 }
-                if(!Array.isArray(params) && params["data"][i + 1] !== undefined) {
-                  dataValue = params["data"][i + 1];
+                if (!Array.isArray(params) && params["data"][i + 1] !== undefined) {
+                    dataValue = params["data"][i + 1];
                 }
                 if (dataValue === undefined && !seriesItem.showTooltipValueNone) {
                     continue;
@@ -402,8 +402,8 @@ function getSeriesConfig(seriesConfig, series, colors) {
                 for (let referencedData of weewxData[dataReference]) {
                     if (referencedData[0] === entry[0]) {
                         entry.push(referencedData[1]);
-                        if(referencedData[1] === 0) {
-                          entry[1] = null;
+                        if (referencedData[1] === 0) {
+                            entry[1] = null;
                         }
                     }
                 }
@@ -509,7 +509,7 @@ function getXMinInterval() {
 }
 
 function addUndefinedIfCurrentMissing(data) {
-    if(data === undefined || data ===null) {
+    if (data === undefined || data === null) {
         return;
     }
     let latestTimestamp = 0;
