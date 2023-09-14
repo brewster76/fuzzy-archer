@@ -27,6 +27,7 @@ function loadGauges() {
         let minvalue = gauge.weewxData.minvalue;
         let maxvalue = gauge.weewxData.maxvalue;
         let splitnumber = gauge.weewxData.splitnumber;
+        let gaugeName = gauge.weewxData.gaugeName === undefined ? weewxData.labels.Generic[gaugeId] : gauge.weewxData.gaugeName;
         let axisTickSplitNumber = 5;
         if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
             gauge.weewxData.heatMapEnabled = false;
@@ -60,7 +61,7 @@ function loadGauges() {
                 colors.push([(untilValue - minvalue) / range, lineColors[i]]);
             }
         }
-        let gaugeOption = getGaugeOption(weewxData.labels.Generic[gaugeId], minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
+        let gaugeOption = getGaugeOption(gaugeName, minvalue, maxvalue, splitnumber, axisTickSplitNumber, colors, weewxData.units.Labels[gauge.weewxData.target_unit], gauge.weewxData);
         if (gauge.weewxData.obs_group === "group_direction") {
             gauge.isCircular = true;
             gaugeOption.series[0].startAngle = 90;
@@ -70,7 +71,7 @@ function loadGauges() {
                 gaugeOption.series[1].endAngle = -270;
             }
             gaugeOption.series[0].axisLabel.distance = 10;
-            gaugeOption.series[0].axisLabel.fontSize = 12;
+            gaugeOption.series[0].axisLabel.fontSize = gauge.weewxData.labelFontSize === undefined ? 12 : gauge.weewxData.labelFontSize;
             gaugeOption.series[0].axisLabel.fontWeight = 'bold';
             gaugeOption.series[0].axisLabel.formatter = function (value) {
                 if (value === 0)
@@ -137,7 +138,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             },
             axisLabel: {
                 fontWeight: 'normal',
-                fontSize: 8,
+                fontSize: weewxData.labelFontSize === undefined ? 8 : weewxData.labelFontSize,
                 color: '#777',
                 formatter: function (value, index) {
                     return round(value, 1);
@@ -145,21 +146,19 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             },
             title: {
                 fontWeight: 'normal',
-                fontSize: 10,
+                fontSize: weewxData.titleFontSize === undefined ? 10 : weewxData.titleFontSize,
                 color: '#777',
                 offsetCenter: ['0', '28%']
             },
             detail: {
                 fontWeight: 'bold',
-                fontSize: 12,
+                fontSize: weewxData.detailFontSize === undefined ? 12 : weewxData.detailFontSize,
                 color: '#777',
                 formatter: function (value) {
-                    let unitString = unit === undefined ? "" : unit;
                     if (decimals !== undefined && decimals >= 0) {
-                        return value.toFixed(decimals) + unitString;
-                    } else {
-                        return value + unitString;
+                        value = format(value, decimals);
                     }
+                    return value + getUnitString(value, unit);
                 },
                 offsetCenter: ['0', '70%']
             },
@@ -247,4 +246,28 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
         until += ticksWidth;
     }
     return color;
+}
+
+function getDecimalSeparator(locale) {
+    let n = 1.1;
+    n = n.toLocaleString(locale).substring(1, 2);
+    return n;
+}
+
+var noReadingString = "--";
+function format(number, digits) {
+    if (number === noReadingString) {
+        return number;
+    }
+    number = Number(number);
+    let localeInfo = locale.replace("_", "-");
+    let numString = parseFloat(number.toFixed(digits)).toLocaleString(localeInfo);
+    let decimalSeparator = getDecimalSeparator(localeInfo);
+    if (digits > 0 && !numString.includes(decimalSeparator)) {
+        numString += decimalSeparator;
+        for (let i = 0; i < digits; i++) {
+            numString += "0";
+        }
+    }
+    return numString;
 }

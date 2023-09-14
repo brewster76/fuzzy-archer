@@ -14,8 +14,9 @@
             <p></p>
             #include "graphMenu.html.inc"
             <div class="row" id="modalRow">
-                    #for $imageName, $value in $ImageGenerator[$global_type + '_images'].items()
-                    #if isinstance($value, dict)
+                    #for $imageName in $image_items
+                    #set $imageItem = $ImageGenerator[$global_type + '_images'][$imageName]
+                    #if isinstance($imageItem, dict)
                     <div class="chart">
                         <div class="modal fade" id="large-${imageName}Modal" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog" style="max-width: 900px">
