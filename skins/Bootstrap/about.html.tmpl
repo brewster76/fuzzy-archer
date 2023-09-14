@@ -37,12 +37,66 @@
                 and use the WeeWX installer to unpack it:</p>
             <pre>wee_extension --install [wherever you've put the archive]</pre>
 
-            <p>Set the page title and footer through the corresponding file for your language in
-                <code>skins/Bootstrap/lang/{your_language}.conf</code>. Change the template language using
-                lang = {your_language} in the section for your skin in <code>weewx.conf</code>
-                For more information concerning localisation see the official
-                <a href="http://www.weewx.com/docs/customizing.htm#localization">WeeWX docs</a>.
+            <p>The preferred way to custumize your page is to apply any changes and additions in your weewx.conf, using the skin's section within <code>[StdConfig]</code>.
+                Change the language using <code>lang = {your_language}</code> in the section for your skin in <code>weewx.conf</code>.
+                For more information concerning localization see the official <a href="http://www.weewx.com/docs/customizing.htm#localization">WeeWX docs</a>.
             </p>
+            <h3>Example:</h3>
+            <p>The following example is an excerpt of weewx.conf. It will result in a english translated page, using the en_US locale, kilometers per hour instead of miles per hour for group_speed and setting the Footer text to "My custom footer text". Also, two news items will be shown on the "News" page. Also, a custom chart "inTemp", appearing as first chart, and the preconfigured "radiation" chart, as the last chart, is configured.</p>
+            <pre>
+[StdReport]
+    [[Bootstrap]]
+        skin = Bootstrap
+        HTML_ROOT = /var/www/html/weewx/Bootstrap/en
+        lang = en
+        enable = true
+        locale = en_US
+
+        [[[Units]]]
+            [[[[Groups]]]]
+                group_speed = km_per_hour
+
+        [[[Texts]]]
+            Footer Text = "My custom footer text."
+
+        [[[News]]]
+            [[[[February 3, 2023]]]]
+                header = "Big News!"
+                body = "We have big news!"
+                img_src = "path/to/big_news.jpg"
+                img_alt = "Big News!"
+                img_title = "We have big news!"
+            [[[[December 7, 2022]]]]
+                header = "News"
+                body = "We have news, but no pictures."
+
+        [[[LiveCharts]]]
+            live_chart_items = inTemp, outTemp, barometer, rain, outHumidity, wind, windDir, radiation # radiation is already preconfigured in skin.conf
+            [[[[inTemp]]]]
+                [[[[[inTemp]]]]]
+                    payload_key = inTemp_F
+                    showMaxMarkPoint = true
+                    showMinMarkPoint = true
+                    showAvgMarkLine = true
+                    lineColor = '#b44242'
+                    decimals = 1
+            </pre>
+
+            <h3>Custom pages:</h3>
+            <p>Let's say, you want to exchange this about page with your own. Create a template files <code>extra.html.tmpl</code>
+             and tell CheetahGenerator to handle it. Then exchange <code>about</code> with <code>extra</code> in the <code>navigation_items</code>. 
+             Then configure your new page in the <code>[[[[extra]]]]</code> stanza as below.</p>
+            <pre>
+        [[[CheetahGenerator]]]
+            [[[[HTMLFiles]]]]
+                [[[[[extra]]]]]
+                    template = extra.html.tmpl
+        [[[Navigation]]]
+            navigation_items = index, stats, history, news, extra
+            [[[[extra]]]]
+                text = About
+                href = extra.html
+            </pre>
         </div>
     </div>
     #include "foot.html.inc"

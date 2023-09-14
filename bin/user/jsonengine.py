@@ -33,6 +33,7 @@ import weewx.reportengine
 from weewx.units import convert
 
 from user.sunevents import SunEvents
+from weeutil.config import merge_config
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.gauge_dict = self.skin_dict['LiveGauges']
         self.chart_dict = self.skin_dict['LiveCharts']
         self.units_dict = self.skin_dict['Units']
+        merge_config(self.units_dict, self.config_dict['StdReport']['Defaults']['Units'])
         self.labels_dict = self.skin_dict['Labels']
+        merge_config(self.labels_dict, self.config_dict['StdReport']['Defaults']['Labels'])
         self.frontend_data = {}
 
         # Create a converter to get this into the desired units
@@ -114,7 +117,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         for gauge in self.gauge_dict.sections:
             data_type = self.gauge_dict[gauge].get('data_type', gauge)
-            ret, gauge_history = self.gen_history_data(gauge, data_type, live_options, self.gauge_dict[gauge].get('data_binding', None))
+            ret, gauge_history = self.gen_history_data(gauge, data_type, live_options, self.gauge_dict[gauge].get('data_binding', None), None)
             self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
             self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
 
@@ -125,7 +128,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
                 data_type = self.chart_dict[chart][category].get('data_type', category)
-                ret, category_history = self.gen_history_data(category, data_type, live_options, self.chart_dict[chart][category].get('data_binding'))
+                plotType = self.chart_dict[chart][category].get('plotType', 'line')
+                ret, category_history = self.gen_history_data(category, data_type, live_options, self.chart_dict[chart][category].get('data_binding'), plotType)
                 self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
                 self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
 
@@ -174,7 +178,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.info("JSONGenerator: weewx.units.obs_group_dict['%s'] is not present, using the empty string." % column_name)
             return ""
 
-    def gen_history_data(self, obs_name, column_name, live_options, binding_name):
+    def gen_history_data(self, obs_name, column_name, live_options, binding_name, plotType):
         log.debug("Generating history for obs_name %s and column_name %s with binding %s" % (obs_name, column_name, binding_name))
         if obs_name in self.frontend_data:
             log.debug("Data for observation %s has already been collected." % obs_name)
@@ -206,17 +210,30 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     logging.exception("Could not get db_manager for default binding")
 
             batch_records = db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
+
             for rec in batch_records:
-                db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
+                try:
+                    db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
+                except:
+                    log.debug("JSONGenerator: Ignoring data for column '%s', is this column in the database table?" % (column_name))
+                    return 0, None
+
                 if target_unit == "":
                     history_value = rec[column_name]
                 else:
                     history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
                 try:
-                    history_list.append(float(history_value))
+                    if history_value is None:
+                        history_list.append(history_value)
+                    else:
+                        history_list.append(float(history_value))
                     time_list.append(rec['dateTime'] * 1000)
                 except:
                     log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
+
+
+
+
 
         log.debug("returning history list")
         return 1, list(zip(time_list, history_list))

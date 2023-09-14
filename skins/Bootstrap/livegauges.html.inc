@@ -4,9 +4,10 @@
             <h1 class="currentConditions">$gettext("Current Conditions")</h1>
         </div>
     </div>
+    #set $live_gauge_items = $to_list($LiveGauges.get('live_gauge_items', ['outTemp', 'barometer', 'windDir', 'outHumidity', 'windSpeed', 'windGust']))
     #set $count = 0
-    #set $size = len($LiveGauges)
-    #for $gauge in $LiveGauges
+    #set $size = len($live_gauge_items)
+    #for $gauge in $live_gauge_items
     #if $count % 2 == 0
     <div class="row">
     #end if
@@ -22,38 +23,9 @@
     <div class="row stationInfo">
         <table class="table table-hover">
             <tbody>
-            <tr>
-                <td>$gettext("Latitude")</td>
-                <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
-            </tr>
-            <tr>
-                <td>$gettext("Longitude")</td>
-                <td>$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
-            </tr>
-            <tr>
-                <td>$gettext("Altitude")</td>
-                <td>$station.altitude</td>
-            </tr>
-            <tr>
-                <td>$gettext("Sunrise")</td>
-                <td>$almanac.sunrise</td>
-            </tr>
-            <tr>
-                <td>$gettext("Sunset")</td>
-                <td>$almanac.sunset</td>
-            </tr>
-            <tr>
-                <td>$gettext("Moon Phase")</td>
-                <td>$almanac.moon_phase ($almanac.moon_fullness%)</td>
-            </tr>
-            <tr>
-                <td>$gettext("Station Uptime")</td>
-                <td>$station.uptime.long_form</td>
-            </tr>
-            <tr>
-                <td>$gettext("Server Uptime")</td>
-                <td>$station.os_uptime.long_form</td>
-            </tr>
+            #for $station_info_item in $StationInfo['station_info_items']
+            #include $station_info_item + ".html.inc"
+            #end for
             </tbody>
         </table>
     </div>

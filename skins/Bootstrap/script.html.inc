@@ -8,4 +8,3 @@
 <script src="js/gauges.js"></script>
 <script src="js/site.js"></script>
 <script src="js/lang.js"></script>
-<script type="text/javascript"></script>

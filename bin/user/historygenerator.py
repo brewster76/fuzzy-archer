@@ -58,24 +58,19 @@ class MyXSearch(SearchList):
         self.search_list_extension = {}
 
         # Make some config available to templates
+        self.add_to_extension_list('Navigation', generator.skin_dict)
+        self.add_to_extension_list('StationInfo', generator.skin_dict)
+        self.add_to_extension_list('TranslationLinks', generator.skin_dict)
+        self.add_to_extension_list('HistoryReport', generator.skin_dict)
+        self.add_to_extension_list('ImageGenerator', generator.skin_dict)
         self.add_to_extension_list('BootstrapLabels', generator.skin_dict)
         self.add_to_extension_list('Labels', generator.skin_dict)
         self.add_to_extension_list('Units', generator.skin_dict)
         self.add_to_extension_list('LiveGauges', generator.skin_dict)
         self.add_to_extension_list('Stats', generator.skin_dict)
+        self.add_to_extension_list('News', generator.skin_dict)
         self.add_to_extension_list('LiveCharts', generator.skin_dict)
         self.add_to_extension_list('locale', generator.skin_dict)
-
-        # Make ImageGenerator specific labels in config file available to templates
-        image_dict = {}
-        image_config_path = os.path.join(generator.config_dict['WEEWX_ROOT'], generator.config_dict['StdReport']['SKIN_ROOT'],
-                                         'Bootstrap', "skin.conf")
-        try:
-            image_dict = ConfigObj(image_config_path)
-        except:
-            log.info("%s: Could not import image dictionary %s" %
-                     os.path.basename(__file__), image_config_path)
-        self.add_to_extension_list('ImageGenerator', image_dict)
 
     def add_to_extension_list(self, key, source):
         if key in source:
@@ -105,7 +100,7 @@ class MyXSearch(SearchList):
 
             t1 = time.time()
             ngen = 0
-            self.search_list_extension["history_tables"] = []
+            self.search_list_extension["history_tables"] = {}
 
             for table in self.table_dict.sections:
                 noaa = True if table == 'NOAA' else False
@@ -147,7 +142,7 @@ class MyXSearch(SearchList):
 
                 new_table = self._statsDict(table_options, table_stats, table, binding, NOAA=noaa)
                 if new_table is not None:
-                    self.search_list_extension["history_tables"].append(new_table)
+                    self.search_list_extension["history_tables"][table] = new_table
                     ngen += 1
 
             t2 = time.time()
@@ -348,9 +343,9 @@ class MyXSearch(SearchList):
 
     def getCount(self, obs_period, aggregate_type, threshold_value, threshold_units, obs_type):
         try:
-           return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
+            return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
         except:
-           return [0, 'count']
+            return [0, 'count']
 
     def _colorCell(self, value, format_string, cell_colors):
         """Returns a '<div style= background-color: XX; color: YY"> z.zz </div>' html table entry string.

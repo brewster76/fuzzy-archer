@@ -19,6 +19,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
     def __init__(self):
         files=[('skins/Bootstrap',
             ['skins/Bootstrap/about.html.tmpl',
+             'skins/Bootstrap/chartimages.html.inc',
              'skins/Bootstrap/day.html.tmpl',
              'skins/Bootstrap/foot.html.inc',
              'skins/Bootstrap/graphMenu.html.inc',
@@ -26,12 +27,15 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/history.html.tmpl',
              'skins/Bootstrap/index.html.tmpl',
              'skins/Bootstrap/livegauges.html.inc',
+             'skins/Bootstrap/location.html.inc',
              'skins/Bootstrap/month.html.tmpl',
+             'skins/Bootstrap/moonphase.html.inc',
              'skins/Bootstrap/nav.html.inc',
              'skins/Bootstrap/news.html.tmpl',
              'skins/Bootstrap/script.html.inc',
-             'skins/Bootstrap/chartimages.html.inc',
              'skins/Bootstrap/stats.html.tmpl',
+             'skins/Bootstrap/sunRiseSet.html.inc',
+             'skins/Bootstrap/uptime.html.inc',
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
              'skins/Bootstrap/skin.conf']),
@@ -76,9 +80,9 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="4.0",
+            version="4.1",
             name='bootstrap',
-            description='A skin based around the bootstrap 5.2.0 framework',
+            description='A skin based around the bootstrap framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={

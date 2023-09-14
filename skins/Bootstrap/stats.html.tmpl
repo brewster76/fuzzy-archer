@@ -1,4 +1,5 @@
 #errorCatcher Echo
+#set $stats_items = $to_list($Stats.get('stats_items', ['outTemp', 'rain', 'rainRate', 'barometer', 'wind']))
 <!DOCTYPE html>
 <html lang="$lang">
 #include "head.html.inc"
@@ -13,7 +14,8 @@
         <!-- Stats panel -->
         <div class="col-md-9 main">
             <table class="table table-hover statsTable">
-            #for $obs_type, $statsItem in $Stats.items()
+            #for $obs_type in $stats_items
+                #set $statsItem = $Stats[$obs_type]
                 #set $binding = 'wx_binding'
                 #if 'data_binding' in $statsItem.keys()
                 #set $binding = $statsItem.data_binding

@@ -1,3 +1,4 @@
 #errorCatcher Echo
 #set global $global_type = 'day'
+#set global $image_items = $to_list($ImageGenerator[$global_type + '_images'].get('image_items', ['daytempchill-Bootstrap', 'daybarometer-Bootstrap', 'dayrain-Bootstrap', 'dayhumidity-Bootstrap', 'daywind-Bootstrap', 'daywinddir-Bootstrap']))
 #include "chartimages.html.inc"
