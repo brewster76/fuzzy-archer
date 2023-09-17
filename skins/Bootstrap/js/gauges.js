@@ -225,6 +225,9 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
     let baseColor = '#ff0000';
     for (let item of data) {
         let value = item[1];
+        if(value === null || value === undefined) {
+            continue;
+        }
         let index = 0;
         if (value > max) {
             index = splitValueCount.length - 1;
