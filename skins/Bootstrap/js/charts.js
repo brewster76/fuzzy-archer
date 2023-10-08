@@ -290,7 +290,7 @@ function getTooltip(seriesConfigs) {
 
                 let formattedValue = "-";
                 let dataValue;
-                if (Array.isArray(params) && params[i] !== undefined) {
+                if (Array.isArray(params) && params[i] !== undefined && params[i]["data"] !== undefined) {
                     dataValue = params[i]["data"][1];
                 } else {
                     dataValue = getDataValue(axisValue, seriesItem.data);
