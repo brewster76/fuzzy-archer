@@ -15,7 +15,7 @@ let eChartsLocale;
 let maxAgeHoursMS;
 let intervalData = {};
 
-fetch(weewxDataUrl).then(function (u) {
+fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
@@ -334,7 +334,7 @@ function formatDateTime(timestamp) {
 
 function checkAsyncReload() {
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
-        fetch("ts.json").then(function (u) {
+        fetch("ts.json", { cache: "no-store" }).then(function (u) {
             return u.json();
         }).then(function (serverData) {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
@@ -348,7 +348,7 @@ function checkAsyncReload() {
 }
 
 function asyncReloadWeewxData() {
-    fetch(weewxDataUrl).then(function (u) {
+    fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
         return u.json();
     }).then(function (serverData) {
         for (let chartItem of weewxData["charts"].live_chart_items) {

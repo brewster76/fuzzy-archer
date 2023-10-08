@@ -1,4 +1,4 @@
-Theme for Weewx weather station software.
+Theme for WeeWX weather station software.
 ============
 Gauge and Chart graphics showing current conditions.
 
