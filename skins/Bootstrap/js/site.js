@@ -353,7 +353,7 @@ function asyncReloadWeewxData() {
     }).then(function (serverData) {
         for (let chartItem of weewxData["charts"].live_chart_items) {
             for (let seriesName of Object.keys(weewxData["charts"][chartItem])) {
-                if(serverData[seriesName] !== undefined) {
+                if(serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
                     let newestServerTimestamp = serverData[seriesName].slice(-1)[0][0];
                     let newerItems = [];
                     let seriesData = getSeriesData(chartItem, seriesName);
