@@ -340,6 +340,7 @@ function checkAsyncReload() {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
                 lastGoodStamp = serverData.lastGoodStamp;
                 asyncReloadWeewxData();
+                lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
             throw err
