@@ -2,7 +2,7 @@
 #
 # Based on installer for xstats
 #
-# Configured by Nick to install bootstrap skin, 2014-2022
+# Configured by Nick and Michael to install bootstrap skin, 2014-2023
 
 import os.path
 import configobj
@@ -80,7 +80,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf'])]
 
         super(BootstrapInstaller, self).__init__(
-            version="4.1",
+            version="4.1.1",
             name='bootstrap',
             description='A skin based around the bootstrap framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",
