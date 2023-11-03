@@ -1,4 +1,4 @@
-<nav aria-label="Nav" class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+<nav aria-label="Nav" class="navbar fixed-top navbar-expand-lg bg-dark" data-bs-theme="dark">
     <div class="container-fluid">
         #set $station_url = $station.station_url
         #if "location_href" in $Extras and $Extras.location_href != ''

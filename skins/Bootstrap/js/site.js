@@ -1,6 +1,7 @@
 const AVG = "avg";
 const SUM = "sum";
 const CHART = "Chart";
+const CHARTS = "charts";
 
 let weewxData;
 let weewxDataUrl = "weewxData.json";
@@ -15,7 +16,9 @@ let eChartsLocale;
 let maxAgeHoursMS;
 let intervalData = {};
 
-fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
+fetch(weewxDataUrl, {
+    cache: "no-store"
+}).then(function (u) {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
@@ -143,7 +146,7 @@ function updateGaugeValue(newValue, gauge) {
     gauge.setOption(option);
 }
 
-function addAggregatedChartValues(chart, jPayload, timestamp) {
+/*function addAggregatedChartValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     let intervalSeconds = chart.weewxData.aggregate_interval_minutes * 60;
     for (let dataset of option.series) {
@@ -157,7 +160,7 @@ function addAggregatedChartValues(chart, jPayload, timestamp) {
             }
         }
     }
-}
+}*/
 
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
@@ -190,7 +193,6 @@ function addValues(chart, jPayload, timestamp) {
             }
         }
     }
-
 
 }
 
@@ -333,8 +335,11 @@ function formatDateTime(timestamp) {
 }
 
 function checkAsyncReload() {
+    log_debug(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
-        fetch("ts.json", { cache: "no-store" }).then(function (u) {
+        fetch("ts.json", {
+            cache: "no-store"
+        }).then(function (u) {
             return u.json();
         }).then(function (serverData) {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
@@ -349,22 +354,19 @@ function checkAsyncReload() {
 }
 
 function asyncReloadWeewxData() {
-    fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
+    fetch(weewxDataUrl, {
+        cache: "no-store"
+    }).then(function (u) {
         return u.json();
     }).then(function (serverData) {
-        for (let chartItem of weewxData["charts"].live_chart_items) {
-            for (let seriesName of Object.keys(weewxData["charts"][chartItem])) {
-                if(serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
-                    let newestServerTimestamp = serverData[seriesName].slice(-1)[0][0];
-                    let newerItems = [];
+        let newerItems = [];
+        for (let chartItem of weewxData[CHARTS].live_chart_items) {
+            newerItems[chartItem] = [];
+            for (let seriesName of Object.keys(weewxData[CHARTS][chartItem])) {
+                if (serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
                     let seriesData = getSeriesData(chartItem, seriesName);
                     if (seriesData !== undefined) {
-                        let aItem = seriesData.pop();
-                        while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-                            newerItems.unshift(aItem);
-                            aItem = seriesData.pop();
-                        }
-                        serverData[seriesName].concat(newerItems);
+                        newerItems[chartItem][seriesName] = setNewerItems(seriesData, serverData[seriesName], weewxData[CHARTS][chartItem], seriesName);
                     }
                 }
             }
@@ -374,12 +376,60 @@ function asyncReloadWeewxData() {
         if (typeof loadCharts === 'function') {
             loadCharts();
         }
+        appendNewerItems(newerItems);
         let date = new Date(lastGoodStamp * 1000);
         let lastUpdate = document.getElementById("lastUpdate");
         lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
     }).catch(err => {
         throw err
     });
+}
+
+function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
+    let config = configs[seriesName];
+    let newerItems = [];
+    if (config.aggregateInterval === undefined) {
+        let newestServerTimestamp = serverSeriesData[serverSeriesData.length - 1][0];
+        let aItem = seriesData.pop();
+        while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+            //serverSeriesData.push(aItem);
+            newerItems.push(aItem);
+            aItem = seriesData.pop();
+        }
+    } else {
+        let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType);
+        let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
+        let aItem = seriesData.pop();
+        
+        while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
+            if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
+                aggregatedServerSeriesData.pop();
+                aggregatedServerSeriesData.push(aItem);
+            }
+            if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+                //aggregatedServerSeriesData.push(aItem);
+                newerItems.push(aItem);
+            }
+            aItem = seriesData.pop();
+        }
+        serverSeriesData = aggregatedServerSeriesData;
+    }
+    return newerItems;
+}
+
+function appendNewerItems(newerItems) {
+    for (let chartItem of Object.keys(newerItems)) {
+        let chart = charts[chartItem + CHART];
+        for (let seriesName of Object.keys(newerItems[chartItem])) {
+            let newData = newerItems[chartItem][seriesName];
+            for(let value of newData) {
+                log_debug(chartItem + "/" + seriesName);
+                let jPayload = {};
+                jPayload[weewxData[CHARTS][chartItem][seriesName].payload_key] = value[1];
+                addValues(chart, jPayload, value[0]);
+            }
+        }
+    }
 }
 
 function getValue(obj, path) {
@@ -403,4 +453,10 @@ function getSeriesData(chartItem, seriesName) {
         }
     }
     return undefined;
+}
+
+function log_debug(message) {
+    if (weewxData.config.debug_front_end !== undefined && "true" === weewxData.config.debug_front_end.toLowerCase()) {
+        console.log(message);
+    }
 }

@@ -6,12 +6,12 @@
 <!-- Menu navbar -->
 #include "nav.html.inc"
 <!-- Main container -->
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid pt-3">
+    <div class="row pt-3">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
         <!-- Graph panel -->
-        <div class="col-md-9 main">
+        <div class="col-md-9 main pt-md-4">
             #for $date, $newsItem in $News.items()
             #if len($News) == 1 or $date != 'Put date here...'
             <h3>$newsItem.header <small>$date</small></h3>

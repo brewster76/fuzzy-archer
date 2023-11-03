@@ -103,8 +103,8 @@ function loadCharts() {
         chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
         chartOption.textStyle = {
             fontSize: chart.weewxData.fontSize === undefined ? 10 : chart.weewxData.fontSize,
-        },
-            chart.setOption(chartOption);
+        };
+        chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
 }
@@ -371,7 +371,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
     let type = seriesConfig.plotType;
     if (seriesConfig.aggregateInterval !== undefined) {
-        seriesConfig.data = aggregate(seriesConfig)
+        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType)
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),
@@ -486,15 +486,15 @@ function getSeriesConfig(seriesConfig, series, colors) {
     series.push(serie);
 }
 
-function aggregate(seriesConfig) {
+function aggregate(data, aggregateInterval, aggregateType) {
     let aggregatedData = [];
-    for (let entry of seriesConfig.data) {
+    for (let entry of data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
         if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig.aggregateInterval, aggregatedData);
+            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
         }
     }
-    if (seriesConfig.aggregateType === AVG && aggregatedData.length > 0) {
+    if (aggregateType === AVG && aggregatedData.length > 0) {
         for (let entry of aggregatedData) {
             if (entry[2] !== 0) {
                 entry[1] = entry[1] / entry[2];

@@ -5,12 +5,12 @@
 <!-- Menu navbar -->
 #include "nav.html.inc"
 <!-- Main container -->
-<div class="container-fluid">
-    <div class="row">
+<div class="container-fluid pt-3">
+    <div class="row pt-3">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
         <!-- Graph panel -->
-        <div class="col-md-9 main">
+        <div class="col-md-9 main pt-md-3">
             <p></p>
             #include "graphMenu.html.inc"
             <div class="row" id="modalRow">

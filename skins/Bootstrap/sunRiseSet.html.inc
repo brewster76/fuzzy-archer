@@ -1,8 +1,8 @@
 <tr>
-    <td>$gettext("Sunrise")</td>
+    <td><i class="bi-sunrise" title="$gettext("Sunrise")"></i></td>
     <td>$almanac.sunrise</td>
 </tr>
 <tr>
-    <td>$gettext("Sunset")</td>
+    <td><i class="bi-sunset" title="$gettext("Sunset")"></i></td>
     <td>$almanac.sunset</td>
 </tr>

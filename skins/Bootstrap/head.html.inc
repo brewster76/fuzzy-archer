@@ -4,6 +4,7 @@
     <title>$gettext("Page Title") $station.location</title>
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.min.css" rel="stylesheet">
     <link href="css/live.css" rel="stylesheet">
     #set $extra_css = $to_list($Extras.get('extra_css', []))
     #for $css in $extra_css
