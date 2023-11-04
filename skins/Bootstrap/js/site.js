@@ -146,54 +146,36 @@ function updateGaugeValue(newValue, gauge) {
     gauge.setOption(option);
 }
 
-/*function addAggregatedChartValues(chart, jPayload, timestamp) {
-    let option = chart.getOption();
-    let intervalSeconds = chart.weewxData.aggregate_interval_minutes * 60;
-    for (let dataset of option.series) {
-        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
-        if (!isNaN(value)) {
-            addAggregatedChartValue(dataset, value, timestamp, intervalSeconds);
-            chart.setOption(option);
-            if (chart.chartId !== undefined) {
-                let chartElem = document.getElementById(chart.chartId + "_timestamp");
-                chartElem.innerHTML = formatDateTime(timestamp);
-            }
-        }
-    }
-}*/
-
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     if (option === undefined || option === null) {
         return;
     }
     for (let dataset of option.series) {
-        let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
-        if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
-            intervalSeconds = chart.weewxData[dataset.weewxColumn].aggregateInterval;
-        }
+        dataset.chartId = chart.chartId;
+        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
+        addValueAndUpdateChart(chart, option, dataset, value, timestamp);
+    }
+}
+
+function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
+    if (!isNaN(value)) {
         let aggregateType = SUM;
         if (chart.weewxData[dataset.weewxColumn].aggregateType !== undefined) {
             aggregateType = chart.weewxData[dataset.weewxColumn].aggregateType;
         }
+        if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
+            addAggregatedChartValue(dataset, value, timestamp, chart.weewxData[dataset.weewxColumn].aggregateInterval, aggregateType);
+        } else {
+            addValue(dataset, value, timestamp);
+        }
+        chart.setOption(option);
 
-        dataset.chartId = chart.chartId;
-        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
-        if (!isNaN(value)) {
-            if (intervalSeconds !== undefined) {
-                addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType);
-            } else {
-                addValue(dataset, value, timestamp);
-            }
-            chart.setOption(option);
-
-            if (dataset.chartId !== undefined) {
-                let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-                chartElem.innerHTML = formatDateTime(timestamp);
-            }
+        if (dataset.chartId !== undefined) {
+            let chartElem = document.getElementById(dataset.chartId + "_timestamp");
+            chartElem.innerHTML = formatDateTime(timestamp);
         }
     }
-
 }
 
 function addValue(dataset, value, timestamp) {
@@ -335,7 +317,7 @@ function formatDateTime(timestamp) {
 }
 
 function checkAsyncReload() {
-    log_debug(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000);
+    log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.json", {
             cache: "no-store"
@@ -420,14 +402,11 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
 function appendNewerItems(newerItems) {
     for (let chartItem of Object.keys(newerItems)) {
         let chart = charts[chartItem + CHART];
-        for (let seriesName of Object.keys(newerItems[chartItem])) {
-            let newData = newerItems[chartItem][seriesName];
-            for(let value of newData) {
-                log_debug(chartItem + "/" + seriesName);
-                let jPayload = {};
-                jPayload[weewxData[CHARTS][chartItem][seriesName].payload_key] = value[1];
-                addValues(chart, jPayload, value[0]);
-            }
+        let option = chart.getOption();
+        for (let dataset of option.series) {
+            log_debug(`updating ${dataset.weewxColumn} of ${chartItem}-chart.`);
+            let newData = newerItems[chartItem][dataset.weewxColumn];
+            addValueAndUpdateChart(chart, option, dataset, newData[1], newData[0]);
         }
     }
 }

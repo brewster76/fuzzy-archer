@@ -12,7 +12,7 @@
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
         <!-- Graph panel -->
-        <div class="col-md-9 main pt-md-5">
+        <div class="col-md-9 main pt-md-4">
             #for $history_item in $history_items
             #set $table = $history_tables[$history_item]
             <h3 class="historyHeader">$gettext($table.header_text)</h3>

@@ -36,9 +36,9 @@ function loadCharts() {
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
 
-            let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? LINE : category.plotType;
-            let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? SUM : category.aggregateType;
-            let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
+            let plotType = category.plotType == undefined ? LINE : category.plotType;
+            let aggregateType = category.aggregateType === undefined ? SUM : category.aggregateType;
+            let aggregateInterval = category.aggregateInterval;
 
             let dataReferences = undefined ? undefined : category.dataReferences;
             if (dataReferences !== undefined && !Array.isArray(dataReferences)) {
@@ -92,8 +92,8 @@ function loadCharts() {
             if (serie.dataOption === undefined || serie.data === null) {
                 continue;
             }
-            let currenStart = serie.data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
-            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
+            let currenStart = serie.data[0][0] - chart.weewxData.aggregateInterval;
+            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregateInterval;
             start = start === undefined || start >= currenStart ? currenStart : start;
             end = end === undefined || end <= currentEnd ? currentEnd : end;
         }
