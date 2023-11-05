@@ -33,12 +33,15 @@ import time
 import logging
 import os.path
 
-from configobj import ConfigObj
+import weewx.units
+import weeutil.weeutil
 
+try:
+    from weeutil.weeutil import accumulateLeaves
+except:
+    from weeutil.config import accumulateLeaves
 from weewx.cheetahgenerator import SearchList
 from weewx.tags import TimespanBinder
-import weeutil.weeutil
-import weewx.units
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +108,7 @@ class MyXSearch(SearchList):
             for table in self.table_dict.sections:
                 noaa = True if table == 'NOAA' else False
 
-                table_options = weeutil.weeutil.accumulateLeaves(self.table_dict[table])
+                table_options = accumulateLeaves(self.table_dict[table])
 
 
                 # Get the binding where the data is allocated

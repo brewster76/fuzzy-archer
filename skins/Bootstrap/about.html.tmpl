@@ -15,7 +15,7 @@
             <!-- About content goes here-->
             <h2>How it's done</h2>
             <p>This website summarizes weather data logged by a weather station using the polished and highly
-                customisable
+                customizable
                 <A href="http://weewx.com">WeeWX</a> software (version $station.version). WeeWX collects data from the
                 weatherstation in a customizable interval and stores it in an archive database.
                 It also creates all the data for the graphs and webpages which are uploaded to the website every interval.
@@ -35,7 +35,12 @@
             <p>Having already a working WeeWX installation, the easiest way to install this skin is to download the
                 source archive from GitHub: <a href="https://github.com/brewster76/fuzzy-archer/releases">releases</a>,
                 and use the WeeWX installer to unpack it:</p>
+            
             <pre>wee_extension --install [wherever you've put the archive]</pre>
+            
+            <p>or, if you are running weewx v5 and above:</p>
+            
+            <pre>weectl extension install https://github.com/brewster76/fuzzy-archer/archive/refs/tags/{replace_with_the_current_version.}zip</pre>
 
             <p>The preferred way to custumize your page is to apply any changes and additions in your weewx.conf, using the skin's section within <code>[StdConfig]</code>.
                 Change the language using <code>lang = {your_language}</code> in the section for your skin in <code>weewx.conf</code>.

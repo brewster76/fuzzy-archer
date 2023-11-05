@@ -28,12 +28,17 @@ import logging
 import json
 import os.path
 
-import weeutil.weeutil
 import weewx.reportengine
-from weewx.units import convert
 
-from user.sunevents import SunEvents
+try:
+    from weeutil.weeutil import accumulateLeaves
+except:
+    from weeutil.config import accumulateLeaves
 from weeutil.config import merge_config
+from weewx.units import convert
+from weeutil.weeutil import to_bool
+from user.sunevents import SunEvents
+
 
 log = logging.getLogger(__name__)
 
@@ -80,7 +85,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         self.show_daynight = True
         try:
-            self.show_daynight = weeutil.weeutil.to_bool(self.chart_dict['show_daynight'])
+            self.show_daynight = to_bool(self.chart_dict['show_daynight'])
         except KeyError:
             log.debug('show_daynight is on')
 
@@ -113,7 +118,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             self.frontend_data['source_unit_system'][unit_system_item[0]] = unit_system_item[1]
         self.frontend_data['units'] = self.units_dict
         self.frontend_data['labels'] = self.labels_dict
-        live_options = weeutil.weeutil.accumulateLeaves(self.json_dict)
+        live_options = accumulateLeaves(self.json_dict)
 
         for gauge in self.gauge_dict.sections:
             data_type = self.gauge_dict[gauge].get('data_type', gauge)

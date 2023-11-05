@@ -10,7 +10,7 @@ See it in action with live data (10s. refresh interval):
 
 [Weather test page english](https://www.kainzbauer.net/weather/Rif/en)
 
-[Wetter Testseite Deutsch](https://www.kainzbauer.net/weather/Rif/de)
+[Wetter Testseite Deutsch](https://www.kainzbauer.net/weather/Rif)
 
 Interactive charts showing conditions over a timespan
 
