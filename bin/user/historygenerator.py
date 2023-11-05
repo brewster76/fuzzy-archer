@@ -59,6 +59,7 @@ class MyXSearch(SearchList):
         self.cache_time = 0
 
         self.search_list_extension = {}
+        self.search_list_extension['fuzzy_archer_version'] = generator.config_dict['fuzzy_archer_version']
 
         # Make some config available to templates
         self.add_to_extension_list('Navigation', generator.skin_dict)

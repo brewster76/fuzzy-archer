@@ -91,7 +91,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={
-                'bootstrap_version':version,
+                'fuzzy_archer_version':version,
                 'StdReport': {
                     'Bootstrap': {
                         'skin':'Bootstrap',
