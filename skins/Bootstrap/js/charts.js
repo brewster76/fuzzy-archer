@@ -311,15 +311,15 @@ function getTooltip(seriesConfigs) {
                     }
                     let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
                     let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
-                    let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
-                    let to = toDate.toLocaleTimeString(localeWithDash);
+                    let from = formatDateTime(fromDate);
+                    let to = formatTime(toDate);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
                     let date = new Date(aggregateAxisValue);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
-                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date) + '</td></tr>';
                     }
                 }
 

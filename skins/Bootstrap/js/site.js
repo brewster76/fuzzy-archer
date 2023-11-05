@@ -91,7 +91,7 @@ fetch(weewxDataUrl, {
                     addValues(chart, jPayload, timestamp);
                 }
                 let lastUpdate = document.getElementById("lastUpdate");
-                lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+                lastUpdate.innerHTML = formatDateTime(date);
             });
         }
     }
@@ -166,6 +166,7 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
         }
         if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
             addAggregatedChartValue(dataset, value, timestamp, chart.weewxData[dataset.weewxColumn].aggregateInterval, aggregateType);
+            timestamp = Date.now(); // Axis timestamps for aggregated series are not fitting for updating "last updated" in chart
         } else {
             addValue(dataset, value, timestamp);
         }
@@ -313,7 +314,12 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
 
 function formatDateTime(timestamp) {
     let date = new Date(timestamp);
-    return date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+    return date.toLocaleDateString(localeWithDash) + ", " + formatTime(timestamp);
+}
+
+function formatTime(timestamp) {
+    let date = new Date(timestamp);
+    return date.toLocaleTimeString(localeWithDash);
 }
 
 function checkAsyncReload() {
@@ -358,10 +364,10 @@ function asyncReloadWeewxData() {
         if (typeof loadCharts === 'function') {
             loadCharts();
         }
-        appendNewerItems(newerItems);
         let date = new Date(lastGoodStamp * 1000);
         let lastUpdate = document.getElementById("lastUpdate");
-        lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+        lastUpdate.innerHTML = formatDateTime(date);
+        appendNewerItems(newerItems);
     }).catch(err => {
         throw err
     });
@@ -374,7 +380,6 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
         let newestServerTimestamp = serverSeriesData[serverSeriesData.length - 1][0];
         let aItem = seriesData.pop();
         while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-            //serverSeriesData.push(aItem);
             newerItems.push(aItem);
             aItem = seriesData.pop();
         }
@@ -389,7 +394,6 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
                 aggregatedServerSeriesData.push(aItem);
             }
             if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-                //aggregatedServerSeriesData.push(aItem);
                 newerItems.push(aItem);
             }
             aItem = seriesData.pop();
@@ -401,12 +405,20 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
 
 function appendNewerItems(newerItems) {
     for (let chartItem of Object.keys(newerItems)) {
-        let chart = charts[chartItem + CHART];
+        let chartId = chartItem + CHART;
+        let chart = charts[chartId];
         let option = chart.getOption();
         for (let dataset of option.series) {
-            log_debug(`updating ${dataset.weewxColumn} of ${chartItem}-chart.`);
+            dataset.chartId = chartId;
             let newData = newerItems[chartItem][dataset.weewxColumn];
-            addValueAndUpdateChart(chart, option, dataset, newData[1], newData[0]);
+            if(newData.length > 0) {
+                for(let data of newData) {
+                    let value = data[1];
+                    let timestamp = data[0];
+                    log_debug(`updating ${dataset.weewxColumn} of ${chartId} value=${value}, timestamp=${timestamp}(${formatDateTime(timestamp)}).`);
+                    addValueAndUpdateChart(chart, option, dataset, value, timestamp);
+                }
+            }
         }
     }
 }
