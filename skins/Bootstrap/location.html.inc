@@ -1,4 +1,4 @@
-<div class="row d-flex align-items-center">
+<div class="row d-flex align-items-center stationInfo">
     <div class="col-2">
         <i class="bi-globe2 fs-3" title="$gettext('Latitude'), $gettext('Longitude')"></i>
     </div>

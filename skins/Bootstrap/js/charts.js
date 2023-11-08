@@ -58,6 +58,8 @@ function loadCharts() {
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
+                minInterval: category.minInterval,
+                maxInterval: category.maxInterval,
                 showMaxMarkPoint: getBooleanOrDefault(category.showMaxMarkPoint, false),
                 showMinMarkPoint: getBooleanOrDefault(category.showMinMarkPoint, false),
                 showAvgMarkLine: getBooleanOrDefault(category.showAvgMarkLine, false),
@@ -154,6 +156,8 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
         yAxisIndices[seriesConfig.yAxisIndex]["decimals"] = seriesConfig.decimals;
+        yAxisIndices[seriesConfig.yAxisIndex]["minInterval"] = seriesConfig.minInterval;
+        yAxisIndices[seriesConfig.yAxisIndex]["maxInterval"] = seriesConfig.maxInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
     }
 
@@ -161,16 +165,19 @@ function getChartOption(seriesConfigs) {
     for (let yAxisIndex of Object.keys(yAxisIndices)) {
         let obs_group = yAxisIndices[yAxisIndex]["obs_group"];
         let unit = yAxisIndices[yAxisIndex]["unit"];
+        let decimals = yAxisIndices[yAxisIndex]["decimals"];
+        let minInterval = yAxisIndices[yAxisIndex]["minInterval"];
+        let maxInterval = yAxisIndices[yAxisIndex]["maxInterval"];
         let yAxisItem = {
             name: Array.isArray(unit) && unit.length > 1 ? unit[1] : unit,
             type: "value",
-            minInterval: undefined,
+            minInterval: minInterval,
+            maxInterval: maxInterval,
             nameTextStyle: {
                 fontWeight: 'bold',
             },
             axisLabel: {
                 formatter: function (value, index) {
-                    let decimals = yAxisIndices[yAxisIndex]["decimals"];
                     let formattedValue = format(value, decimals);
                     if (value * Math.pow(10, decimals) % 1 != 0) {
                         formattedValue = "";
@@ -194,12 +201,6 @@ function getChartOption(seriesConfigs) {
             yAxisItem.min = 0;
             yAxisItem.max = 100;
         }
-        /*if (chart.weewxData.yAxis_minInterval !== undefined) {
-            yAxisItem.minInterval = Number(chart.weewxData.yAxis_minInterval);
-        }
-        if (chart.weewxData.yAxis_axisLabel_align !== undefined) {
-            yAxisItem.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
-        }*/
         if (obs_group === "group_direction") {
             yAxisItem.min = 0;
             yAxisItem.max = 360;
@@ -225,9 +226,6 @@ function getChartOption(seriesConfigs) {
             }
         },
         tooltip: getTooltip(seriesConfigs),
-        /*label: {
-            align: 'left'
-        },*/
         xAxis: {
             show: true,
             minInterval: getXMinInterval(),

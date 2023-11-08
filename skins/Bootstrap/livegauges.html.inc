@@ -20,7 +20,7 @@
     #set $count = $count + 1
     #end for
     <!-- Station info -->
-    <div class="row stationInfo">
+    <div class="row">
         #for $station_info_item in $StationInfo['station_info_items']
         #include $station_info_item + ".html.inc"
         #end for

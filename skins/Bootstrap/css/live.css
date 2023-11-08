@@ -27,10 +27,20 @@ body {
   margin-bottom: 3px;
   float: left;
 }
-.stationInfo td {
-   color: #555;
-   font-family: sans-serif;
-   font-size: smaller;
+
+.stationInfo {
+  background-color: #f8f9fa;
+  color: #555;
+  margin: 1px;
+  font-family: sans-serif;
+  font-size: small;
+  margin: 1px 1px;
+}
+
+.footer {
+  color: #555;
+  font-family: sans-serif;
+  font-size: xx-small;
 }
 .primaryLive, .primaryLive:active, .primaryLive:focus, .primaryLive:checked {
   background-color: #428bca;
