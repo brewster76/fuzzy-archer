@@ -249,6 +249,9 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, agg
 }
 
 function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
+    if(value === null || value === undefined) {
+        return;
+    }
     let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
