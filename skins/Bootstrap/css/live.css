@@ -15,26 +15,24 @@ body {
 .gauge {
   width: 160px;
   height:160px;
+  min-width: 140px;
+  min-height:140px;
 }
-.gaugecol {
-  min-width: 175px;
-  min-height:175px;
-}
+
 .chart {
-  width: 400px;
-  height:250px;
+  width: 475px;
+  height:275px;
   margin-top: 3px;
   margin-bottom: 3px;
   float: left;
 }
 
 .stationInfo {
-  background-color: #f8f9fa;
+  background-color: #f6f6f6;
   color: #555;
   margin: 1px;
   font-family: sans-serif;
   font-size: small;
-  margin: 1px 1px;
 }
 
 .footer {
@@ -77,7 +75,7 @@ body {
 
 thead.table-light th {
   color: #333;
-  background-color: #f3f3f3;
+  background-color: #f6f6f6;
 }
 
 .table {

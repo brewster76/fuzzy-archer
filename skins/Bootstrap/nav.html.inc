@@ -1,16 +1,12 @@
-<nav aria-label="Nav" class="navbar fixed-top navbar-expand-lg bg-dark" data-bs-theme="dark">
+<nav class="navbar fixed-top navbar-expand bg-dark" data-bs-theme="dark">
     <div class="container-fluid">
         #set $station_url = $station.station_url
         #if "location_href" in $Extras and $Extras.location_href != ''
             #set $station_url = $Extras.location_href
         #end if
-        <a class="navbar-brand" href="$station_url">$station.location</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
-                aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarText">
-            <ul id="navbarList" class="navbar-nav mb-2 mb-lg-0">
+        <div class="d-none d-md-inline"><a class="navbar-brand" href="$station_url">$station.location</a></div>
+        <div class="navbar-collapse">
+            <ul id="navbarList" class="navbar-nav mb-0">
                 #for $nav_item in $Navigation['navigation_items']
                 #set $active = ''
                 #set $href = $Navigation[$nav_item]['href']
@@ -23,11 +19,11 @@
                 </li>
                 #end for
             </ul>
-            #set $msAuto = 'ms-auto'
+            #set $msAuto = ' ms-auto'
             #if $varExists('TranslationLinks')
-            <ul id="navbarLang" class="navbar-nav $msAuto mb-2 mb-lg-0 me-4">
+            <ul id="navbarLang" class="navbar-nav${msAuto} mb-0 me-4">
               <li class="dropdown nav-item">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                   $lang
                 </a>
                 <ul class="dropdown-menu">
@@ -41,7 +37,7 @@
             </ul>
             #set $msAuto = ''
             #end if
-            <div class="navbar-text $msAuto">$gettext("Last update") <span id="lastUpdate">$current.dateTime</span></div>
+            <div class="navbar-text d-none d-lg-inline${msAuto}">$gettext("Last update") <span id="lastUpdate">$current.dateTime</span></div>
         </div>
     </div>
 </nav>

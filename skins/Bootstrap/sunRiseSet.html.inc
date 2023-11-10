@@ -1,4 +1,4 @@
-<div class="row d-flex align-items-center stationInfo">
+<div class="row $global_station_info_classes">
     <div class="col-2">
         <i class="bi-sunrise fs-3" title="$gettext('Sunrise')"></i>
     </div>

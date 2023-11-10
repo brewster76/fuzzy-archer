@@ -7,12 +7,12 @@
 <!-- Menu navbar -->
 #include "nav.html.inc"
 <!-- Main container -->
-<div class="container-fluid pt-3">
-    <div class="row pt-3">
+<div class="$global_main_container_classes">
+    <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
         <!-- Stats panel -->
-        <div class="col-md-9 main pt-md-4">
+        <div class="${global_graph_panel_classes}">
             <table class="table table-hover statsTable">
             #for $obs_type in $stats_items
                 #set $statsItem = $Stats[$obs_type]

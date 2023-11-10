@@ -1,4 +1,4 @@
-<div class="row d-flex align-items-center stationInfo">
+<div class="row $global_station_info_classes">
     <div class="col-2">
         <i class="bi-clock-history fs-3" title="$gettext('Station Uptime')"></i>
     </div>
@@ -6,7 +6,7 @@
         <div class="text-nowrap">$station.uptime.long_form</div>
     </div>
 </div>
-<div class="row d-flex align-items-center stationInfo">
+<div class="row $global_station_info_classes">
     <div class="col-2">
         <i class="bi-clock-history fs-3" title="$gettext('Server Uptime')"></i>
     </div>

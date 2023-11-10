@@ -1,3 +1,6 @@
+#set global $global_graph_panel_classes = 'col-md-6 col-lg-7 col-xl-8 col-xxl-9 main mt-md-5 mx-1 mx-md-0'
+#set global $global_main_container_classes = 'container-fluid mt-4'
+#set global $global_station_info_classes = 'd-flex align-items-center stationInfo my-1'
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
