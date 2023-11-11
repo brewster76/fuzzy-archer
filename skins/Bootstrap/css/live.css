@@ -118,3 +118,7 @@ h3 small {
   font-size: 0.6em;
   margin-left: 0.5em;
 }
+
+section {
+  scroll-margin-top: 56px;
+}

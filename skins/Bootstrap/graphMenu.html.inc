@@ -1,4 +1,5 @@
 #set $graphMenuItems = [{'href': 'index.html', 'text': 'Live'}, {'href': 'day.html', 'text': '24 Hours'}, {'href': 'week.html', 'text': 'Week'}, {'href': 'month.html', 'text': 'Month'}, {'href': 'year.html', 'text': 'Year'}]
+<section id="menuAnchor"></section>
 <p id="graphMenu" class="my-1 mt-md-0">
     #for $graphMenuItem in $graphMenuItems
     #set $classlist = ' btn-light primaryLight'
@@ -20,7 +21,7 @@
       for(let i = 0; i < listItems.snapshotLength; i++) {
         let item = listItems.snapshotItem(i);
         if(window.innerWidth < 768) {
-          item.href += "#graphMenu";
+          item.href += "#menuAnchor";
         }
       }
     }
