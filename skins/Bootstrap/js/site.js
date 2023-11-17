@@ -5,6 +5,7 @@ const CHARTS = "charts";
 
 let weewxData;
 let weewxDataUrl = "weewxData.json";
+let stationInfoDataUrl = "reportData.json";
 let gauges = {};
 let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
@@ -249,7 +250,7 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, agg
 }
 
 function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
-    if(value === null || value === undefined) {
+    if (value === null || value === undefined) {
         return;
     }
     let duration = aggregateInterval * 1000;
@@ -336,6 +337,7 @@ function checkAsyncReload() {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
                 lastGoodStamp = serverData.lastGoodStamp;
                 asyncReloadWeewxData();
+                asyncReloadReportData();
                 lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
@@ -376,6 +378,20 @@ function asyncReloadWeewxData() {
     });
 }
 
+function asyncReloadReportData() {
+    fetch(stationInfoDataUrl, {
+        cache: "no-store"
+    }).then(function (u) {
+        return u.json();
+    }).then(function (reportData) {
+        for(let aFunction of updateFunctions) {
+            aFunction(reportData);
+        }
+    }).catch(err => {
+        throw err
+    });
+}
+
 function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
     let config = configs[seriesName];
     let newerItems = [];
@@ -390,7 +406,7 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
         let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType);
         let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
         let aItem = seriesData.pop();
-        
+
         while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
             if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
                 aggregatedServerSeriesData.pop();
@@ -414,8 +430,8 @@ function appendNewerItems(newerItems) {
         for (let dataset of option.series) {
             dataset.chartId = chartId;
             let newData = newerItems[chartItem][dataset.weewxColumn];
-            if(newData.length > 0) {
-                for(let data of newData) {
+            if (newData.length > 0) {
+                for (let data of newData) {
                     let value = data[1];
                     let timestamp = data[0];
                     log_debug(`updating ${dataset.weewxColumn} of ${chartId} value=${value}, timestamp=${timestamp}(${formatDateTime(timestamp)}).`);
@@ -452,5 +468,11 @@ function getSeriesData(chartItem, seriesName) {
 function log_debug(message) {
     if (weewxData.config.debug_front_end !== undefined && "true" === weewxData.config.debug_front_end.toLowerCase()) {
         console.log(message);
+    }
+}
+
+function setInnerHTML(element, value) {
+    if (element !== null && element !== undefined && value !== null && value !== undefined) {
+        element.innerHTML = value;
     }
 }

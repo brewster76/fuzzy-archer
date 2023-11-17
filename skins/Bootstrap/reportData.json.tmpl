@@ -1,0 +1,11 @@
+{
+#set $count = 0
+#set $includes = $to_list($JSONGenerator['ReportData'].get('includes', ['stationInfo.json.inc']))
+#for $include in $includes
+#set $count = $count + 1
+#include $include
+#if $count < len($includes)
+,
+#end if
+#end for
+}

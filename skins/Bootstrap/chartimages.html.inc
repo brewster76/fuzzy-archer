@@ -9,8 +9,8 @@
     <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
-        <!-- Graph panel -->
-        <div class="${global_graph_panel_classes}">
+        <!-- Main panel -->
+        <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             #include "graphMenu.html.inc"
             <div class="row" id="modalRow">
                     #for $imageName in $image_items

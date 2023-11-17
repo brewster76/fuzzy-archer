@@ -70,6 +70,7 @@ class MyXSearch(SearchList):
         self.add_to_extension_list('BootstrapLabels', generator.skin_dict)
         self.add_to_extension_list('Labels', generator.skin_dict)
         self.add_to_extension_list('Units', generator.skin_dict)
+        self.add_to_extension_list('JSONGenerator', generator.skin_dict)
         self.add_to_extension_list('LiveGauges', generator.skin_dict)
         self.add_to_extension_list('Stats', generator.skin_dict)
         self.add_to_extension_list('News', generator.skin_dict)
@@ -174,14 +175,14 @@ class MyXSearch(SearchList):
             table_colors = self.color_dict[colors_key][unit]
         else:
             log.info("No colors defined for %s" % table_name)
-            table_colors = {"minvalues": [0], "maxvalues": [0], "colors": ["#ffffff"]}
+            table_colors = {"minvalues": [0], "colors": ["#ffffff"]}
 
         # Check everything's the same length
         l = len(table_colors['minvalues'])
 
-        for i in [table_colors['maxvalues'], table_colors['colors']]:
+        for i in [table_colors['minvalues'], table_colors['colors']]:
             if len(i) != l:
-                log.info("%s: minvalues, maxvalues and colors must have the same number of elements in table: %s"
+                log.info("%s: minvalues and colors must have the same number of elements in table: %s"
                          % (os.path.basename(__file__), table_name))
                 return None, None
 
@@ -192,19 +193,19 @@ class MyXSearch(SearchList):
             # Check everything's the same length
             l = len(summary_colors['minvalues'])
 
-            for i in [summary_colors['maxvalues'], summary_colors['colors']]:
+            for i in [summary_colors['minvalues'], summary_colors['colors']]:
                 if len(i) != l:
-                    log.info("%s: minvalues, maxvalues and colors must have the same number of elements in table: %s[summary]"
+                    log.info("%s: minvalues and colors must have the same number of elements in table: %s[summary]"
                              % (os.path.basename(__file__), table_name))
                     return None, None
 
         font_color_list = table_colors['fontColors'] if 'fontColors' in table_colors else ['#000000'] * l
-        cell_colors = list(zip(table_colors['minvalues'], table_colors['maxvalues'], table_colors['colors'], font_color_list))
+        cell_colors = list(zip(table_colors['minvalues'], table_colors['colors'], font_color_list))
 
         summary_cell_colors = None
         if None is not summary_colors:
             font_color_list = summary_colors['fontColors'] if 'fontColors' in summary_colors else ['#000000'] * l
-            summary_cell_colors = list(zip(summary_colors['minvalues'], summary_colors['maxvalues'], summary_colors['colors'], font_color_list))
+            summary_cell_colors = list(zip(summary_colors['minvalues'], summary_colors['colors'], font_color_list))
 
         return cell_colors, summary_cell_colors
 
@@ -356,15 +357,15 @@ class MyXSearch(SearchList):
 
         value: Numeric value for the observation
         format_string: How the numberic value should be represented in the table cell.
-        cellColors: An array containing 4 lists. [minvalues], [maxvalues], [background color], [foreground color]
+        cellColors: An array containing 3 lists. [minvalues], [background color], [foreground color]
         """
         cell = {"value": "", "bgcolor": "", "fontcolor": ""}
         if value[0] is not None:
             vh = weewx.units.ValueHelper(value)
-            for c in cell_colors:
-                if (value[0] >= float(c[0])) and (value[0] < float(c[1])):
-                    cell["bgcolor"] = c[2]
-                    cell["fontcolor"] = c[3]
+            for index, c in enumerate(cell_colors):
+                if (value[0] >= float(c[0])) and ((index + 1) >= len(cell_colors) or value[0] < float(cell_colors[index + 1][0])):
+                    cell["bgcolor"] = c[1]
+                    cell["fontcolor"] = c[2]
                     break
             cell["value"] = vh.format(format_string, None, False, True)
         return cell
