@@ -40,12 +40,14 @@ Read the upgrading guides in the wiki, if you already have an older version inst
 New in v4.2:
 
 - Upgraded dependencies
-- Overhaul of the UI, more optimizations for mobile devices, more compact on mobile devices
+- Overhaul of the UI, optimizations for mobile devices, more compact on mobile devices
+- Navbar is fixed on top, faster and easier navigation especially on mobile devices
 - Introduced Bootstrap Icons (https://icons.getbootstrap.com/)
-- History: redundant specification of maxvalues for colors was removed
+- History: redundant specification of maxvalues for colors was removed, remove them from your custom configs (leaving them will still work, but is of no use)
 - Support for customizing report data JSON in front end
 - Fixed async refresh for sum aggregation
 - Config option for axis intervals
+- Moon phase, sunrise/set, uptime is now updated asyncronously every archive_interval
 
 New in v4.1:
 
