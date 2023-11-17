@@ -10,7 +10,7 @@ See it in action with live data (10s. refresh interval):
 
 [Example page english](https://www.kainzbauer.net/weather/Rif/en)
 
-[Example Testseite Deutsch](https://www.kainzbauer.net/weather/Rif)
+[Example page Deutsch](https://www.kainzbauer.net/weather/Rif)
 
 Interactive charts showing conditions over a timespan
 
@@ -36,6 +36,16 @@ Available in multiple languages. Help wanted! We need help with translations for
 - thai
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
+
+New in v4.2:
+
+- Upgraded dependencies
+- Overhaul of the UI, more optimizations for mobile devices, more compact on mobile devices
+- Introduced Bootstrap Icons (https://icons.getbootstrap.com/)
+- History: redundant specification of maxvalues for colors was removed
+- Support for customizing report data JSON in front end
+- Fixed async refresh for sum aggregation
+- Config option for axis intervals
 
 New in v4.1:
 
