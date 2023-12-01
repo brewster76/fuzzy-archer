@@ -45,9 +45,11 @@ New in v4.2:
 - Introduced Bootstrap Icons (https://icons.getbootstrap.com/)
 - History: redundant specification of maxvalues for colors was removed, remove them from your custom configs (leaving them will still work, but is of no use)
 - Support for customizing report data JSON in front end
-- Fixed async refresh for sum aggregation
+- Fixed async refresh for sum aggregation in live charts
 - Config option for axis intervals
+- Config option for station info items
 - Moon phase, sunrise/set, uptime is now updated asyncronously every archive_interval
+- Added rain summaries in station info
 
 New in v4.1:
 
