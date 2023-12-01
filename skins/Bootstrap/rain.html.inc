@@ -36,10 +36,10 @@ updateFunctions.push(
         setInnerHTML(document.getElementById("stationInfoWeekRain"), reportData.stationInfo.weekRain);
         setInnerHTML(document.getElementById("stationInfoMonthRain"), reportData.stationInfo.monthRain);
         setInnerHTML(document.getElementById("stationInfoYearRain"), reportData.stationInfo.yearRain);
-        setInnerHTML(document.getElementById("stationInfo24hrain"), reportData.stationInfo.24hRain);
-        setInnerHTML(document.getElementById("stationInfo72hrain"), reportData.stationInfo.72hRain);
-        setInnerHTML(document.getElementById("stationInfo30dayRain"), reportData.stationInfo.30dRain);
-        setInnerHTML(document.getElementById("stationInfo365DayRain"), reportData.stationInfo.365dRain);
+        setInnerHTML(document.getElementById("stationInfo24hrain"), reportData.stationInfo["24hRain"]);
+        setInnerHTML(document.getElementById("stationInfo72hrain"), reportData.stationInfo["72hRain"]);
+        setInnerHTML(document.getElementById("stationInfo30dayRain"), reportData.stationInfo["30dRain"]);
+        setInnerHTML(document.getElementById("stationInfo365DayRain"), reportData.stationInfo["365dRain"]);
     }
 );
 #end raw
