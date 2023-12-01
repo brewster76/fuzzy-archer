@@ -39,6 +39,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
              'skins/Bootstrap/reportData.json.tmpl',
+             'skins/Bootstrap/rain.html.inc',
              'skins/Bootstrap/stationInfo.json.inc',
              'skins/Bootstrap/skin.conf']),
            ('skins/Bootstrap/NOAA',
