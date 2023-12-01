@@ -21,7 +21,8 @@
     #end for
     <!-- Station info -->
     <div class="row mx-1">
-        #for $station_info_item in $StationInfo['station_info_items']
+        #set $station_info_items = $to_list($StationInfo.get('station_info_items', ['location', 'sunRiseSet', 'moonphase', 'rain', 'uptime']))
+        #for $station_info_item in $station_info_items
         #include $station_info_item + ".html.inc"
         #end for
     </div>

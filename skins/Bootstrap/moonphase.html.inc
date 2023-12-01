@@ -1,6 +1,6 @@
 <div class="row $global_station_info_classes">
     <div class="col-2">
-        <i class="bi-moon fs-3" title="$gettext('Moon Phase')"></i>
+        <i class="bi-moon fs-4" title="$gettext('Moon Phase')"></i>
     </div>
     <div class="col-4">
         <div><span id="stationInfoMoonPhase">$almanac.moon_phase</span> (<span id="stationInfoMoonFullness">$almanac.moon_fullness</span>%)</div>

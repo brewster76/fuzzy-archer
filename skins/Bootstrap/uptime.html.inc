@@ -1,6 +1,6 @@
 <div class="row $global_station_info_classes">
     <div class="col-2">
-        <i class="bi-clock-history fs-3" title="$gettext('Station Uptime')"></i>
+        <i class="bi-clock-history fs-4" title="$gettext('Station Uptime')"></i>
     </div>
     <div class="col-10">
         <div class="text-nowrap"><span id="stationInfoStationUptime">$station.uptime.long_form</span></div>
@@ -8,7 +8,7 @@
 </div>
 <div class="row $global_station_info_classes">
     <div class="col-2">
-        <i class="bi-clock-history fs-3" title="$gettext('Server Uptime')"></i>
+        <i class="bi-clock-history fs-4" title="$gettext('Server Uptime')"></i>
     </div>
     <div class="col-10">
         <div class="text-nowrap"><span id="stationInfoServerUptime">$station.os_uptime.long_form</span></div>

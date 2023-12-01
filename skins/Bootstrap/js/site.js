@@ -75,6 +75,9 @@ fetch(weewxDataUrl, {
                 let timestamp;
                 if (jPayload.dateTime !== undefined) {
                     timestamp = parseInt(jPayload.dateTime) * 1000;
+                    if(Date.now() - timestamp > archiveIntervalSeconds * 1000) {
+                        return;
+                    }
                 } else {
                     timestamp = Date.now();
                 }

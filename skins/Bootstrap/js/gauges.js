@@ -3,7 +3,7 @@ function loadGauges() {
     let gaugePanel = document.getElementById("gaugePanel");
     if(gaugePanel !== null && gaugePanel !== undefined && window.getComputedStyle(gaugePanel).display === 'none') {
         gaugePanel.remove();
-        document.getElementById("mainPanel").setAttribute("class", "col-12");
+        document.getElementById("mainPanel").setAttribute("class", "col-12 mt-1");
         return;
     }
     for (let gaugeId of Object.keys(weewxData.gauges)) {

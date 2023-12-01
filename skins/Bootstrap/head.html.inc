@@ -1,4 +1,4 @@
-#set global $global_main_panel_classes = 'col-md-6 col-lg-7 col-xl-8 col-xxl-9'
+#set global $global_main_panel_classes = 'col-md-6 col-lg-7 col-xl-8 col-xxl-9 mt-1'
 #set global $global_main_panel_id = 'mainPanel'
 #set global $global_main_container_classes = 'container-fluid'
 #set global $global_station_info_classes = 'd-flex align-items-center stationInfo my-1'
