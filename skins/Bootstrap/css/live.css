@@ -92,7 +92,7 @@ thead.table-light th {
   font-size: 12px;
 }
 
-.statsTime {
+.statsTime, .stationInfoRainHeader {
   color: #777;
   font-size: smaller;
 }
