@@ -38,6 +38,9 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/uptime.html.inc',
              'skins/Bootstrap/week.html.tmpl',
              'skins/Bootstrap/year.html.tmpl',
+             'skins/Bootstrap/reportData.json.tmpl',
+             'skins/Bootstrap/rain.html.inc',
+             'skins/Bootstrap/stationInfo.json.inc',
              'skins/Bootstrap/skin.conf']),
            ('skins/Bootstrap/NOAA',
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
@@ -55,12 +58,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'bin/user/sunevents.py']),
            ('skins/Bootstrap/css',
             ['skins/Bootstrap/css/bootstrap.min.css',
+             'skins/Bootstrap/css/bootstrap-icons.min.css',
              'skins/Bootstrap/css/live.css']),
+           ('skins/Bootstrap/css/fonts',
+            ['skins/Bootstrap/css/fonts/bootstrap-icons.woff',
+             'skins/Bootstrap/css/fonts/bootstrap-icons.woff2']),
            ('skins/Bootstrap/js',
             ['skins/Bootstrap/js/bootstrap.bundle.min.js',
             'skins/Bootstrap/js/charts.js',
             'skins/Bootstrap/js/echarts.min.js',
-             'skins/Bootstrap/js/jquery-3.6.3.min.js',
+             'skins/Bootstrap/js/jquery.min.js',
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/lang.js',
             'skins/Bootstrap/js/mqtt.min.js',
@@ -79,13 +86,15 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/no.conf',
              'skins/Bootstrap/lang/th.conf'])]
 
+        version="4.2"
         super(BootstrapInstaller, self).__init__(
-            version="4.1.1",
+            version=version,
             name='bootstrap',
             description='A skin based around the bootstrap framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={
+                'fuzzy_archer_version':version,
                 'StdReport': {
                     'Bootstrap': {
                         'skin':'Bootstrap',

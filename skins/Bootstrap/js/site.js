@@ -1,9 +1,11 @@
 const AVG = "avg";
 const SUM = "sum";
 const CHART = "Chart";
+const CHARTS = "charts";
 
 let weewxData;
 let weewxDataUrl = "weewxData.json";
+let stationInfoDataUrl = "reportData.json";
 let gauges = {};
 let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
@@ -15,7 +17,9 @@ let eChartsLocale;
 let maxAgeHoursMS;
 let intervalData = {};
 
-fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
+fetch(weewxDataUrl, {
+    cache: "no-store"
+}).then(function (u) {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
@@ -71,6 +75,9 @@ fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
                 let timestamp;
                 if (jPayload.dateTime !== undefined) {
                     timestamp = parseInt(jPayload.dateTime) * 1000;
+                    if(Date.now() - timestamp > archiveIntervalSeconds * 1000) {
+                        return;
+                    }
                 } else {
                     timestamp = Date.now();
                 }
@@ -88,7 +95,7 @@ fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
                     addValues(chart, jPayload, timestamp);
                 }
                 let lastUpdate = document.getElementById("lastUpdate");
-                lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+                lastUpdate.innerHTML = formatDateTime(date);
             });
         }
     }
@@ -143,55 +150,37 @@ function updateGaugeValue(newValue, gauge) {
     gauge.setOption(option);
 }
 
-function addAggregatedChartValues(chart, jPayload, timestamp) {
-    let option = chart.getOption();
-    let intervalSeconds = chart.weewxData.aggregate_interval_minutes * 60;
-    for (let dataset of option.series) {
-        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
-        if (!isNaN(value)) {
-            addAggregatedChartValue(dataset, value, timestamp, intervalSeconds);
-            chart.setOption(option);
-            if (chart.chartId !== undefined) {
-                let chartElem = document.getElementById(chart.chartId + "_timestamp");
-                chartElem.innerHTML = formatDateTime(timestamp);
-            }
-        }
-    }
-}
-
 function addValues(chart, jPayload, timestamp) {
     let option = chart.getOption();
     if (option === undefined || option === null) {
         return;
     }
     for (let dataset of option.series) {
-        let intervalSeconds = chart.weewxData.aggregate_interval_minutes === undefined ? undefined : chart.weewxData.aggregate_interval_minutes * 60; //to keep legacy functionality
-        if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
-            intervalSeconds = chart.weewxData[dataset.weewxColumn].aggregateInterval;
-        }
+        dataset.chartId = chart.chartId;
+        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
+        addValueAndUpdateChart(chart, option, dataset, value, timestamp);
+    }
+}
+
+function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
+    if (!isNaN(value)) {
         let aggregateType = SUM;
         if (chart.weewxData[dataset.weewxColumn].aggregateType !== undefined) {
             aggregateType = chart.weewxData[dataset.weewxColumn].aggregateType;
         }
+        if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
+            addAggregatedChartValue(dataset, value, timestamp, chart.weewxData[dataset.weewxColumn].aggregateInterval, aggregateType);
+            timestamp = Date.now(); // Axis timestamps for aggregated series are not fitting for updating "last updated" in chart
+        } else {
+            addValue(dataset, value, timestamp);
+        }
+        chart.setOption(option);
 
-        dataset.chartId = chart.chartId;
-        let value = convert(chart.weewxData[dataset.weewxColumn], getValue(jPayload, dataset.payloadKey));
-        if (!isNaN(value)) {
-            if (intervalSeconds !== undefined) {
-                addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType);
-            } else {
-                addValue(dataset, value, timestamp);
-            }
-            chart.setOption(option);
-
-            if (dataset.chartId !== undefined) {
-                let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-                chartElem.innerHTML = formatDateTime(timestamp);
-            }
+        if (dataset.chartId !== undefined) {
+            let chartElem = document.getElementById(dataset.chartId + "_timestamp");
+            chartElem.innerHTML = formatDateTime(timestamp);
         }
     }
-
-
 }
 
 function addValue(dataset, value, timestamp) {
@@ -264,6 +253,9 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, agg
 }
 
 function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
+    if (value === null || value === undefined) {
+        return;
+    }
     let duration = aggregateInterval * 1000;
     let intervalStart = getIntervalStart(timestamp, duration) + duration / 2;
     if (data.length > 0 && data[data.length - 1][0] === intervalStart) {
@@ -329,17 +321,26 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
 
 function formatDateTime(timestamp) {
     let date = new Date(timestamp);
-    return date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+    return date.toLocaleDateString(localeWithDash) + ", " + formatTime(timestamp);
+}
+
+function formatTime(timestamp) {
+    let date = new Date(timestamp);
+    return date.toLocaleTimeString(localeWithDash);
 }
 
 function checkAsyncReload() {
+    log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
-        fetch("ts.json", { cache: "no-store" }).then(function (u) {
+        fetch("ts.json", {
+            cache: "no-store"
+        }).then(function (u) {
             return u.json();
         }).then(function (serverData) {
             if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
                 lastGoodStamp = serverData.lastGoodStamp;
                 asyncReloadWeewxData();
+                asyncReloadReportData();
                 lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
@@ -349,22 +350,19 @@ function checkAsyncReload() {
 }
 
 function asyncReloadWeewxData() {
-    fetch(weewxDataUrl, { cache: "no-store" }).then(function (u) {
+    fetch(weewxDataUrl, {
+        cache: "no-store"
+    }).then(function (u) {
         return u.json();
     }).then(function (serverData) {
-        for (let chartItem of weewxData["charts"].live_chart_items) {
-            for (let seriesName of Object.keys(weewxData["charts"][chartItem])) {
-                if(serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
-                    let newestServerTimestamp = serverData[seriesName].slice(-1)[0][0];
-                    let newerItems = [];
+        let newerItems = [];
+        for (let chartItem of weewxData[CHARTS].live_chart_items) {
+            newerItems[chartItem] = [];
+            for (let seriesName of Object.keys(weewxData[CHARTS][chartItem])) {
+                if (serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
                     let seriesData = getSeriesData(chartItem, seriesName);
                     if (seriesData !== undefined) {
-                        let aItem = seriesData.pop();
-                        while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-                            newerItems.unshift(aItem);
-                            aItem = seriesData.pop();
-                        }
-                        serverData[seriesName].concat(newerItems);
+                        newerItems[chartItem][seriesName] = setNewerItems(seriesData, serverData[seriesName], weewxData[CHARTS][chartItem], seriesName);
                     }
                 }
             }
@@ -376,10 +374,75 @@ function asyncReloadWeewxData() {
         }
         let date = new Date(lastGoodStamp * 1000);
         let lastUpdate = document.getElementById("lastUpdate");
-        lastUpdate.innerHTML = date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash);
+        lastUpdate.innerHTML = formatDateTime(date);
+        appendNewerItems(newerItems);
     }).catch(err => {
         throw err
     });
+}
+
+function asyncReloadReportData() {
+    fetch(stationInfoDataUrl, {
+        cache: "no-store"
+    }).then(function (u) {
+        return u.json();
+    }).then(function (reportData) {
+        for(let aFunction of updateFunctions) {
+            aFunction(reportData);
+        }
+    }).catch(err => {
+        throw err
+    });
+}
+
+function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
+    let config = configs[seriesName];
+    let newerItems = [];
+    if (config.aggregateInterval === undefined) {
+        let newestServerTimestamp = serverSeriesData[serverSeriesData.length - 1][0];
+        let aItem = seriesData.pop();
+        while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+            newerItems.push(aItem);
+            aItem = seriesData.pop();
+        }
+    } else {
+        let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType);
+        let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
+        let aItem = seriesData.pop();
+
+        while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
+            if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
+                aggregatedServerSeriesData.pop();
+                aggregatedServerSeriesData.push(aItem);
+            }
+            if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+                newerItems.push(aItem);
+            }
+            aItem = seriesData.pop();
+        }
+        serverSeriesData = aggregatedServerSeriesData;
+    }
+    return newerItems;
+}
+
+function appendNewerItems(newerItems) {
+    for (let chartItem of Object.keys(newerItems)) {
+        let chartId = chartItem + CHART;
+        let chart = charts[chartId];
+        let option = chart.getOption();
+        for (let dataset of option.series) {
+            dataset.chartId = chartId;
+            let newData = newerItems[chartItem][dataset.weewxColumn];
+            if (newData.length > 0) {
+                for (let data of newData) {
+                    let value = data[1];
+                    let timestamp = data[0];
+                    log_debug(`updating ${dataset.weewxColumn} of ${chartId} value=${value}, timestamp=${timestamp}(${formatDateTime(timestamp)}).`);
+                    addValueAndUpdateChart(chart, option, dataset, value, timestamp);
+                }
+            }
+        }
+    }
 }
 
 function getValue(obj, path) {
@@ -403,4 +466,16 @@ function getSeriesData(chartItem, seriesName) {
         }
     }
     return undefined;
+}
+
+function log_debug(message) {
+    if (weewxData.config.debug_front_end !== undefined && "true" === weewxData.config.debug_front_end.toLowerCase()) {
+        console.log(message);
+    }
+}
+
+function setInnerHTML(element, value) {
+    if (element !== null && element !== undefined && value !== null && value !== undefined) {
+        element.innerHTML = value;
+    }
 }
