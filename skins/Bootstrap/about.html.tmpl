@@ -6,12 +6,12 @@
 <!-- Menu navbar -->
 #include "nav.html.inc"
 <!-- Main container -->
-<div class="container-fluid">
+<div class="$global_main_container_classes">
     <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
-        <!-- Graph panel -->
-        <div class="col-md-9 main">
+        <!-- Main panel -->
+        <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             <!-- About content goes here-->
             <h2>How it's done</h2>
             <p>This website summarizes weather data logged by a weather station using the polished and highly
@@ -88,7 +88,7 @@
             </pre>
 
             <h3>Custom pages:</h3>
-            <p>Let's say, you want to exchange this about page with your own. Create a template files <code>extra.html.tmpl</code>
+            <p>Let's say, you want to exchange this about page with your own. Create a template file <code>extra.html.tmpl</code>
              and tell CheetahGenerator to handle it. Then exchange <code>about</code> with <code>extra</code> in the <code>navigation_items</code>. 
              Then configure your new page in the <code>[[[[extra]]]]</code> stanza as below.</p>
             <pre>
@@ -101,6 +101,7 @@
             [[[[extra]]]]
                 text = About
                 href = extra.html
+                icon = bi-question-square # insert bootstrap icon here: bi-{icon} see <a href="https://icons.getbootstrap.com/">Bootstrap Icons</a>
             </pre>
         </div>
     </div>

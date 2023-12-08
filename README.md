@@ -5,12 +5,14 @@ Gauge and Chart graphics showing current conditions.
 English example             |  German example with combined line/bar chart and scatter chart
 :-------------------------:|:-------------------------:
 ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/d3d948ff-763e-42cd-a653-e40f3e6fdacb)  |  ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)
+![mobile_en](https://github.com/brewster76/fuzzy-archer/assets/58649043/2b445b5c-250b-47ff-b80d-53e9c73b52d8) | ![mobile_de](https://github.com/brewster76/fuzzy-archer/assets/58649043/60abda1b-27b0-43ad-bff2-56881455f8b9)
+
 
 See it in action with live data (10s. refresh interval):
 
 [Example page english](https://www.kainzbauer.net/weather/Rif/en)
 
-[Example Testseite Deutsch](https://www.kainzbauer.net/weather/Rif)
+[Example page Deutsch](https://www.kainzbauer.net/weather/Rif)
 
 Interactive charts showing conditions over a timespan
 
@@ -36,6 +38,20 @@ Available in multiple languages. Help wanted! We need help with translations for
 - thai
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
+
+New in v4.2:
+
+- Upgraded dependencies
+- Overhaul of the UI, optimizations for mobile devices, more compact on mobile devices
+- Navbar is fixed on top, faster and easier navigation especially on mobile devices
+- Introduced Bootstrap Icons (https://icons.getbootstrap.com/)
+- History: redundant specification of maxvalues for colors was removed, remove them from your custom configs (leaving them will still work, but is of no use)
+- Support for customizing report data JSON in front end
+- Fixed async refresh for sum aggregation in live charts
+- Config option for axis intervals
+- Config option for station info items
+- Moon phase, sunrise/set, rain summaries, uptime is now updated asyncronously every archive_interval
+- Added rain summaries in station info
 
 New in v4.1:
 

@@ -36,9 +36,9 @@ function loadCharts() {
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
 
-            let plotType = chart.weewxData.aggregate_interval_minutes !== undefined && category.plotType === undefined ? "bar" : category.plotType == undefined ? LINE : category.plotType;
-            let aggregateType = chart.weewxData.aggregate_interval_minutes !== undefined && category.aggregateType === undefined ? SUM : category.aggregateType;
-            let aggregateInterval = chart.weewxData.aggregate_interval_minutes !== undefined ? chart.weewxData.aggregate_interval_minutes * 60 : category.aggregateInterval;
+            let plotType = category.plotType == undefined ? LINE : category.plotType;
+            let aggregateType = category.aggregateType === undefined ? SUM : category.aggregateType;
+            let aggregateInterval = category.aggregateInterval;
 
             let dataReferences = undefined ? undefined : category.dataReferences;
             if (dataReferences !== undefined && !Array.isArray(dataReferences)) {
@@ -58,6 +58,8 @@ function loadCharts() {
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
+                minInterval: category.minInterval,
+                maxInterval: category.maxInterval,
                 showMaxMarkPoint: getBooleanOrDefault(category.showMaxMarkPoint, false),
                 showMinMarkPoint: getBooleanOrDefault(category.showMinMarkPoint, false),
                 showAvgMarkLine: getBooleanOrDefault(category.showAvgMarkLine, false),
@@ -92,8 +94,8 @@ function loadCharts() {
             if (serie.dataOption === undefined || serie.data === null) {
                 continue;
             }
-            let currenStart = serie.data[0][0] - chart.weewxData.aggregate_interval_minutes * 60000;
-            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregate_interval_minutes * 60000;
+            let currenStart = serie.data[0][0] - chart.weewxData.aggregateInterval;
+            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregateInterval;
             start = start === undefined || start >= currenStart ? currenStart : start;
             end = end === undefined || end <= currentEnd ? currentEnd : end;
         }
@@ -103,8 +105,8 @@ function loadCharts() {
         chartOption.animation = chart.weewxData.animation === undefined || !chart.weewxData.animation.toLowerCase() === "false";
         chartOption.textStyle = {
             fontSize: chart.weewxData.fontSize === undefined ? 10 : chart.weewxData.fontSize,
-        },
-            chart.setOption(chartOption);
+        };
+        chart.setOption(chartOption);
         chartElement.appendChild(getTimestampDiv(documentChartId, timestamp));
     }
 }
@@ -154,6 +156,8 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
         yAxisIndices[seriesConfig.yAxisIndex]["decimals"] = seriesConfig.decimals;
+        yAxisIndices[seriesConfig.yAxisIndex]["minInterval"] = seriesConfig.minInterval;
+        yAxisIndices[seriesConfig.yAxisIndex]["maxInterval"] = seriesConfig.maxInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
     }
 
@@ -161,16 +165,19 @@ function getChartOption(seriesConfigs) {
     for (let yAxisIndex of Object.keys(yAxisIndices)) {
         let obs_group = yAxisIndices[yAxisIndex]["obs_group"];
         let unit = yAxisIndices[yAxisIndex]["unit"];
+        let decimals = yAxisIndices[yAxisIndex]["decimals"];
+        let minInterval = yAxisIndices[yAxisIndex]["minInterval"];
+        let maxInterval = yAxisIndices[yAxisIndex]["maxInterval"];
         let yAxisItem = {
             name: Array.isArray(unit) && unit.length > 1 ? unit[1] : unit,
             type: "value",
-            minInterval: undefined,
+            minInterval: minInterval,
+            maxInterval: maxInterval,
             nameTextStyle: {
                 fontWeight: 'bold',
             },
             axisLabel: {
                 formatter: function (value, index) {
-                    let decimals = yAxisIndices[yAxisIndex]["decimals"];
                     let formattedValue = format(value, decimals);
                     if (value * Math.pow(10, decimals) % 1 != 0) {
                         formattedValue = "";
@@ -194,12 +201,6 @@ function getChartOption(seriesConfigs) {
             yAxisItem.min = 0;
             yAxisItem.max = 100;
         }
-        /*if (chart.weewxData.yAxis_minInterval !== undefined) {
-            yAxisItem.minInterval = Number(chart.weewxData.yAxis_minInterval);
-        }
-        if (chart.weewxData.yAxis_axisLabel_align !== undefined) {
-            yAxisItem.axisLabel.align = chart.weewxData.yAxis_axisLabel_align;
-        }*/
         if (obs_group === "group_direction") {
             yAxisItem.min = 0;
             yAxisItem.max = 360;
@@ -225,9 +226,6 @@ function getChartOption(seriesConfigs) {
             }
         },
         tooltip: getTooltip(seriesConfigs),
-        /*label: {
-            align: 'left'
-        },*/
         xAxis: {
             show: true,
             minInterval: getXMinInterval(),
@@ -311,15 +309,15 @@ function getTooltip(seriesConfigs) {
                     }
                     let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
                     let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
-                    let from = fromDate.toLocaleDateString(localeWithDash) + ", " + fromDate.toLocaleTimeString(localeWithDash);
-                    let to = toDate.toLocaleTimeString(localeWithDash);
+                    let from = formatDateTime(fromDate);
+                    let to = formatTime(toDate);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
                     let date = new Date(aggregateAxisValue);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
-                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + date.toLocaleDateString(localeWithDash) + ", " + date.toLocaleTimeString(localeWithDash) + '</td></tr>';
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date) + '</td></tr>';
                     }
                 }
 
@@ -371,7 +369,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
     let type = seriesConfig.plotType;
     if (seriesConfig.aggregateInterval !== undefined) {
-        seriesConfig.data = aggregate(seriesConfig)
+        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType)
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),
@@ -486,15 +484,15 @@ function getSeriesConfig(seriesConfig, series, colors) {
     series.push(serie);
 }
 
-function aggregate(seriesConfig) {
+function aggregate(data, aggregateInterval, aggregateType) {
     let aggregatedData = [];
-    for (let entry of seriesConfig.data) {
+    for (let entry of data) {
         //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
         if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, seriesConfig.aggregateInterval, aggregatedData);
+            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
         }
     }
-    if (seriesConfig.aggregateType === AVG && aggregatedData.length > 0) {
+    if (aggregateType === AVG && aggregatedData.length > 0) {
         for (let entry of aggregatedData) {
             if (entry[2] !== 0) {
                 entry[1] = entry[1] / entry[2];

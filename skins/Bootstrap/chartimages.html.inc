@@ -5,13 +5,12 @@
 <!-- Menu navbar -->
 #include "nav.html.inc"
 <!-- Main container -->
-<div class="container-fluid">
+<div class="$global_main_container_classes">
     <div class="row">
         <!-- Gauge panel -->
         #include "livegauges.html.inc"
-        <!-- Graph panel -->
-        <div class="col-md-9 main">
-            <p></p>
+        <!-- Main panel -->
+        <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             #include "graphMenu.html.inc"
             <div class="row" id="modalRow">
                     #for $imageName in $image_items
