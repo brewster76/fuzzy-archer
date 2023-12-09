@@ -18,7 +18,7 @@
                 #set $statsItem = $Stats[$obs_type]
                 #set $binding = 'wx_binding'
                 #if 'data_binding' in $statsItem.keys()
-                #set $binding = $statsItem.data_binding
+                    #set $binding = $statsItem.data_binding
                 #end if
                 <thead class="table-light">
                 <tr>
@@ -32,63 +32,66 @@
                 </thead>
                 <tbody class="table-group-divider">
                 #for $aggregate_type, $aggregate_type_item in $statsItem.items()
-                #if isinstance($aggregate_type_item, dict)
-                #set $aggregate_type_time = $aggregate_type + 'time'
-                #set $text = 'Translation missing'
-                #if 'label' in $aggregate_type_item.keys()
-                    #set $text = $aggregate_type_item.label
-                #elif $aggregate_type == 'max'
-                    #set $text = 'High'
-                #elif $aggregate_type == 'min'
-                    #set $text = 'Low'
-                #elif $aggregate_type == 'avg'
-                    #set $text = 'Average'
-                #elif $aggregate_type == 'sum'
-                    #set $text = 'Sum'
-                #elif $aggregate_type == 'maxmin'
-                    #set $text = 'Highest minimum'
-                #elif $aggregate_type == 'minmax'
-                    #set $text = 'Lowest maximum'
-                #end if
-                #set $since_ever = True
-                #if 'since_ever' in $aggregate_type_item and $aggregate_type_item.since_ever.lower == 'false'
-                #set $since_ever = False
-                #end if
-                #set $show_time = True
-                #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false' or $aggregate_type in ["sum"]
-                #set $show_time = False
-                #end if
-                #set $show_today = True
-                #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
-                #set $show_today = False
-                #end if
+                    #if isinstance($aggregate_type_item, dict)
+                        #set $aggregate_type_time = $aggregate_type + 'time'
+                        #set $text = 'Translation missing'
+                        #if 'label' in $aggregate_type_item.keys()
+                            #set $text = $aggregate_type_item.label
+                        #elif $aggregate_type == 'max'
+                            #set $text = 'High'
+                        #elif $aggregate_type == 'min'
+                            #set $text = 'Low'
+                        #elif $aggregate_type == 'avg'
+                            #set $text = 'Average'
+                        #elif $aggregate_type == 'sum'
+                            #set $text = 'Sum'
+                        #elif $aggregate_type == 'maxmin'
+                            #set $text = 'Highest minimum'
+                        #elif $aggregate_type == 'minmax'
+                            #set $text = 'Lowest maximum'
+                        #end if
+                        #set $since_ever = True
+                        #if 'since_ever' in $aggregate_type_item and $aggregate_type_item.since_ever.lower == 'false'
+                            #set $since_ever = False
+                        #end if
+                        #set $show_time = True
+                        #if 'show_time' in $aggregate_type_item and $aggregate_type_item.show_time.lower == 'false' or $aggregate_type in ["sum"]
+                            #set $show_time = False
+                        #end if
+                        #set $show_today = True
+                        #if 'show_today' in $aggregate_type_item and $aggregate_type_item.show_today.lower == 'false'
+                            #set $show_today = False
+                        #end if
 
-                #set $cols = [[$day($data_binding=$binding), $show_today, "%X"], [$week($data_binding=$binding), True, "%x"], [$month($data_binding=$binding), True, "%x"], [$year($data_binding=$binding), True, "%x"], [$alltime($data_binding=$binding), $since_ever, "%x"]]
-                <tr>
-                    <th>$gettext($text)</th>
-                    #for $col in $cols
-                    <td>
-                        #if $col[1]
-                        $getattr($getattr($col[0], $obs_type), $aggregate_type)
-                        #if $show_time
-                        <br><span class="statsTime">
-                        #if $aggregate_type in ["maxsum", "minsum"]
-                        #set $format = $col[2]
-                        #set $dailysumContext = "dailysum" + $col[0].context
-                        #if $dailysumContext in $Units.TimeFormats
-                        #set $format = $Units.TimeFormats[$dailysumContext]
-                        #end if
-                        $getattr($getattr($col[0], $obs_type), $aggregate_type_time).format($format)
-                        #else
-                        $getattr($getattr($col[0], $obs_type), $aggregate_type_time)
-                        #end if
-                        #end if
-                        </span>
-                        #end if
-                    </td>
-                    #end for
-                </tr>
-                #end if
+                        #set $cols = [[$day($data_binding=$binding), $show_today, "%X"], [$week($data_binding=$binding), True, "%x"], [$month($data_binding=$binding), True, "%x"], [$year($data_binding=$binding), True, "%x"], [$alltime($data_binding=$binding), $since_ever, "%x"]]
+                        <tr>
+                            <th>$gettext($text)</th>
+                            #for $col in $cols
+                                <td>
+                                    #if $col[1]
+                                        $getattr($getattr($col[0], $obs_type), $aggregate_type)
+                                        #if $show_time
+                                            <br><span class="statsTime">
+                                            #if $aggregate_type in ['max', 'min', 'maxmin', 'minmax', 'maxsum', 'minsum', 'minavg', 'maxavg']
+                                                #set $format = $col[2]
+                                                #set $dailyContext = "daily_aggr_" + $col[0].context
+                                                #if $aggregate_type in ['max', 'min', 'maxmin', 'minmax']
+                                                    #set $dailyContext = "daily_ext_" + $col[0].context
+                                                #end if
+                                                #if $dailyContext in $Units.TimeFormats
+                                                    #set $format = $Units.TimeFormats[$dailyContext]
+                                                #end if
+                                                $getattr($getattr($col[0], $obs_type), $aggregate_type_time).format($format)
+                                            #else
+                                                $getattr($getattr($col[0], $obs_type), $aggregate_type_time)
+                                            #end if
+                                        #end if
+                                        </span>
+                                    #end if
+                                </td>
+                            #end for
+                        </tr>
+                    #end if
                 #end for
                 </tbody>
             #end for
