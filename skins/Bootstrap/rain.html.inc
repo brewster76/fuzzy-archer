@@ -22,7 +22,7 @@
     </div>
     <div class="col-3">
         <div class="text-nowrap fw-bold stationInfoRainHeader">$gettext('This year')</div>
-        <div class="text-nowrap"><span id="stationInfoMonthRain">$year.rain.sum</span></div>
+        <div class="text-nowrap"><span id="stationInfoYearRain">$year.rain.sum</span></div>
         <div class="text-nowrap fw-bold stationInfoRainHeader mt-2">$span(day_delta=365).length.day.format("%d")</div>
         <div class="text-nowrap"><span id="stationInfo365DayRain">$span(day_delta=365).rain.sum</span></div>
     </div>
