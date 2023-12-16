@@ -98,12 +98,15 @@ function loadGauges() {
 function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineColor, unit, weewxData) {
     name = decodeHtml(name);
     let decimals = Number(weewxData.decimals);
-    let value;
+    let value = null;
     let data = weewxData.dataset.data;
     if (data === undefined || data.length < 1) {
         value = 0;
     } else {
-        value = data.slice(-1)[0][1];
+        let index = 1;
+        while(value === null && index <= data.length) {
+            value = data.slice(index++ * -1)[0][1];
+        }
     }
     let option = {
         animation: weewxData.animation === undefined || !weewxData.animation.toLowerCase() === "false",
