@@ -75,7 +75,7 @@ fetch(weewxDataUrl, {
                 let timestamp;
                 if (jPayload.dateTime !== undefined) {
                     timestamp = parseInt(jPayload.dateTime) * 1000;
-                    if(Date.now() - timestamp > archiveIntervalSeconds * 1000) {
+                    if (Date.now() - timestamp > archiveIntervalSeconds * 1000) {
                         return;
                     }
                 } else {
@@ -387,7 +387,7 @@ function asyncReloadReportData() {
     }).then(function (u) {
         return u.json();
     }).then(function (reportData) {
-        for(let aFunction of updateFunctions) {
+        for (let aFunction of updateFunctions) {
             aFunction(reportData);
         }
     }).catch(err => {
@@ -407,20 +407,22 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
         }
     } else {
         let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType);
-        let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
-        let aItem = seriesData.pop();
+        if (aggregatedServerSeriesData.length > 0) {
+            let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
+            let aItem = seriesData.pop();
 
-        while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
-            if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
-                aggregatedServerSeriesData.pop();
-                aggregatedServerSeriesData.push(aItem);
+            while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
+                if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
+                    aggregatedServerSeriesData.pop();
+                    aggregatedServerSeriesData.push(aItem);
+                }
+                if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
+                    newerItems.push(aItem);
+                }
+                aItem = seriesData.pop();
             }
-            if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-                newerItems.push(aItem);
-            }
-            aItem = seriesData.pop();
+            serverSeriesData = aggregatedServerSeriesData;
         }
-        serverSeriesData = aggregatedServerSeriesData;
     }
     return newerItems;
 }
