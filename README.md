@@ -26,7 +26,6 @@ Historic data in color coded html tables.
 
 Available in multiple languages. Help wanted! We need help with translations for:
 
-- traditional chinese
 - czech
 - spanish
 - finnish (there isn't even a language file stub yet)
