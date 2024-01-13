@@ -369,7 +369,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
     let type = seriesConfig.plotType;
     if (seriesConfig.aggregateInterval !== undefined) {
-        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType)
+        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType);
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),
@@ -482,24 +482,6 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
 
     series.push(serie);
-}
-
-function aggregate(data, aggregateInterval, aggregateType) {
-    let aggregatedData = [];
-    for (let entry of data) {
-        //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
-        if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
-        }
-    }
-    if (aggregateType === AVG && aggregatedData.length > 0) {
-        for (let entry of aggregatedData) {
-            if (entry[2] !== 0) {
-                entry[1] = entry[1] / entry[2];
-            }
-        }
-    }
-    return aggregatedData;
 }
 
 function getXMinInterval() {

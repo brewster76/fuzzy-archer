@@ -26,7 +26,7 @@ function loadGauges() {
         gauge.weewxData.dataset = {
             weewxColumn: gaugeId
         };
-        gauge.weewxData.dataset.data = JSON.parse(JSON.stringify(weewxData[gaugeId]));
+        gauge.weewxData.dataset.data = aggregate(JSON.parse(JSON.stringify(weewxData[gaugeId])), gauge.weewxData.aggregateInterval, gauge.weewxData.aggregateType);
         gauges[documentGaugeId] = gauge;
         let colors = [];
         let gaugePitchPrecision = gauge.weewxData["gauge_pitch_precision"] === undefined ? 1 : gauge.weewxData["gauge_pitch_precision"];
@@ -225,6 +225,9 @@ $(window).on('resize', function () {
 });
 
 function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
+    if(data === undefined || data === null ){
+        return "#ffffff00";
+    }
     let ticksNumber = splitNumber * axisTickSplitNumber;
     let range = max - min;
     let ticksRange = (range / ticksNumber);
