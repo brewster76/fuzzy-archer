@@ -74,8 +74,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',
-            ['skins/Bootstrap/lang/cn.conf',
-             'skins/Bootstrap/lang/cz.conf',
+            ['skins/Bootstrap/lang/cz.conf',
              'skins/Bootstrap/lang/de.conf',
              'skins/Bootstrap/lang/en.conf',
              'skins/Bootstrap/lang/es.conf',
@@ -84,7 +83,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/it.conf',
              'skins/Bootstrap/lang/nl.conf',
              'skins/Bootstrap/lang/no.conf',
-             'skins/Bootstrap/lang/th.conf'])]
+             'skins/Bootstrap/lang/th.conf',
+             'skins/Bootstrap/lang/zh.conf'])]
 
         version="4.2"
         super(BootstrapInstaller, self).__init__(
