@@ -483,20 +483,22 @@ function setInnerHTML(element, value) {
 }
 
 function aggregate(data, aggregateInterval, aggregateType) {
-    if(aggregateInterval === undefined || aggregateType === undefined) {
+    if (aggregateInterval === undefined || aggregateType === undefined) {
         return data;
     }
     let aggregatedData = [];
-    for (let entry of data) {
-        //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
-        if (entry[1] !== undefined) {
-            setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
+    if (data !== null && data !== undefined) {
+        for (let entry of data) {
+            //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
+            if (entry[1] !== undefined) {
+                setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
+            }
         }
-    }
-    if (aggregateType === AVG && aggregatedData.length > 0) {
-        for (let entry of aggregatedData) {
-            if (entry[2] !== 0) {
-                entry[1] = entry[1] / entry[2];
+        if (aggregateType === AVG && aggregatedData.length > 0) {
+            for (let entry of aggregatedData) {
+                if (entry[2] !== 0) {
+                    entry[1] = entry[1] / entry[2];
+                }
             }
         }
     }
