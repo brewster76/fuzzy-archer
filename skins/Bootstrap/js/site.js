@@ -431,6 +431,9 @@ function appendNewerItems(newerItems) {
     for (let chartItem of Object.keys(newerItems)) {
         let chartId = chartItem + CHART;
         let chart = charts[chartId];
+        if(chart === undefined) {
+            return;
+        }
         let option = chart.getOption();
         for (let dataset of option.series) {
             dataset.chartId = chartId;
@@ -462,9 +465,11 @@ function getValue(obj, path) {
 }
 
 function getSeriesData(chartItem, seriesName) {
-    for (let series of charts[chartItem + CHART].getOption().series) {
-        if (series.weewxColumn !== undefined && series.weewxColumn === seriesName) {
-            return series.data;
+    if(charts[chartItem + CHART] !== undefined) {
+        for (let series of charts[chartItem + CHART].getOption().series) {
+            if (series.weewxColumn !== undefined && series.weewxColumn === seriesName) {
+                return series.data;
+            }
         }
     }
     return undefined;

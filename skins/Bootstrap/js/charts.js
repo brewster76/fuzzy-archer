@@ -171,6 +171,7 @@ function getChartOption(seriesConfigs) {
         let yAxisItem = {
             name: Array.isArray(unit) && unit.length > 1 ? unit[1] : unit,
             type: "value",
+            alignTicks: true,
             minInterval: minInterval,
             maxInterval: maxInterval,
             nameTextStyle: {
