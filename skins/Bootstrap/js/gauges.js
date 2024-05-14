@@ -35,11 +35,8 @@ function loadGauges() {
         let splitnumber = gauge.weewxData.splitnumber;
         let gaugeName = gauge.weewxData.gaugeName === undefined ? weewxData.labels.Generic[gaugeId] : gauge.weewxData.gaugeName;
         let axisTickSplitNumber = 5;
-        if (gauge.weewxData.heatMapEnabled !== undefined && gauge.weewxData.heatMapEnabled.toLowerCase() === "false") {
-            gauge.weewxData.heatMapEnabled = false;
-        } else {
-            gauge.weewxData.heatMapEnabled = true;
-        }
+        gauge.weewxData.heatMapEnabled = parseBoolean(gauge.weewxData.heatMapEnabled);
+        gauge.weewxData.stuckNeedleEnabled = parseBoolean(gauge.weewxData.stuckNeedleEnabled);
         if (gauge.weewxData.obs_group === "group_direction") {
             minvalue = 0;
             maxvalue = 360;
@@ -95,17 +92,29 @@ function loadGauges() {
         gauge.setOption(gaugeOption);
     }
 }
+
+function parseBoolean(value) {
+    if (value !== undefined && value.toLowerCase() === "false") {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineColor, unit, weewxData) {
     name = decodeHtml(name);
     let decimals = Number(weewxData.decimals);
     let value = null;
     let data = weewxData.dataset.data;
     if (data === undefined || data.length < 1) {
-        value = 0;
+        value = null;
     } else {
         let index = 1;
-        while(value === null && index <= data.length) {
+        while (value === null && index <= data.length) {
             value = data.slice(index++ * -1)[0][1];
+            if (!weewxData.stuckNeedleEnabled) {
+                break;
+            }
         }
     }
     let option = {
@@ -126,6 +135,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                 }
             },
             pointer: {
+                show: !isNaN(parseFloat(value)),
                 width: 5,
                 itemStyle: {
                     color: '#428bca',
@@ -164,10 +174,14 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
                 fontSize: weewxData.detailFontSize === undefined ? 12 : weewxData.detailFontSize,
                 color: '#777',
                 formatter: function (value) {
-                    if (decimals !== undefined && decimals >= 0) {
-                        value = format(value, decimals);
+                    if (isNaN(value)) {
+                        return undefined;
+                    } else {
+                        if (decimals !== undefined && decimals >= 0) {
+                            value = format(value, decimals);
+                        }
+                        return value + getUnitString(value, unit);
                     }
-                    return value + getUnitString(value, unit);
                 },
                 offsetCenter: ['0', '70%']
             },
