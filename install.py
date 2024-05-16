@@ -8,7 +8,6 @@ import os.path
 import configobj
 
 import setup
-import distutils
 
 def loader():
     return BootstrapInstaller()
