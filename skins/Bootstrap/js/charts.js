@@ -370,7 +370,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
     let type = seriesConfig.plotType;
     if (seriesConfig.aggregateInterval !== undefined) {
-        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType);
+        seriesConfig.data = aggregate(seriesConfig.data, seriesConfig.aggregateInterval, seriesConfig.aggregateType, seriesConfig.decimals);
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),

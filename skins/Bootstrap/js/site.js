@@ -169,7 +169,7 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
             aggregateType = chart.weewxData[dataset.weewxColumn].aggregateType;
         }
         if (chart.weewxData[dataset.weewxColumn].aggregateInterval !== undefined) {
-            addAggregatedChartValue(dataset, value, timestamp, chart.weewxData[dataset.weewxColumn].aggregateInterval, aggregateType);
+            addAggregatedChartValue(dataset, value, timestamp, chart.weewxData[dataset.weewxColumn].aggregateInterval, aggregateType, chart.weewxData[dataset.weewxColumn].decimals);
             timestamp = Date.now(); // Axis timestamps for aggregated series are not fitting for updating "last updated" in chart
         } else {
             addValue(dataset, value, timestamp);
@@ -252,7 +252,7 @@ function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, agg
     rotateData(dataset.data);
 }
 
-function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType) {
+function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggregateType, decimals) {
     if (value === null || value === undefined) {
         return;
     }
@@ -266,7 +266,7 @@ function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggr
         } else {
             aggregatedValue = Number.parseFloat(data[data.length - 1][1]) + value;
         }
-        data[data.length - 1][1] = aggregatedValue;
+        data[data.length - 1][1] = round(aggregatedValue, decimals);
         data[data.length - 1][2]++;
     } else {
         data.push([intervalStart, value, 1]);
@@ -487,7 +487,7 @@ function setInnerHTML(element, value) {
     }
 }
 
-function aggregate(data, aggregateInterval, aggregateType) {
+function aggregate(data, aggregateInterval, aggregateType, decimals) {
     if (aggregateInterval === undefined || aggregateType === undefined) {
         return data;
     }
@@ -496,7 +496,7 @@ function aggregate(data, aggregateInterval, aggregateType) {
         for (let entry of data) {
             //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
             if (entry[1] !== undefined) {
-                setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
+                setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData, aggregateType, decimals);
             }
         }
         if (aggregateType === AVG && aggregatedData.length > 0) {
