@@ -351,7 +351,8 @@ function getTooltip(seriesConfigs) {
                 }
 
                 if (dataValue !== undefined && dataValue !== null) {
-                    formattedValue = format(dataValue, seriesItem.decimals) + getUnitString(dataValue, unitString);
+                    let formattedDataValue = format(dataValue, seriesItem.decimals);
+                    formattedValue = formattedDataValue + getUnitString(formattedDataValue, unitString);
                 }
                 tooltipHTML += ('<tr style="font-size: small;"><td>' + marker.replace(BG_REGEX, "background-color:" + seriesItem.lineColor + ";") + seriesItem.name + '</td><td style="text-align: right; padding-left: 10px; font-weight: bold;">' + formattedValue + '</td></tr>');
 
