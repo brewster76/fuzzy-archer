@@ -26,7 +26,7 @@ function loadGauges() {
         gauge.weewxData.dataset = {
             weewxColumn: gaugeId
         };
-        gauge.weewxData.dataset.data = aggregate(JSON.parse(JSON.stringify(weewxData[gaugeId])), gauge.weewxData.aggregateInterval, gauge.weewxData.aggregateType);
+        gauge.weewxData.dataset.data = aggregate(JSON.parse(JSON.stringify(weewxData[gaugeId])), gauge.weewxData.aggregateInterval, gauge.weewxData.aggregateType, gauge.weewxData.decimals);
         gauges[documentGaugeId] = gauge;
         let colors = [];
         let gaugePitchPrecision = gauge.weewxData["gauge_pitch_precision"] === undefined ? 1 : gauge.weewxData["gauge_pitch_precision"];
