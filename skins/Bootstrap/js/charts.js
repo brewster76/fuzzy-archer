@@ -401,7 +401,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
                 for (let referencedData of weewxData[dataReference]) {
                     if (referencedData[0] === entry[0]) {
                         entry.push(referencedData[1]);
-                        if (referencedData[1] === 0) {
+                        if (referencedData[1] === 0 || referencedData[1] === null) {
                             entry[1] = null;
                         }
                     }
