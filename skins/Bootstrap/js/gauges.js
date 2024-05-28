@@ -263,9 +263,9 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
     return color;
 }
 
-function getDecimalSeparator(locale) {
+function getDecimalSeparator() {
     let n = 1.1;
-    n = n.toLocaleString(locale).substring(1, 2);
+    n = n.toLocaleString(jsLocale).substring(1, 2);
     return n;
 }
 
@@ -275,9 +275,8 @@ function format(number, digits) {
         return number;
     }
     number = Number(number);
-    let localeInfo = locale.replace("_", "-");
-    let numString = parseFloat(number.toFixed(digits)).toLocaleString(localeInfo);
-    let decimalSeparator = getDecimalSeparator(localeInfo);
+    let numString = parseFloat(number.toFixed(digits)).toLocaleString(jsLocale);
+    let decimalSeparator = getDecimalSeparator();
     if (digits > 0 && !numString.includes(decimalSeparator)) {
         numString += decimalSeparator;
         for (let i = 0; i < digits; i++) {
