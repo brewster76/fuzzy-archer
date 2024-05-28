@@ -21,6 +21,7 @@
     #end for
     <script type="text/javascript">
     let locale = "$locale";
+    let jsLocale = locale.replace("_", "-").split(".")[0];
     function decodeHtml(html) {
         var txt = document.createElement("textarea");
         txt.innerHTML = html;
