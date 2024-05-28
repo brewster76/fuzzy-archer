@@ -11,7 +11,6 @@ let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
 let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
 let archiveIntervalSeconds;
-let localeWithDash;
 let lang;
 let eChartsLocale;
 let maxAgeHoursMS;
@@ -24,7 +23,6 @@ fetch(weewxDataUrl, {
 }).then(function (serverData) {
     weewxData = serverData;
     archiveIntervalSeconds = weewxData.config.archive_interval;
-    localeWithDash = locale.replace("_", "-");
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
@@ -321,12 +319,12 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
 
 function formatDateTime(timestamp) {
     let date = new Date(timestamp);
-    return date.toLocaleDateString(localeWithDash) + ", " + formatTime(timestamp);
+    return date.toLocaleDateString(jsLocale) + ", " + formatTime(timestamp);
 }
 
 function formatTime(timestamp) {
     let date = new Date(timestamp);
-    return date.toLocaleTimeString(localeWithDash);
+    return date.toLocaleTimeString(jsLocale);
 }
 
 function checkAsyncReload() {
