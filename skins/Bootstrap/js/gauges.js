@@ -35,8 +35,8 @@ function loadGauges() {
         let splitnumber = gauge.weewxData.splitnumber;
         let gaugeName = gauge.weewxData.gaugeName === undefined ? weewxData.labels.Generic[gaugeId] : gauge.weewxData.gaugeName;
         let axisTickSplitNumber = 5;
-        gauge.weewxData.heatMapEnabled = parseBoolean(gauge.weewxData.heatMapEnabled);
-        gauge.weewxData.stuckNeedleEnabled = parseBoolean(gauge.weewxData.stuckNeedleEnabled);
+        gauge.weewxData.heatMapEnabled = parseBooleanDefaultTrue(gauge.weewxData.heatMapEnabled);
+        gauge.weewxData.stuckNeedleEnabled = parseBooleanDefaultTrue(gauge.weewxData.stuckNeedleEnabled);
         if (gauge.weewxData.obs_group === "group_direction") {
             minvalue = 0;
             maxvalue = 360;
@@ -93,12 +93,19 @@ function loadGauges() {
     }
 }
 
-function parseBoolean(value) {
+function parseBooleanDefaultTrue(value) {
+    return parseBoolean(value, true);
+}
+
+function parseBooleanDefaultFalse(value) {
+    return parseBoolean(value, false);
+}
+
+function parseBoolean(value, defaultValue) {
     if (value !== undefined && value.toLowerCase() === "false") {
         return false;
-    } else {
-        return true;
     }
+    return defaultValue;
 }
 
 function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineColor, unit, weewxData) {
