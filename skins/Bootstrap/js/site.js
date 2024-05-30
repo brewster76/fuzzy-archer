@@ -124,6 +124,7 @@ function setGaugeValue(gauge, value, timestamp) {
 
 function updateGaugeValue(newValue, gauge) {
     let option = gauge.getOption();
+    option.series[0].pointer.show = true;
     let currentValue = option.series[0].data[0].value;
     if (gauge.isCircular !== undefined && gauge.isCircular && Math.abs(newValue - currentValue) > 180) {
         let currentAnimationEasingUpdate = option.series[0].animationEasingUpdate;
