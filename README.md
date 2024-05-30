@@ -38,6 +38,19 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
+New in v4.3:
+
+- WeeWX 5.1 and above supports configuration of an individual locale for each report
+- Fixed issues
+  - https://github.com/brewster76/fuzzy-archer/issues/137
+  - https://github.com/brewster76/fuzzy-archer/issues/140
+  - https://github.com/brewster76/fuzzy-archer/issues/141
+  - https://github.com/brewster76/fuzzy-archer/issues/144
+  - https://github.com/brewster76/fuzzy-archer/issues/137
+- New norwegian translation (thx to @[Aslak Vaa](https://github.com/aslak47))
+- Added feature to configure gauge needle behaviour with null or missing data (thx to @[claudobahn](https://github.com/claudobahn))
+- Other smaller fixes
+
 New in v4.2:
 
 - Upgraded dependencies
