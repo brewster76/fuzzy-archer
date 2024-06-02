@@ -498,6 +498,14 @@ function aggregate(data, aggregateInterval, aggregateType) {
                 setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData);
             }
         }
+        
+        if (aggregateType === AVG && aggregatedData.length > 0) {
+            for (let entry of aggregatedData) {
+                if (entry[2] !== 0) {
+                    entry[1] = entry[1] / entry[2];
+                }
+            }
+        }
     }
     return aggregatedData;
 }
