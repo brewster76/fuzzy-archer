@@ -389,6 +389,11 @@ function getSeriesConfig(seriesConfig, series, colors) {
         yAxisIndex: seriesConfig.yAxisIndex,
     };
 
+    
+    if (seriesConfig.symbolSize !== undefined) {
+        serie.symbolSize = new Function("return " + seriesConfig.symbolSize)();
+    }
+
     if (seriesConfig.plotType === SCATTER) {
         let groups = [weewxData.units.Groups[seriesConfig.obs_group]];
         let decimals = [seriesConfig.decimals];
@@ -407,12 +412,6 @@ function getSeriesConfig(seriesConfig, series, colors) {
                     }
                 }
             }
-            seriesConfig.symbolSize = function (data) {
-                return 5 + 3 * Math.sqrt(data[2]);
-            };
-        }
-        if (seriesConfig.symbolSize !== undefined) {
-            serie.symbolSize = seriesConfig.symbolSize;
         }
         serie.emphasis = {
             focus: 'series',
