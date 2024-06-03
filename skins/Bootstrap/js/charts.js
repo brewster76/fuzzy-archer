@@ -407,11 +407,13 @@ function getSeriesConfig(seriesConfig, series, colors) {
                     }
                 }
             }
+            seriesConfig.symbolSize = function (data) {
+                return 5 + 3 * Math.sqrt(data[2]);
+            };
         }
-
-        serie.symbolSize = function (data) {
-            return 5 * Math.sqrt(data[2] / Math.PI);
-        };
+        if (seriesConfig.symbolSize !== undefined) {
+            serie.symbolSize = seriesConfig.symbolSize;
+        }
         serie.emphasis = {
             focus: 'series',
             label: {
