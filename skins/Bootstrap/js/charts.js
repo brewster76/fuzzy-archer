@@ -382,6 +382,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
         barWidth: '100%', //only applies to barchart
         barGap: '-100%', //only applies to barchart
         symbol: seriesConfig.symbol === undefined ? 'none' : seriesConfig.symbol,
+        symbolKeepAspect: true,
         lineStyle: {
             width: seriesConfig.lineStyle === undefined || seriesConfig.lineStyle.width === undefined ? 1 : seriesConfig.lineStyle.width,
         },
