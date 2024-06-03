@@ -40,6 +40,7 @@ Read the upgrading guides in the wiki, if you already have an older version inst
 
 New in v4.3:
 
+- Upgraded dependencies
 - WeeWX 5.1 and above supports configuration of an individual locale for each report
 - Fixed issues
   - https://github.com/brewster76/fuzzy-archer/issues/137
@@ -49,6 +50,8 @@ New in v4.3:
   - https://github.com/brewster76/fuzzy-archer/issues/137
 - New norwegian translation (thx to @[Aslak Vaa](https://github.com/aslak47))
 - Added feature to configure gauge needle behaviour with null or missing data (thx to @[claudobahn](https://github.com/claudobahn))
+- New default symbol for shipped lightning chart.
+- symbolSize is configurable, even with a JS function (see shipped lightning chart configs)
 - Other smaller fixes
 
 New in v4.2:
