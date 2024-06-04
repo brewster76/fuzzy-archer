@@ -54,6 +54,8 @@ New in v4.3:
 - symbolSize is configurable, even with a JS function (see shipped lightning chart configs)
 - Other smaller fixes
 
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.2...4.3
+
 New in v4.2:
 
 - Upgraded dependencies
