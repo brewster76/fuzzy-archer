@@ -265,7 +265,7 @@ function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggr
         } else {
             aggregatedValue = Number.parseFloat(data[data.length - 1][1]) + value;
         }
-        data[data.length - 1][1] = round(aggregatedValue, decimals);
+        data[data.length - 1][1] = round(aggregatedValue, decimals + 1);
         data[data.length - 1][2]++;
     } else {
         data.push([intervalStart, value, 1]);
