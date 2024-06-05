@@ -46,6 +46,7 @@ New in v4.3:
   - https://github.com/brewster76/fuzzy-archer/issues/137
   - https://github.com/brewster76/fuzzy-archer/issues/140
   - https://github.com/brewster76/fuzzy-archer/issues/141
+  - https://github.com/brewster76/fuzzy-archer/issues/143
   - https://github.com/brewster76/fuzzy-archer/issues/144
   - https://github.com/brewster76/fuzzy-archer/issues/137
 - New norwegian translation (thx to @[Aslak Vaa](https://github.com/aslak47))
