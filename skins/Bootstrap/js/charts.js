@@ -134,7 +134,14 @@ function getDayNightSeries(chartOption, chartId, start, end) {
         data[data.length - 1][0] = end;
     }
 
-    chartOption.series[0].markArea = getDayNightMarkArea();
+    let dayNightSerie = {
+        "name": "dayNight",
+        "type": "line",
+        "data": data,
+        "markArea": getDayNightMarkArea(),
+    }
+
+    chartOption.series.push(dayNightSerie);
 
     return {
         name: DAY_NIGHT_KEY + chartId,
@@ -147,10 +154,12 @@ function getChartOption(seriesConfigs) {
     let series = [];
     let colors = [];
     let yAxisIndices = [];
+    let legendData = [];
     for (let seriesConfig of seriesConfigs) {
         if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
         }
+        legendData.push(seriesConfig.name);
         getSeriesConfig(seriesConfig, series, colors);
         yAxisIndices[seriesConfig.yAxisIndex] = Array();
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
@@ -213,7 +222,8 @@ function getChartOption(seriesConfigs) {
 
     return {
         legend: {
-            type: "plain"
+            type: "plain",
+            data: legendData
         },
         color: colors,
         backgroundColor: backGroundColor,
@@ -390,7 +400,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
         yAxisIndex: seriesConfig.yAxisIndex,
     };
 
-    
+
     if (seriesConfig.symbolSize !== undefined) {
         serie.symbolSize = new Function("return " + seriesConfig.symbolSize)();
     }
