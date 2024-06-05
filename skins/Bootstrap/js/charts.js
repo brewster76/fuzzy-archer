@@ -159,7 +159,6 @@ function getChartOption(seriesConfigs) {
         if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
         }
-        legendData.push(seriesConfig.name);
         getSeriesConfig(seriesConfig, series, colors);
         yAxisIndices[seriesConfig.yAxisIndex] = Array();
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
@@ -168,6 +167,10 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["minInterval"] = seriesConfig.minInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["maxInterval"] = seriesConfig.maxInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
+    }
+
+    for(let serie of series) {        
+        legendData.push(serie.name);
     }
 
     let yAxis = [];
