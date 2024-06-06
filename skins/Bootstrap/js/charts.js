@@ -428,7 +428,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
             }
         }
         serie.emphasis = {
-            focus: 'series',
+            focus: 'none',
             label: {
                 show: true,
                 formatter: function (param) {
