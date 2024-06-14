@@ -22,7 +22,7 @@ fetch(weewxDataUrl, {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
-    archiveIntervalSeconds = weewxData.config.archive_interval;
+    archiveIntervalSeconds = Number(weewxData.config.archive_interval);
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
@@ -430,7 +430,7 @@ function appendNewerItems(newerItems) {
     for (let chartItem of Object.keys(newerItems)) {
         let chartId = chartItem + CHART;
         let chart = charts[chartId];
-        if(chart === undefined) {
+        if (chart === undefined) {
             return;
         }
         let option = chart.getOption();
@@ -464,7 +464,7 @@ function getValue(obj, path) {
 }
 
 function getSeriesData(chartItem, seriesName) {
-    if(charts[chartItem + CHART] !== undefined) {
+    if (charts[chartItem + CHART] !== undefined) {
         for (let series of charts[chartItem + CHART].getOption().series) {
             if (series.weewxColumn !== undefined && series.weewxColumn === seriesName) {
                 return series.data;

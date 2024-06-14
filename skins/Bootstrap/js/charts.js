@@ -1,5 +1,6 @@
 const BG_REGEX = /background-color:.*;/;
-const DAY_NIGHT_KEY = "dayNight_";
+const DAY_NIGHT = "dayNight";
+const DAY_NIGHT_KEY = DAY_NIGHT + "_";
 const BAR = "bar";
 const LINE = "line";
 const SCATTER = "scatter";
@@ -91,11 +92,11 @@ function loadCharts() {
         chartOption = getChartOption(chartSeriesConfigs);
 
         for (let serie of chartOption.series) {
-            if (serie.dataOption === undefined || serie.data === null) {
+            if (serie.data === undefined || serie.data === null) {
                 continue;
             }
-            let currenStart = serie.data[0][0] - chart.weewxData.aggregateInterval;
-            let currentEnd = serie.data[serie.data.length - 1][0] + chart.weewxData.aggregateInterval;
+            let currenStart = serie.data[0][0] - archiveIntervalSeconds * 1000;
+            let currentEnd = serie.data[serie.data.length - 1][0] + archiveIntervalSeconds * 1000;
             start = start === undefined || start >= currenStart ? currenStart : start;
             end = end === undefined || end <= currentEnd ? currentEnd : end;
         }
@@ -135,9 +136,9 @@ function getDayNightSeries(chartOption, chartId, start, end) {
     }
 
     let dayNightSerie = {
-        "name": "dayNight",
+        "name": DAY_NIGHT,
         "type": "line",
-        "data": data,
+        "data": [[start, undefined], [end, undefined]],
         "markArea": getDayNightMarkArea(),
     }
 
@@ -169,7 +170,7 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
     }
 
-    for(let serie of series) {        
+    for (let serie of series) {
         legendData.push(serie.name);
     }
 
@@ -274,6 +275,9 @@ function getTooltip(seriesConfigs) {
         show: true,
         position: containsScatter ? "top" : "inside",
         formatter: function (params, ticket, callback) {
+            if (params[0].seriesName.includes(DAY_NIGHT)) {
+                return;
+            }
             let tooltipHTML = '<table>';
             let show = true;
             let marker;
