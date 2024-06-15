@@ -47,8 +47,11 @@ New in v4.3:
   - https://github.com/brewster76/fuzzy-archer/issues/140
   - https://github.com/brewster76/fuzzy-archer/issues/141
   - https://github.com/brewster76/fuzzy-archer/issues/143
+  - https://github.com/brewster76/fuzzy-archer/issues/146
   - https://github.com/brewster76/fuzzy-archer/issues/144
-  - https://github.com/brewster76/fuzzy-archer/issues/137
+  - https://github.com/brewster76/fuzzy-archer/issues/152
+  - https://github.com/brewster76/fuzzy-archer/issues/153
+  - https://github.com/brewster76/fuzzy-archer/issues/154
 - New norwegian translation (thx to @[Aslak Vaa](https://github.com/aslak47))
 - Added feature to configure gauge needle behaviour with null or missing data (thx to @[claudobahn](https://github.com/claudobahn))
 - New default symbol for shipped lightning chart.
