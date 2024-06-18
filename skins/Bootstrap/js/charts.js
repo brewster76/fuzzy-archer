@@ -275,7 +275,8 @@ function getTooltip(seriesConfigs) {
         show: true,
         position: containsScatter ? "top" : "inside",
         formatter: function (params, ticket, callback) {
-            if (params[0].seriesName.includes(DAY_NIGHT)) {
+            let seriesName = Array.isArray(params) ? params[0].seriesName : params.seriesName;
+            if (seriesName.includes(DAY_NIGHT)) {
                 return;
             }
             let tooltipHTML = '<table>';
