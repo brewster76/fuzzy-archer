@@ -156,11 +156,12 @@ function getChartOption(seriesConfigs) {
     let colors = [];
     let yAxisIndices = [];
     let legendData = [];
+    let z = 9999;
     for (let seriesConfig of seriesConfigs) {
         if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
         }
-        getSeriesConfig(seriesConfig, series, colors);
+        getSeriesConfig(seriesConfig, series, colors, z--);
         yAxisIndices[seriesConfig.yAxisIndex] = Array();
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
@@ -171,7 +172,16 @@ function getChartOption(seriesConfigs) {
     }
 
     for (let serie of series) {
-        legendData.push(serie.name);
+        if (serie.name.startsWith(DAY_NIGHT_KEY)) {
+            continue;
+        }
+        let legendItem = {
+            name: serie.name
+        }
+        if (serie.symbol !== undefined && serie.symbol !== 'none') {
+            legendItem.icon = serie.symbol;
+        }
+        legendData.push(legendItem);
     }
 
     let yAxis = [];
@@ -381,7 +391,7 @@ function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
     return aggregateAxisValue;
 }
 
-function getSeriesConfig(seriesConfig, series, colors) {
+function getSeriesConfig(seriesConfig, series, colors, z) {
     colors.push(seriesConfig.lineColor);
     if (seriesConfig.data === undefined) {
         seriesConfig.data = [];
@@ -392,6 +402,7 @@ function getSeriesConfig(seriesConfig, series, colors) {
     }
     let serie = {
         name: decodeHtml(seriesConfig.name),
+        z: z,
         payloadKey: seriesConfig.payloadKey,
         weewxColumn: seriesConfig.weewxColumn,
         unit: seriesConfig.unit,
