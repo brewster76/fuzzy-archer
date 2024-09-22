@@ -23,12 +23,12 @@ Directions for use:
 TODO: example
 """
 import sys
-import time
 import logging
 import json
 import os.path
 
 import weewx.reportengine
+import weewx.xtypes
 
 try:
     from weeutil.weeutil import accumulateLeaves
@@ -37,6 +37,8 @@ except:
 from weeutil.config import merge_config
 from weewx.units import convert
 from weeutil.weeutil import to_bool
+from weeutil.weeutil import TimeSpan
+from datetime import datetime, time, timedelta
 from user.sunevents import SunEvents
 
 
@@ -103,7 +105,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 self.record_dict_vtd[key] = None
 
     def gen_data(self):
-        start_time = time.time()
+        start_time = datetime.now().timestamp()
         ngen = 0
         unit_systems = {'US': weewx.units.USUnits, 'METRIC': weewx.units.MetricUnits, 'METRICWX': weewx.units.MetricWXUnits}
         source_unit_system = self.config_dict['StdConvert']['target_unit']
@@ -119,34 +121,32 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.frontend_data['units'] = self.units_dict
         self.frontend_data['labels'] = self.labels_dict
         live_options = accumulateLeaves(self.json_dict)
+        duration = int(live_options.get('timespan'))
+        first_value_timestamp = self.lastGoodStamp - duration * 60 * 60
+        last_value_timestamp = self.lastGoodStamp
+        self.first_timestamp = first_value_timestamp
 
-        for gauge in self.gauge_dict.sections:
-            data_type = self.gauge_dict[gauge].get('data_type', gauge)
-            decimals = self.gauge_dict[gauge].get('decimals', '3')
-            ret, gauge_history = self.gen_history_data(gauge, data_type, live_options, self.gauge_dict[gauge].get('data_binding', None), decimals)
-            self.frontend_data['gauges'][gauge]['target_unit'] = self.get_target_unit(gauge)
-            self.frontend_data['gauges'][gauge]['obs_group'] = self.get_obs_group(gauge)
-
-            if ret is not None:
-                ngen += 1
-                log.debug("Adding %s to frontend_data." % gauge)
-                self.frontend_data[gauge] = gauge_history
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
-                data_type = self.chart_dict[chart][category].get('data_type', category)
-                decimals = self.chart_dict[chart][category].get('decimals', '3')
-                ret, category_history = self.gen_history_data(category, data_type, live_options, self.chart_dict[chart][category].get('data_binding'), decimals)
-                self.frontend_data['charts'][chart][category]['target_unit'] = self.get_target_unit(category)
-                self.frontend_data['charts'][chart][category]['obs_group'] = self.get_obs_group(category)
+                category_config = self.frontend_data['charts'][chart][category]
+                ret, category_history = self.gen_history_data(category, category_config, self.chart_dict[chart][category].get('data_binding'))
+                category_config['target_unit'] = self.get_target_unit(category)
+                category_config['obs_group'] = self.get_obs_group(category)
 
                 if ret is not None:
                     ngen += 1
                     log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
+        for gauge in self.gauge_dict.sections:
+            gauge_config = self.frontend_data['gauges'][gauge]
+            ret, gauge_history = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
+            gauge_config['target_unit'] = self.get_target_unit(gauge)
+            gauge_config['obs_group'] = self.get_obs_group(gauge)
 
-        timespan = int(live_options.get('timespan'))
-        first_value_timestamp = self.lastGoodStamp - timespan * 60 * 60
-        last_value_timestamp = self.lastGoodStamp
+            if ret is not None:
+                ngen += 1
+                log.debug("Adding %s to frontend_data." % gauge)
+                self.frontend_data[gauge] = gauge_history
 
         altitude = self.config_dict['Station']['altitude']
         altitude_m = altitude[0]
@@ -165,7 +165,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.write_json(os.path.join(html_root, data_filename))
         self.write_ts_file(os.path.join(html_root, timestamp_filename))
 
-        finish_time = time.time()
+        finish_time = datetime.now().timestamp()
 
         log.info("JSONGenerator: Generated %d data items for %s in %.2f seconds" %
                  (ngen, self.skin_dict['REPORT_NAME'], finish_time - start_time))
@@ -184,65 +184,40 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.info("JSONGenerator: weewx.units.obs_group_dict['%s'] is not present, using the empty string." % column_name)
             return ""
 
-    def gen_history_data(self, obs_name, column_name, live_options, binding_name, decimals):
+    def gen_history_data(self, obs_name, item_config, binding_name):
+
+        column_name = item_config.get('data_type', obs_name)
         log.debug("Generating history for obs_name %s and column_name %s with binding %s" % (obs_name, column_name, binding_name))
+
         if obs_name in self.frontend_data:
             log.debug("Data for observation %s has already been collected." % obs_name)
             return None, None
-        # Find display unit of measure
-        try:
-            target_unit = self.get_target_unit(column_name)
-        except:
-            log.info("JSONGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
-            return 0, None
-        try:
-            timespan = int(live_options.get('timespan'))
-        except:
-            logging.exception("Error getting timespan:")
         else:
-            history_list = []
-            time_list = []
-
             try:
                 if binding_name:
                     db_manager = self.db_binder.get_manager(binding_name)
                 else:
                     db_manager = self.db_binder.get_manager()
-
             except:
                 if binding_name:
                     logging.exception("Could not get db_manager for binding %s" % binding_name)
                 else:
                     logging.exception("Could not get db_manager for default binding")
 
-            batch_records = db_manager.genBatchRecords(self.lastGoodStamp - timespan * 60 * 60, self.lastGoodStamp)
+        aggregate_types = []
+        if item_config.get('showMaxMarkPoint', 'false') == 'true':
+            aggregate_types.append("max")
+        if item_config.get('showMinMarkPoint', 'false') == 'true':
+            aggregate_types.append("min")
 
-            for rec in batch_records:
-                try:
-                    db_value_tuple = weewx.units.as_value_tuple(rec, column_name)
-                except:
-                    log.debug("JSONGenerator: Ignoring data for column '%s', is this column in the database table?" % (column_name))
-                    return 0, None
-
-                if target_unit == "":
-                    history_value = rec[column_name]
-                else:
-                    history_value = weewx.units.convert(db_value_tuple, target_unit)[0]
-                try:
-                    if history_value is None:
-                        history_list.append(history_value)
-                    else:
-                        history_list.append(round(float(history_value), int(decimals) + 1))
-                    time_list.append(rec['dateTime'] * 1000)
-                except:
-                    log.debug("JSONGenerator: Cannot decode reading of '%s' for column '%s'" % (history_value, column_name))
-
-
-
-
-
-        log.debug("returning history list")
-        return 1, list(zip(time_list, history_list))
+        timespan = TimeSpan(self.first_timestamp, self.lastGoodStamp)
+        series = weewx.xtypes.get_series(column_name, timespan, db_manager)
+        daily_highlow_values = []
+        for aggregate_type in aggregate_types:
+            daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
+        combined_series = self.combine_series(series, daily_highlow_values, item_config)
+        log.debug("Returning data series for '%s'" % column_name)
+        return 1, combined_series
 
     def write_json(self, data_filename):
 
@@ -280,3 +255,36 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 darkening_extent = 1
             event[1] = darkening_extent
         return events
+
+    def combine_series(self, series, daily_highlow_values, item_config):
+        decimals = int(item_config.get('decimals', '3'))
+        combined_series = []
+        for index, interval_start_time in enumerate(series[0][0]):
+            interval_end_time = series[1][0][index]
+            value = series[2][0][index]
+            if value is not None:
+                value = round(float(value), decimals + 1)
+            for highlow_values in daily_highlow_values:
+                for highlow_value in highlow_values:
+                    highlow_time = highlow_value[0]
+                    if highlow_time > interval_start_time and highlow_time <= interval_end_time:
+                        if highlow_time < interval_end_time:
+                            combined_series.append([highlow_time * 1000, round(float(highlow_value[1]), decimals + 1)])
+                        else:
+                            value = highlow_value[1]
+            combined_series.append([interval_end_time * 1000, value])
+        return combined_series
+
+    def get_daily_highlow_values(self, obs_type, aggregate_type, start_time, end_time, db_manager):
+        value_list = []
+        start_of_day = datetime.combine(datetime.fromtimestamp(start_time), time.min)
+        while start_of_day.timestamp() < end_time:
+            start_of_next_day = start_of_day + timedelta(days=1)
+            timespan = TimeSpan(start_of_day.timestamp(), start_of_next_day.timestamp())
+            highlow_value = weewx.xtypes.get_aggregate(obs_type, timespan, aggregate_type, db_manager)[0]
+            highlow_time = weewx.xtypes.get_aggregate(obs_type, timespan, aggregate_type + "time", db_manager)[0]
+            value_list.append([highlow_time, highlow_value])
+
+            start_of_day = start_of_next_day
+
+        return value_list
