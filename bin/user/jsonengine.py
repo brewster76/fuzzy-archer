@@ -204,6 +204,13 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 else:
                     logging.exception("Could not get db_manager for default binding")
 
+        # Find display unit of measure
+        try:
+            target_unit = self.get_target_unit(column_name)
+        except:
+            log.info("JSONGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
+            return 0, None
+
         aggregate_types = []
         if item_config.get('showMaxMarkPoint', 'false') == 'true':
             aggregate_types.append("max")
@@ -215,7 +222,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         daily_highlow_values = []
         for aggregate_type in aggregate_types:
             daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
-        combined_series = self.combine_series(series, daily_highlow_values, item_config)
+        combined_series = self.combine_series(column_name, series, daily_highlow_values, item_config, target_unit)
         log.debug("Returning data series for '%s'" % column_name)
         return 1, combined_series
 
@@ -256,24 +263,32 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             event[1] = darkening_extent
         return events
 
-    def combine_series(self, series, daily_highlow_values, item_config):
+    def combine_series(self, column_name, series, daily_highlow_values, item_config, target_unit):
+
         decimals = int(item_config.get('decimals', '3'))
         combined_series = []
         for index, interval_start_time in enumerate(series[0][0]):
             interval_end_time = series[1][0][index]
             value = series[2][0][index]
             if value is not None:
-                value = round(float(value), decimals + 1)
+                value = self.convert_value(value, decimals, series[2].unit, series[2].group, target_unit)
             for highlow_values in daily_highlow_values:
                 for highlow_value in highlow_values:
                     highlow_time = highlow_value[0]
                     if highlow_time > interval_start_time and highlow_time <= interval_end_time:
                         if highlow_time < interval_end_time:
-                            combined_series.append([highlow_time * 1000, round(float(highlow_value[1]), decimals + 1)])
+                            combined_series.append([highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)])
                         else:
                             value = highlow_value[1]
             combined_series.append([interval_end_time * 1000, value])
         return combined_series
+
+    def convert_value(self, value, decimals, source_unit, source_group, target_unit):
+        if target_unit != "":
+            value_tuple = {0: value, 1: source_unit, 2: source_group}
+            value = weewx.units.convert(value_tuple, target_unit)[0]
+
+        return round(float(value), decimals + 1)
 
     def get_daily_highlow_values(self, obs_type, aggregate_type, start_time, end_time, db_manager):
         value_list = []
