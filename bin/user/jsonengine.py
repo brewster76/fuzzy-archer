@@ -222,7 +222,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         daily_highlow_values = []
         for aggregate_type in aggregate_types:
             daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
-        combined_series = self.combine_series(column_name, series, daily_highlow_values, item_config, target_unit)
+        combined_series = self.combine_series(series, daily_highlow_values, item_config, target_unit)
         log.debug("Returning data series for '%s'" % column_name)
         return 1, combined_series
 
@@ -263,7 +263,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             event[1] = darkening_extent
         return events
 
-    def combine_series(self, column_name, series, daily_highlow_values, item_config, target_unit):
+    def combine_series(self, series, daily_highlow_values, item_config, target_unit):
 
         decimals = int(item_config.get('decimals', '3'))
         combined_series = []
@@ -275,7 +275,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             for highlow_values in daily_highlow_values:
                 for highlow_value in highlow_values:
                     highlow_time = highlow_value[0]
-                    if highlow_time > interval_start_time and highlow_time <= interval_end_time:
+                    if highlow_time is not None and highlow_time > interval_start_time and highlow_time <= interval_end_time:
                         if highlow_time < interval_end_time:
                             combined_series.append([highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)])
                         else:
