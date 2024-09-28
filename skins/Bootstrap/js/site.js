@@ -104,7 +104,7 @@ fetch(weewxDataUrl, {
         loadCharts();
     }
 }).catch(err => {
-    throw err
+    throw err;
 });
 
 setInterval(checkAsyncReload, 60000);
@@ -328,7 +328,7 @@ function formatTime(timestamp) {
     return date.toLocaleTimeString(jsLocale);
 }
 
-function checkAsyncReload() {
+function checkAsyncReload(isRetry) {
     log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.json", {
@@ -343,12 +343,16 @@ function checkAsyncReload() {
                 lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
-            throw err
+            if (isRetry === undefined) {
+                setTimeout(checkAsyncReload(true), 100);
+            } else {
+                throw err;
+            }
         });
     }
 }
 
-function asyncReloadWeewxData() {
+function asyncReloadWeewxData(isRetry) {
     fetch(weewxDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -376,11 +380,16 @@ function asyncReloadWeewxData() {
         lastUpdate.innerHTML = formatDateTime(date);
         appendNewerItems(newerItems);
     }).catch(err => {
-        throw err
+        if (isRetry === undefined) {
+            log_debug("Retrying asyncReloadWeewxData");
+            setTimeout(asyncReloadWeewxData(true), 100);
+        } else {
+            throw err;
+        }
     });
 }
 
-function asyncReloadReportData() {
+function asyncReloadReportData(isRetry) {
     fetch(stationInfoDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -390,7 +399,12 @@ function asyncReloadReportData() {
             aFunction(reportData);
         }
     }).catch(err => {
-        throw err
+        if (isRetry === undefined) {
+            log_debug("Retrying asyncReloadReportData");
+            setTimeout(asyncReloadReportData(true), 100);
+        } else {
+            throw err;
+        }
     });
 }
 
@@ -437,7 +451,7 @@ function appendNewerItems(newerItems) {
         for (let dataset of option.series) {
             dataset.chartId = chartId;
             let newData = newerItems[chartItem][dataset.weewxColumn];
-            if (newData.length > 0) {
+            if (newData !== undefined && newData.length > 0) {
                 for (let data of newData) {
                     let value = data[1];
                     let timestamp = data[0];
