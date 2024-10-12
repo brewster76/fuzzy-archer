@@ -129,7 +129,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         for chart in self.chart_dict.sections:
             for category in self.chart_dict[chart].sections:
                 category_config = self.frontend_data['charts'][chart][category]
-                ret, category_history = self.gen_history_data(category, category_config, self.chart_dict[chart][category].get('data_binding'))
+                ret, category_history, daily_highlow_values = self.gen_history_data(category, category_config, self.chart_dict[chart][category].get('data_binding'))
                 category_config['target_unit'] = self.get_target_unit(category)
                 category_config['obs_group'] = self.get_obs_group(category)
 
@@ -137,6 +137,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     ngen += 1
                     log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
+                    self.frontend_data[category + "_daily_high_low"] = daily_highlow_values
         for gauge in self.gauge_dict.sections:
             gauge_config = self.frontend_data['gauges'][gauge]
             ret, gauge_history = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
@@ -222,9 +223,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         daily_highlow_values = []
         for aggregate_type in aggregate_types:
             daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
-        combined_series = self.combine_series(series, daily_highlow_values, item_config, target_unit)
+        combined_series, processed_highlow_values = self.combine_series(series, daily_highlow_values, item_config, target_unit)
         log.debug("Returning data series for '%s'" % column_name)
-        return 1, combined_series
+        return 1, combined_series, processed_highlow_values
 
     def write_json(self, data_filename):
 
@@ -267,6 +268,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         decimals = int(item_config.get('decimals', '3'))
         combined_series = []
+        processed_highlow_values = []
         for index, interval_start_time in enumerate(series[0][0]):
             interval_end_time = series[1][0][index]
             value = series[2][0][index]
@@ -277,11 +279,14 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     highlow_time = highlow_value[0]
                     if highlow_time is not None and highlow_time > interval_start_time and highlow_time <= interval_end_time:
                         if highlow_time < interval_end_time:
-                            combined_series.append([highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)])
+                            processed_value = [highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)]
+                            combined_series.append(processed_value)
+                            processed_value.append(highlow_value[2])
+                            processed_highlow_values.append(processed_value)
                         else:
                             value = highlow_value[1]
             combined_series.append([interval_end_time * 1000, value])
-        return combined_series
+        return combined_series, processed_highlow_values
 
     def convert_value(self, value, decimals, source_unit, source_group, target_unit):
         if target_unit != "":
@@ -298,7 +303,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             timespan = TimeSpan(start_of_day.timestamp(), start_of_next_day.timestamp())
             highlow_value = weewx.xtypes.get_aggregate(obs_type, timespan, aggregate_type, db_manager)[0]
             highlow_time = weewx.xtypes.get_aggregate(obs_type, timespan, aggregate_type + "time", db_manager)[0]
-            value_list.append([highlow_time, highlow_value])
+            value_list.append([highlow_time, highlow_value, aggregate_type])
 
             start_of_day = start_of_next_day
 

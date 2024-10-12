@@ -469,29 +469,22 @@ function getSeriesConfig(seriesConfig, series, colors, z) {
         let markPoint = {};
         markPoint.symbolSize = 0;
         markPoint.data = [];
-        if (seriesConfig.showMaxMarkPoint) {
+        for (let dataPoint of weewxData[seriesConfig.weewxColumn + "_daily_high_low"]) {
+            let name = "dailyMax";
+            let position = "top";
+            let value = dataPoint[1];
+            let valueTimestamp = dataPoint[0];
+            if (dataPoint[2] === "min") {
+                name = "dailyMin";
+                position = "bottom";
+            }
             markPoint.data.push({
-                type: "max",
-                name: "Max",
+                coord: [valueTimestamp, value],
+                name: name,
                 label: {
                     show: true,
-                    position: "top",
-                    formatter: function (value) {
-                        return format(value.data.value, seriesConfig.decimals);
-                    },
-                }
-            });
-        }
-        if (seriesConfig.showMinMarkPoint) {
-            markPoint.data.push({
-                type: "min",
-                name: "Min",
-                label: {
-                    show: true,
-                    position: "bottom",
-                    formatter: function (value, ticket) {
-                        return format(value.data.value, seriesConfig.decimals);
-                    },
+                    position: position,
+                    formatter: format(value, seriesConfig.decimals).toString(),
                 }
             });
         }
