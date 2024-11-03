@@ -278,7 +278,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 for highlow_value in highlow_values:
                     highlow_time = highlow_value[0]
                     if highlow_time is not None and highlow_time > interval_start_time and highlow_time <= interval_end_time:
-                        if highlow_time < interval_end_time:
+                        if highlow_time <= interval_end_time:
                             processed_value = [highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)]
                             combined_series.append(processed_value)
                             processed_value.append(highlow_value[2])
