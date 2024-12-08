@@ -14,8 +14,12 @@
                 #set $active = ' active'
                 #set $href = '#'
                 #end if
+                #set $hrefTitle = ''
+                #if 'title' in $Navigation[$nav_item]
+                #set $hrefTitle = $Navigation[$nav_item]['title']
+                #end if
                 <li class="nav-item">
-                    <a id="${nav_item}Html" class="nav-link${active}" href="$href">
+                    <a id="${nav_item}Html" class="nav-link${active}" href="$href" title="$gettext($hrefTitle)">
                     #set $icon = 'bi-file-x'
                     #if 'icon' in $Navigation[$nav_item]
                     #set $icon = $Navigation[$nav_item]['icon']
