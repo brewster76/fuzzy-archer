@@ -367,5 +367,8 @@ function getUnitString(shownValue, unit) {
     if(Array.isArray(unit) && unit.length > 1 && Number(shownValue) !== 1) {
         return unit[1];
     }
+    if(Array.isArray(unit) && unit.length > 1 && Number(shownValue) === 1) {
+        return unit[0];
+    }
     return unit;
 }

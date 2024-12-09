@@ -38,6 +38,28 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
+New in v4.3:
+
+- Upgraded dependencies
+- WeeWX 5.1 and above supports configuration of an individual locale for each report
+- Fixed issues
+  - https://github.com/brewster76/fuzzy-archer/issues/137
+  - https://github.com/brewster76/fuzzy-archer/issues/140
+  - https://github.com/brewster76/fuzzy-archer/issues/141
+  - https://github.com/brewster76/fuzzy-archer/issues/143
+  - https://github.com/brewster76/fuzzy-archer/issues/146
+  - https://github.com/brewster76/fuzzy-archer/issues/144
+  - https://github.com/brewster76/fuzzy-archer/issues/152
+  - https://github.com/brewster76/fuzzy-archer/issues/153
+  - https://github.com/brewster76/fuzzy-archer/issues/154
+- New norwegian translation (thx to @[Aslak Vaa](https://github.com/aslak47))
+- Added feature to configure gauge needle behaviour with null or missing data (thx to @[claudobahn](https://github.com/claudobahn))
+- New default symbol for shipped lightning chart.
+- symbolSize is configurable, even with a JS function (see shipped lightning chart configs)
+- Other smaller fixes
+
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.2...4.3
+
 New in v4.2:
 
 - Upgraded dependencies

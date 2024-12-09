@@ -22,7 +22,7 @@ fetch(weewxDataUrl, {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
-    archiveIntervalSeconds = weewxData.config.archive_interval;
+    archiveIntervalSeconds = Number(weewxData.config.archive_interval);
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
@@ -104,7 +104,7 @@ fetch(weewxDataUrl, {
         loadCharts();
     }
 }).catch(err => {
-    throw err
+    throw err;
 });
 
 setInterval(checkAsyncReload, 60000);
@@ -122,6 +122,7 @@ function setGaugeValue(gauge, value, timestamp) {
 
 function updateGaugeValue(newValue, gauge) {
     let option = gauge.getOption();
+    option.series[0].pointer.show = true;
     let currentValue = option.series[0].data[0].value;
     if (gauge.isCircular !== undefined && gauge.isCircular && Math.abs(newValue - currentValue) > 180) {
         let currentAnimationEasingUpdate = option.series[0].animationEasingUpdate;
@@ -264,7 +265,7 @@ function setAggregatedChartEntry(value, timestamp, aggregateInterval, data, aggr
         } else {
             aggregatedValue = Number.parseFloat(data[data.length - 1][1]) + value;
         }
-        data[data.length - 1][1] = round(aggregatedValue, decimals);
+        data[data.length - 1][1] = round(aggregatedValue, decimals + 1);
         data[data.length - 1][2]++;
     } else {
         data.push([intervalStart, value, 1]);
@@ -327,7 +328,7 @@ function formatTime(timestamp) {
     return date.toLocaleTimeString(jsLocale);
 }
 
-function checkAsyncReload() {
+function checkAsyncReload(isRetry) {
     log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.json", {
@@ -342,12 +343,16 @@ function checkAsyncReload() {
                 lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
-            throw err
+            if (isRetry === undefined) {
+                setTimeout(checkAsyncReload(true), 100);
+            } else {
+                throw err;
+            }
         });
     }
 }
 
-function asyncReloadWeewxData() {
+function asyncReloadWeewxData(isRetry) {
     fetch(weewxDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -375,11 +380,16 @@ function asyncReloadWeewxData() {
         lastUpdate.innerHTML = formatDateTime(date);
         appendNewerItems(newerItems);
     }).catch(err => {
-        throw err
+        if (isRetry === undefined) {
+            log_debug("Retrying asyncReloadWeewxData");
+            setTimeout(asyncReloadWeewxData(true), 100);
+        } else {
+            throw err;
+        }
     });
 }
 
-function asyncReloadReportData() {
+function asyncReloadReportData(isRetry) {
     fetch(stationInfoDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -389,7 +399,12 @@ function asyncReloadReportData() {
             aFunction(reportData);
         }
     }).catch(err => {
-        throw err
+        if (isRetry === undefined) {
+            log_debug("Retrying asyncReloadReportData");
+            setTimeout(asyncReloadReportData(true), 100);
+        } else {
+            throw err;
+        }
     });
 }
 
@@ -429,14 +444,14 @@ function appendNewerItems(newerItems) {
     for (let chartItem of Object.keys(newerItems)) {
         let chartId = chartItem + CHART;
         let chart = charts[chartId];
-        if(chart === undefined) {
+        if (chart === undefined) {
             return;
         }
         let option = chart.getOption();
         for (let dataset of option.series) {
             dataset.chartId = chartId;
             let newData = newerItems[chartItem][dataset.weewxColumn];
-            if (newData.length > 0) {
+            if (newData !== undefined && newData.length > 0) {
                 for (let data of newData) {
                     let value = data[1];
                     let timestamp = data[0];
@@ -463,7 +478,7 @@ function getValue(obj, path) {
 }
 
 function getSeriesData(chartItem, seriesName) {
-    if(charts[chartItem + CHART] !== undefined) {
+    if (charts[chartItem + CHART] !== undefined) {
         for (let series of charts[chartItem + CHART].getOption().series) {
             if (series.weewxColumn !== undefined && series.weewxColumn === seriesName) {
                 return series.data;

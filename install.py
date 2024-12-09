@@ -85,7 +85,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf',
              'skins/Bootstrap/lang/zh.conf'])]
 
-        version="4.2"
+        version="4.3"
         super(BootstrapInstaller, self).__init__(
             version=version,
             name='bootstrap',
@@ -93,7 +93,6 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             author="Nick Dajda, Michael Kainzbauer and other contributors",
             author_email="nick.dajda@gmail.com",
             config={
-                'fuzzy_archer_version':version,
                 'StdReport': {
                     'Bootstrap': {
                         'skin':'Bootstrap',
