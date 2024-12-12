@@ -140,7 +140,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     self.frontend_data[category + "_daily_high_low"] = daily_highlow_values
         for gauge in self.gauge_dict.sections:
             gauge_config = self.frontend_data['gauges'][gauge]
-            ret, gauge_history = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
+            ret, gauge_history, _ = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
             gauge_config['target_unit'] = self.get_target_unit(gauge)
             gauge_config['obs_group'] = self.get_obs_group(gauge)
 
@@ -192,7 +192,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         if obs_name in self.frontend_data:
             log.debug("Data for observation %s has already been collected." % obs_name)
-            return None, None
+            return None, None, None
         else:
             try:
                 if binding_name:
@@ -210,7 +210,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             target_unit = self.get_target_unit(column_name)
         except:
             log.info("JSONGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
-            return 0, None
+            return 0, None, None
 
         aggregate_types = []
         if item_config.get('showMaxMarkPoint', 'false') == 'true':
