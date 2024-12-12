@@ -43,6 +43,7 @@ function loadGauges() {
             splitnumber = 4;
             axisTickSplitNumber = 4;
             colors = [[0.25, gauge.weewxData.lineColorN], [0.5, gauge.weewxData.lineColorS], [0.75, gauge.weewxData.lineColorS], [1, gauge.weewxData.lineColorN]];
+            gauge.weewxData.directionValuesEnabled = parseBooleanDefaultFalse(gauge.weewxData.directionValuesEnabled);
         } else {
             let lineColors = Array.isArray(gauge.weewxData.lineColor) ? gauge.weewxData.lineColor : [gauge.weewxData.lineColor];
             let lineColorUntilValues = Array.isArray(gauge.weewxData.lineColorUntil) ? gauge.weewxData.lineColorUntil : [gauge.weewxData.lineColorUntil];
@@ -88,6 +89,13 @@ function loadGauges() {
             };
             gaugeOption.series[0].title.offsetCenter = ['0', '-25%'];
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
+            if (gauge.weewxData.directionValuesEnabled) {
+                gaugeOption.series[0].detail.formatter = function (value) {
+                    let directionIndex = Math.floor((Number(value)+11.25)/22.5);
+                    let directionValues = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
+                    return directionValues[directionIndex];
+                };
+            }
         }
         gauge.setOption(gaugeOption);
     }
