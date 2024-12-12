@@ -102,8 +102,12 @@ function parseBooleanDefaultFalse(value) {
 }
 
 function parseBoolean(value, defaultValue) {
-    if (value !== undefined && value.toLowerCase() === "false") {
-        return false;
+    if (value !== undefined && value !== null) {
+        if (value.toLowerCase() === "false") {
+            return false;
+        } else if (value.toLowerCase() === "true") {
+            return true;
+        }
     }
     return defaultValue;
 }
