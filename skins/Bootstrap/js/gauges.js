@@ -92,6 +92,7 @@ function loadGauges() {
             if (gauge.weewxData.directionValuesEnabled) {
                 gaugeOption.series[0].detail.formatter = function (value) {
                     let directionIndex = Math.floor((Number(value)+11.25)/22.5);
+                    directionIndex = directionIndex == 16 ? 0 : directionIndex;
                     let directionValues = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
                     return directionValues[directionIndex];
                 };
