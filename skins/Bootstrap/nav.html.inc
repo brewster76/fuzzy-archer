@@ -18,8 +18,16 @@
                 #if 'title' in $Navigation[$nav_item]
                 #set $hrefTitle = $Navigation[$nav_item]['title']
                 #end if
-                <li class="nav-item">
-                    <a id="${nav_item}Html" class="nav-link${active}" href="$href" title="$gettext($hrefTitle)">
+                #set $extraLinkAttributes = ''
+                #set $listItemClasses = 'nav-item'
+                #set $linkClasses = 'nav-link' + $active
+                #if 'navigation_items' in $Navigation[$nav_item]
+                #set $extraLinkAttributes = 'data-bs-toggle="dropdown" role="button" aria-expanded="false"'
+                #set $listItemClasses = $listItemClasses + ' dropdown'
+                #set $linkClasses  = $linkClasses  + ' dropdown-toggle'
+                #end if
+                <li class="$listItemClasses">
+                    <a id="${nav_item}Html" class="$linkClasses" href="$href" title="$gettext($hrefTitle)" $extraLinkAttributes>
                     #set $icon = 'bi-file-x'
                     #if 'icon' in $Navigation[$nav_item]
                     #set $icon = $Navigation[$nav_item]['icon']
@@ -27,6 +35,21 @@
                     <i class="$icon fs-2 d-inline d-md-none" title="$gettext($Navigation[$nav_item]['text'])"></i>
                     <span class="d-none d-md-inline">$gettext($Navigation[$nav_item]['text'])</span>
                     </a>
+                    ## Submenu Items
+                    #if 'navigation_items' in $Navigation[$nav_item]
+                    <ul class="dropdown-menu">
+                      #for $nav_sub_item in $Navigation[$nav_item]['navigation_items']
+                      #set $href = $Navigation[$nav_item][$nav_sub_item]['href']
+                      #set $hrefTitle = ''
+                      #if 'title' in $Navigation[$nav_item][$nav_sub_item]
+                      #set $hrefTitle = $Navigation[$nav_item][$nav_sub_item]['title']
+                      #end if
+                      <li><a id="${nav_sub_item}Html" class="dropdown-item" href="$href" title="$gettext($hrefTitle)">
+                      $gettext($Navigation[$nav_item][$nav_sub_item]['text'])
+                      </a></li>
+                      #end for
+                    </ul>
+                    #end if
                 </li>
                 #end for
             </ul>
