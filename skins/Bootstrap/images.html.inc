@@ -47,7 +47,7 @@
         #set $imageCount += 1
         #end for
     </div>
-    #if $StationInfo.Images.carouselNextPrevButtons
+    #if $StationInfo.Images.get('carouselNextPrevButtons', 'true').lower == 'true'
     <button class="carousel-control-prev" type="button" data-bs-target="#imageCarousel" data-bs-slide="prev">
         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
         <span class="visually-hidden">Previous</span>
@@ -75,8 +75,8 @@
             <div class="modal-body">
                 #if $image_item.lightboxStyle == 'video'
                 <div class="d-flex justify-content-center">
-                    <div class="embed-responsive embed-responsive-$image_item.get('lightboxEmbedApect', '4by3')">
-                        <video id="imageCarousel-$imageCount-ModalVideo" controls class="embed-responsive-item">
+                    <div class="ratio ratio-$image_item.get('lightboxVideoApect', '4x3')">
+                        <video id="imageCarousel-$imageCount-ModalVideo" controls >
                             <source id="videoSource" src="$image_item.imageLink" />
                         </video>
                     </div>
