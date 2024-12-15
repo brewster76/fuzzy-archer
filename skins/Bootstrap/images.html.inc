@@ -1,3 +1,6 @@
+#if not 'Images' in $StationInfo
+#stop
+#end if
 #set $image_items = $StationInfo.Images.get('image_items', [])
 #if $image_items
 <div class="row $global_station_info_classes">
