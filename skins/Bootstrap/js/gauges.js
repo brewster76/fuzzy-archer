@@ -91,9 +91,14 @@ function loadGauges() {
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
             if (gauge.weewxData.directionValuesEnabled) {
                 gaugeOption.series[0].detail.formatter = function (value) {
-                    let directionIndex = Math.floor((Number(value)+11.25)/22.5);
-                    let directionValues = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
-                    return directionValues[directionIndex];
+                    let ordinals = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
+                    if(isNaN(value)) {
+                        return ordinals[-1];
+                    }
+                    let sectorSize = 360.0 / ((ordinals.length)-1);
+                    let degree = (value + sectorSize/2.0) % 360.0;
+                    let sector = Math.floor(degree / sectorSize);
+                    return ordinals[sector];
                 };
             }
         }
