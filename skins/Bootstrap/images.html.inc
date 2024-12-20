@@ -63,7 +63,7 @@
 #for $image_item_key in $image_items
 #set $image_item = $StationInfo.Images[$image_item_key]
 #if $image_item.useLightbox == 'true'
-<div class="modal fade" id="imageCarousel-$imageCount-Modal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="imageCarousel-$imageCount-Modal" tabindex="-1" aria-modal="true">
     <div class="modal-dialog modal-fullscreen-$image_item.get('lightboxFullScreen', 'lg-down') 
       modal-$image_item.get('lightboxSize', 'lg')">
         <div class="modal-content">
@@ -77,7 +77,6 @@
                 <div class="d-flex justify-content-center">
                     <div class="ratio ratio-$image_item.get('lightboxVideoApect', '4x3')">
                         <video id="imageCarousel-$imageCount-ModalVideo" controls >
-                            <source id="videoSource" src="$image_item.imageLink" />
                         </video>
                     </div>
                 </div>
@@ -91,10 +90,9 @@
 </div>
 <script>
 document.getElementById('imageCarousel-$imageCount-Modal').addEventListener('shown.bs.modal', function () {
-    var video = document.getElementById('imageCarousel-$imageCount-ModalVideo');
-    video.pause();
-    video.currentTime = 0;
-    video.play();
+    var video= document.getElementById('imageCarousel-${imageCount}-ModalVideo');
+    video.load();
+    fetchVideoAndPlay(video, '$image_item.imageLink');
 })
 </script>
 #end if
@@ -108,5 +106,20 @@ document.getElementById('imageCarousel-$imageCount-Modal').addEventListener('sho
             img.src = img.src+'';
         }, timeout);
     }
+  }
+
+  function fetchVideoAndPlay(video, url) {
+    fetch(url)
+    .then(response => response.blob())
+    .then(blob => {
+        video.src = URL.createObjectURL(blob);
+        return video.play();
+    })
+    .then(_ => {
+        // Video playback started ;
+    })
+    .catch(e => {
+        // Video playback failed ;
+    })
   }
 </script>
