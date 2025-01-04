@@ -469,13 +469,13 @@ function getSeriesConfig(seriesConfig, series, colors, z) {
         let markPoint = {};
         markPoint.symbolSize = 0;
         markPoint.data = [];
-        for (let dataPoint of weewxData[seriesConfig.weewxColumn + "_daily_high_low"]) {
-            let name = "dailyMax";
+        for (let dataPoint of weewxData[seriesConfig.weewxColumn + "_" + DAILY_HIGH_LOW_KEY]) {
+            let name = DAILY_MAX;
             let position = "top";
             let value = dataPoint[1];
             let valueTimestamp = dataPoint[0];
             if (dataPoint[2] === "min") {
-                name = "dailyMin";
+                name = DAILY_MIN;
                 position = "bottom";
             }
             markPoint.data.push({

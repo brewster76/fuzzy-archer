@@ -2,6 +2,9 @@ const AVG = "avg";
 const SUM = "sum";
 const CHART = "Chart";
 const CHARTS = "charts";
+const DAILY_HIGH_LOW_KEY = "daily_high_low";
+const DAILY_MAX = "dailyMax";
+const DAILY_MIN = "dailyMin";
 
 let weewxData;
 let weewxDataUrl = "weewxData.json";
@@ -173,12 +176,42 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
         } else {
             addValue(dataset, value, timestamp);
         }
+        if(dataset.markPoint !== undefined) {
+            updateMinMax(dataset, value, timestamp);
+        }
         chart.setOption(option);
 
         if (dataset.chartId !== undefined) {
             let chartElem = document.getElementById(dataset.chartId + "_timestamp");
             chartElem.innerHTML = formatDateTime(timestamp);
         }
+    }
+}
+
+function updateMinMax(dataset, value, timestamp) {
+    let markpointData = dataset.markPoint.data;    
+    if(markpointData !== undefined && markpointData !== null && markpointData.length > 0) {
+        let lastMarkPoint = dataset.markPoint.data[dataset.markPoint.data.length - 1];
+        checkAndUpdateMarkpoint(dataset, lastMarkPoint, value, timestamp);
+        if(markpointData.length > 1) {
+            let nextMarkPoint = dataset.markPoint.data[dataset.markPoint.data.length - 2];
+            if(nextMarkPoint.name !== lastMarkPoint.name) {
+                checkAndUpdateMarkpoint(dataset, nextMarkPoint, value, timestamp);
+            }
+        }
+    }
+}
+
+function checkAndUpdateMarkpoint(dataset, markPoint, value, timestamp) {
+    if(markPoint.name === DAILY_MAX && value > markPoint.coord[1]) {
+        markPoint.coord[0] = timestamp;
+        markPoint.coord[1] = value;
+        markPoint.label.formatter = format(value, dataset.decimals);
+    }
+    if(markPoint.name === DAILY_MIN && value < markPoint.coord[1]) {
+        markPoint.coord[0] = timestamp;
+        markPoint.coord[1] = value;
+        markPoint.label.formatter = format(value, dataset.decimals);
     }
 }
 
@@ -328,7 +361,7 @@ function formatTime(timestamp) {
     return date.toLocaleTimeString(jsLocale);
 }
 
-function checkAsyncReload(isRetry) {
+function checkAsyncReload(retryCount) {
     log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
         fetch("ts.json", {
@@ -343,8 +376,11 @@ function checkAsyncReload(isRetry) {
                 lastAsyncReloadTimestamp = Date.now();
             }
         }).catch(err => {
-            if (isRetry === undefined) {
-                setTimeout(checkAsyncReload(true), 100);
+            retryCount = retryCount === undefined ? 0 : ++retryCount;
+            if (retryCount < 10) {
+                console.log('Retrying fetch #%d, %d', retryCount, Date.now());
+                setTimeout(checkAsyncReload, 1000, retryCount);
+                return;
             } else {
                 throw err;
             }
@@ -352,7 +388,7 @@ function checkAsyncReload(isRetry) {
     }
 }
 
-function asyncReloadWeewxData(isRetry) {
+function asyncReloadWeewxData() {
     fetch(weewxDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -379,17 +415,10 @@ function asyncReloadWeewxData(isRetry) {
         let lastUpdate = document.getElementById("lastUpdate");
         lastUpdate.innerHTML = formatDateTime(date);
         appendNewerItems(newerItems);
-    }).catch(err => {
-        if (isRetry === undefined) {
-            log_debug("Retrying asyncReloadWeewxData");
-            setTimeout(asyncReloadWeewxData(true), 100);
-        } else {
-            throw err;
-        }
     });
 }
 
-function asyncReloadReportData(isRetry) {
+function asyncReloadReportData() {
     fetch(stationInfoDataUrl, {
         cache: "no-store"
     }).then(function (u) {
@@ -397,13 +426,6 @@ function asyncReloadReportData(isRetry) {
     }).then(function (reportData) {
         for (let aFunction of updateFunctions) {
             aFunction(reportData);
-        }
-    }).catch(err => {
-        if (isRetry === undefined) {
-            log_debug("Retrying asyncReloadReportData");
-            setTimeout(asyncReloadReportData(true), 100);
-        } else {
-            throw err;
         }
     });
 }

@@ -85,7 +85,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf',
              'skins/Bootstrap/lang/zh.conf'])]
 
-        version="4.3"
+        version="4.4"
         super(BootstrapInstaller, self).__init__(
             version=version,
             name='bootstrap',
