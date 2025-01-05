@@ -45,7 +45,7 @@ New in v4.4:
   - https://github.com/brewster76/fuzzy-archer/issues/167 (thx to @[dcapslock](https://github.com/dcapslock))
   - https://github.com/brewster76/fuzzy-archer/issues/169 (thx to @[dcapslock](https://github.com/dcapslock))
 
-Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...v4.4
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...4.4
 
 New in v4.3:
 
