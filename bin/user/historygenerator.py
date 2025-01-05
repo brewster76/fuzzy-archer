@@ -5,7 +5,7 @@
 #
 """Extends the Cheetah generator search list to add html historic data tables in a nice color scheme.
 
-Tested on Weewx release 4.10.2.
+Tested on Weewx release 5.1.0.
 Works with all databases.
 Observes the units of measure and display formats specified in skin.conf.
 
