@@ -280,7 +280,7 @@ function getAverageIntervalValue(currentIntervalData, value) {
 }
 
 function addAggregatedChartValue(dataset, value, timestamp, intervalSeconds, aggregateType) {
-    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data, aggregateType);
+    setAggregatedChartEntry(value, timestamp, intervalSeconds, dataset.data, aggregateType, dataset.decimals);
     rotateData(dataset.data);
 }
 
