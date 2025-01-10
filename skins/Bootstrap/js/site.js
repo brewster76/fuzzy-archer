@@ -441,7 +441,7 @@ function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
             aItem = seriesData.pop();
         }
     } else {
-        let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType);
+        let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType, config.decimals);
         if (aggregatedServerSeriesData.length > 0) {
             let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
             let aItem = seriesData.pop();
@@ -528,10 +528,11 @@ function aggregate(data, aggregateInterval, aggregateType, decimals) {
     }
     let aggregatedData = [];
     if (data !== null && data !== undefined) {
+        //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
+        let shiftInterval = Number(weewxData.config.archive_interval) * 1000;
         for (let entry of data) {
-            //timestamp needs to be shifted one archive_interval to show the readings in the correct time window
             if (entry[1] !== undefined) {
-                setAggregatedChartEntry(entry[1], entry[0] - Number(weewxData.config.archive_interval) * 1000, aggregateInterval, aggregatedData, aggregateType, decimals);
+                setAggregatedChartEntry(entry[1], entry[0] - shiftInterval, aggregateInterval, aggregatedData, aggregateType, decimals);
             }
         }
     }
