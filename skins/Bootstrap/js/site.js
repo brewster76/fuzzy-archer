@@ -12,7 +12,7 @@ let stationInfoDataUrl = "reportData.json";
 let gauges = {};
 let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
-let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
+let lastGoodStamp = lastAsyncReloadTimestamp;
 let archiveIntervalSeconds;
 let lang;
 let eChartsLocale;
@@ -363,14 +363,15 @@ function formatTime(timestamp) {
 
 function checkAsyncReload(retryCount) {
     log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
-    if ((Date.now() - lastAsyncReloadTimestamp) / 1000 > archiveIntervalSeconds) {
+    if ((Date.now() - lastAsyncReloadTimestamp) > archiveIntervalSeconds * 1000) {
         fetch("ts.json", {
             cache: "no-store"
         }).then(function (u) {
             return u.json();
         }).then(function (serverData) {
-            if (Number.parseInt(serverData.lastGoodStamp) > lastGoodStamp) {
-                lastGoodStamp = serverData.lastGoodStamp;
+            let newLastGoodStamp = Number.parseInt(serverData.lastGoodStamp) * 1000;
+            if (newLastGoodStamp > lastGoodStamp) {
+                lastGoodStamp = newLastGoodStamp;
                 asyncReloadWeewxData();
                 asyncReloadReportData();
                 lastAsyncReloadTimestamp = Date.now();
@@ -411,7 +412,7 @@ function asyncReloadWeewxData() {
         if (typeof loadCharts === 'function') {
             loadCharts();
         }
-        let date = new Date(lastGoodStamp * 1000);
+        let date = new Date(lastGoodStamp);
         let lastUpdate = document.getElementById("lastUpdate");
         lastUpdate.innerHTML = formatDateTime(date);
         appendNewerItems(newerItems);
