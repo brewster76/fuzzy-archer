@@ -18,6 +18,7 @@ let lang;
 let eChartsLocale;
 let maxAgeHoursMS;
 let intervalData = {};
+let liveData = [];
 
 fetch(weewxDataUrl, {
     cache: "no-store"
@@ -37,7 +38,6 @@ fetch(weewxDataUrl, {
             let mqttConnection = connection.broker_connection;
             let mqttUsername = connection.mqtt_username;
             let mqttPassword = connection.mqtt_password;
-            let intervalData = {};
 
             let mqttCredentials;
             if (mqttUsername !== undefined) {
@@ -62,7 +62,6 @@ fetch(weewxDataUrl, {
 
             client.on("message", function (topic, payload) {
                 console.log(topic);
-                checkAsyncReload();
                 let jPayload = {};
                 let topicConfig = this.topics[topic];
                 if (topicConfig.type.toUpperCase() === "JSON") {
@@ -82,21 +81,12 @@ fetch(weewxDataUrl, {
                 } else {
                     timestamp = Date.now();
                 }
-                let date = new Date(timestamp);
-                for (let gaugeId of Object.keys(gauges)) {
-                    let gauge = gauges[gaugeId];
-                    let value = convert(gauge.weewxData, getValue(jPayload, gauge.weewxData.payload_key));
-                    if (!isNaN(value)) {
-                        setGaugeValue(gauge, value, timestamp);
-                    }
-                }
-                for (let chartId of Object.keys(charts)) {
-                    let chart = charts[chartId];
-                    chart.chartId = chartId;
-                    addValues(chart, jPayload, timestamp);
-                }
+                checkAsyncReload();
+                liveData.push([timestamp, jPayload]);
+                updateGaugesAndCharts(timestamp, jPayload);
+
                 let lastUpdate = document.getElementById("lastUpdate");
-                lastUpdate.innerHTML = formatDateTime(date);
+                lastUpdate.innerHTML = formatDateTime(new Date(timestamp));
             });
         }
     }
@@ -111,6 +101,32 @@ fetch(weewxDataUrl, {
 });
 
 setInterval(checkAsyncReload, 60000);
+
+function updateGaugesAndCharts(timestamp, jPayload) {
+    for (let gaugeId of Object.keys(gauges)) {
+        let gauge = gauges[gaugeId];
+        let value = convert(gauge.weewxData, getValue(jPayload, gauge.weewxData.payload_key));
+        if (!isNaN(value)) {
+            setGaugeValue(gauge, value, timestamp);
+        }
+    }
+    for (let chartId of Object.keys(charts)) {
+        let chart = charts[chartId];
+        chart.chartId = chartId;
+        addValues(chart, jPayload, timestamp);
+    }
+}
+
+function clearStaleLiveData() {
+    let index = 0;
+    for (let entry of liveData) {
+        if (entry[0] > lastGoodStamp) {
+            break;
+        }
+        index++;
+    }
+    liveData = liveData.slice(index);
+}
 
 function setGaugeValue(gauge, value, timestamp) {
     let option = gauge.getOption();
@@ -176,7 +192,7 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
         } else {
             addValue(dataset, value, timestamp);
         }
-        if(dataset.markPoint !== undefined) {
+        if (dataset.markPoint !== undefined) {
             updateMinMax(dataset, value, timestamp);
         }
         chart.setOption(option);
@@ -189,13 +205,13 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
 }
 
 function updateMinMax(dataset, value, timestamp) {
-    let markpointData = dataset.markPoint.data;    
-    if(markpointData !== undefined && markpointData !== null && markpointData.length > 0) {
+    let markpointData = dataset.markPoint.data;
+    if (markpointData !== undefined && markpointData !== null && markpointData.length > 0) {
         let lastMarkPoint = dataset.markPoint.data[dataset.markPoint.data.length - 1];
         checkAndUpdateMarkpoint(dataset, lastMarkPoint, value, timestamp);
-        if(markpointData.length > 1) {
+        if (markpointData.length > 1) {
             let nextMarkPoint = dataset.markPoint.data[dataset.markPoint.data.length - 2];
-            if(nextMarkPoint.name !== lastMarkPoint.name) {
+            if (nextMarkPoint.name !== lastMarkPoint.name) {
                 checkAndUpdateMarkpoint(dataset, nextMarkPoint, value, timestamp);
             }
         }
@@ -203,12 +219,12 @@ function updateMinMax(dataset, value, timestamp) {
 }
 
 function checkAndUpdateMarkpoint(dataset, markPoint, value, timestamp) {
-    if(markPoint.name === DAILY_MAX && value > markPoint.coord[1]) {
+    if (markPoint.name === DAILY_MAX && value > markPoint.coord[1]) {
         markPoint.coord[0] = timestamp;
         markPoint.coord[1] = value;
         markPoint.label.formatter = format(value, dataset.decimals);
     }
-    if(markPoint.name === DAILY_MIN && value < markPoint.coord[1]) {
+    if (markPoint.name === DAILY_MIN && value < markPoint.coord[1]) {
         markPoint.coord[0] = timestamp;
         markPoint.coord[1] = value;
         markPoint.label.formatter = format(value, dataset.decimals);
@@ -395,27 +411,17 @@ function asyncReloadWeewxData() {
     }).then(function (u) {
         return u.json();
     }).then(function (serverData) {
-        let newerItems = [];
-        for (let chartItem of weewxData[CHARTS].live_chart_items) {
-            newerItems[chartItem] = [];
-            for (let seriesName of Object.keys(weewxData[CHARTS][chartItem])) {
-                if (serverData[seriesName] !== undefined && serverData[seriesName].slice(-1)[0] !== undefined) {
-                    let seriesData = getSeriesData(chartItem, seriesName);
-                    if (seriesData !== undefined) {
-                        newerItems[chartItem][seriesName] = setNewerItems(seriesData, serverData[seriesName], weewxData[CHARTS][chartItem], seriesName);
-                    }
-                }
-            }
-        }
         weewxData = serverData;
         loadGauges();
         if (typeof loadCharts === 'function') {
             loadCharts();
+        } else {
+            setTimeout(loadCharts, 1000);
         }
+        appendLiveData();
         let date = new Date(lastGoodStamp);
         let lastUpdate = document.getElementById("lastUpdate");
         lastUpdate.innerHTML = formatDateTime(date);
-        appendNewerItems(newerItems);
     });
 }
 
@@ -431,58 +437,10 @@ function asyncReloadReportData() {
     });
 }
 
-function setNewerItems(seriesData, serverSeriesData, configs, seriesName) {
-    let config = configs[seriesName];
-    let newerItems = [];
-    if (config.aggregateInterval === undefined) {
-        let newestServerTimestamp = serverSeriesData[serverSeriesData.length - 1][0];
-        let aItem = seriesData.pop();
-        while (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-            newerItems.push(aItem);
-            aItem = seriesData.pop();
-        }
-    } else {
-        let aggregatedServerSeriesData = aggregate(serverSeriesData, config.aggregateInterval, config.aggregateType, config.decimals);
-        if (aggregatedServerSeriesData.length > 0) {
-            let newestServerTimestamp = aggregatedServerSeriesData[aggregatedServerSeriesData.length - 1][0];
-            let aItem = seriesData.pop();
-
-            while (aItem !== undefined && aItem[0] >= newestServerTimestamp) {
-                if (aItem !== undefined && aItem[0] === newestServerTimestamp) {
-                    aggregatedServerSeriesData.pop();
-                    aggregatedServerSeriesData.push(aItem);
-                }
-                if (aItem !== undefined && aItem[0] > newestServerTimestamp) {
-                    newerItems.push(aItem);
-                }
-                aItem = seriesData.pop();
-            }
-            serverSeriesData = aggregatedServerSeriesData;
-        }
-    }
-    return newerItems;
-}
-
-function appendNewerItems(newerItems) {
-    for (let chartItem of Object.keys(newerItems)) {
-        let chartId = chartItem + CHART;
-        let chart = charts[chartId];
-        if (chart === undefined) {
-            return;
-        }
-        let option = chart.getOption();
-        for (let dataset of option.series) {
-            dataset.chartId = chartId;
-            let newData = newerItems[chartItem][dataset.weewxColumn];
-            if (newData !== undefined && newData.length > 0) {
-                for (let data of newData) {
-                    let value = data[1];
-                    let timestamp = data[0];
-                    log_debug(`updating ${dataset.weewxColumn} of ${chartId} value=${value}, timestamp=${timestamp}(${formatDateTime(timestamp)}).`);
-                    addValueAndUpdateChart(chart, option, dataset, value, timestamp);
-                }
-            }
-        }
+function appendLiveData() {
+    clearStaleLiveData();
+    for (let dataItem of liveData) {
+        updateGaugesAndCharts(dataItem[0], dataItem[1]);
     }
 }
 
