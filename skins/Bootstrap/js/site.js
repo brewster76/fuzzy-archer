@@ -415,8 +415,6 @@ function asyncReloadWeewxData() {
         loadGauges();
         if (typeof loadCharts === 'function') {
             loadCharts();
-        } else {
-            setTimeout(loadCharts, 1000);
         }
         appendLiveData();
         let date = new Date(lastGoodStamp);
