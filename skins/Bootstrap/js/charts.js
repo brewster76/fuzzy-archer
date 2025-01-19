@@ -158,7 +158,7 @@ function getChartOption(seriesConfigs) {
     let colors = [];
     let yAxisIndices = [];
     let legendData = [];
-    let z = 9999;
+    let z = seriesConfigs.length;
     for (let seriesConfig of seriesConfigs) {
         if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
