@@ -62,6 +62,12 @@ body {
   font-weight: bold;
   font-size: calc(14px + 0.3vw);
 }
+
+caption {
+  caption-side: top;
+  text-align: left;
+}
+
 .historyTable {
   font-size: calc(5px + 0.5vw);
 }
@@ -74,7 +80,6 @@ body {
 }
 
 thead.table-light th {
-  color: #333;
   background-color: #f6f6f6;
 }
 
@@ -98,6 +103,7 @@ thead.table-light th {
 }
 
 td.month, td.head, td.year, td.noaa, th.month, th.head, th.year, th.noaa {
+  color: #555;
   padding: 2px;
   white-space: nowrap;
   overflow: hidden;
