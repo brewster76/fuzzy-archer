@@ -41,6 +41,8 @@ Read the upgrading guides in the wiki, if you already have an older version inst
 New in v4.4:
 
 - Upgraded dependencies
+- New Feature
+  - Support for all-time summaries for months and years on history page (https://github.com/brewster76/fuzzy-archer/issues/69)
 - Fixed issues
   - https://github.com/brewster76/fuzzy-archer/issues/167 (thx to @[dcapslock](https://github.com/dcapslock))
   - https://github.com/brewster76/fuzzy-archer/issues/169 (thx to @[dcapslock](https://github.com/dcapslock))
