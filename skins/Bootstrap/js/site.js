@@ -7,8 +7,9 @@ const DAILY_MAX = "dailyMax";
 const DAILY_MIN = "dailyMin";
 
 let weewxData;
-let weewxDataUrl = "weewxData.json";
-let stationInfoDataUrl = "reportData.json";
+let weewxDataUrl = "weewxData.json?t=";
+let stationInfoDataUrl = "reportData.json?t=";
+let tsJsonUrl = "ts.json?t=";
 let gauges = {};
 let charts = {};
 let lastAsyncReloadTimestamp = Date.now();
@@ -20,9 +21,7 @@ let maxAgeHoursMS;
 let intervalData = {};
 let liveData = [];
 
-fetch(weewxDataUrl, {
-    cache: "no-store"
-}).then(function (u) {
+fetch(weewxDataUrl + Date.now()).then(function (u) {
     return u.json();
 }).then(function (serverData) {
     weewxData = serverData;
@@ -380,9 +379,7 @@ function formatTime(timestamp) {
 function checkAsyncReload(retryCount) {
     log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
     if ((Date.now() - lastAsyncReloadTimestamp) > archiveIntervalSeconds * 1000) {
-        fetch("ts.json", {
-            cache: "no-store"
-        }).then(function (u) {
+        fetch(tsJsonUrl + Date.now()).then(function (u) {
             return u.json();
         }).then(function (serverData) {
             let newLastGoodStamp = Number.parseInt(serverData.lastGoodStamp) * 1000;
@@ -406,9 +403,7 @@ function checkAsyncReload(retryCount) {
 }
 
 function asyncReloadWeewxData() {
-    fetch(weewxDataUrl, {
-        cache: "no-store"
-    }).then(function (u) {
+    fetch(weewxDataUrl + Date.now()).then(function (u) {
         return u.json();
     }).then(function (serverData) {
         weewxData = serverData;
@@ -424,9 +419,7 @@ function asyncReloadWeewxData() {
 }
 
 function asyncReloadReportData() {
-    fetch(stationInfoDataUrl, {
-        cache: "no-store"
-    }).then(function (u) {
+    fetch(stationInfoDataUrl + Date.now()).then(function (u) {
         return u.json();
     }).then(function (reportData) {
         for (let aFunction of updateFunctions) {
