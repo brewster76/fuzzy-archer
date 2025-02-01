@@ -61,8 +61,8 @@ class MyXSearch(SearchList):
 
         self.search_list_extension = {}
         self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version']  
-        self.search_list_extension['css_hash'] = self.hash_resource('css', generator.skin_dict['HTML_ROOT'])
-        self.search_list_extension['js_hash'] = self.hash_resource('js', generator.skin_dict['HTML_ROOT'])
+        self.search_list_extension['css_hash'] = self.hash_resource('css', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
+        self.search_list_extension['js_hash'] = self.hash_resource('js', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
 
         # Make some config available to templates
         self.add_to_extension_list('Navigation', generator.skin_dict)
@@ -443,7 +443,9 @@ class MyXSearch(SearchList):
         except:
             return [0, 'count']
     
-    def hash_resource(self, type, html_root):
+    def hash_resource(self, type, weewx_root, html_root):
+        if not os.path.isabs(html_root):
+            html_root = os.path.join(weewx_root, html_root)
         resource_path = os.path.join(html_root, type)
         hash_value = ""
         if os.path.exists(resource_path):
@@ -456,6 +458,7 @@ class MyXSearch(SearchList):
                     hash_value += file_hash.hexdigest()
             hash_value = hash(hash_value)
         else:
+            log.debug("Couldn't open %s, using version instead" % resource_path)
             hash_value = self.search_list_extension['fuzzy_archer_version']
         return hash_value
 
