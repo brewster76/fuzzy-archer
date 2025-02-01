@@ -35,6 +35,7 @@ import os.path
 
 import weewx.units
 import weeutil.weeutil
+import hashlib
 
 try:
     from weeutil.weeutil import accumulateLeaves
@@ -59,7 +60,9 @@ class MyXSearch(SearchList):
         self.cache_time = 0
 
         self.search_list_extension = {}
-        self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version']
+        self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version']  
+        self.search_list_extension['css_hash'] = self.hash_resource('css', generator.skin_dict['HTML_ROOT'])
+        self.search_list_extension['js_hash'] = self.hash_resource('js', generator.skin_dict['HTML_ROOT'])
 
         # Make some config available to templates
         self.add_to_extension_list('Navigation', generator.skin_dict)
@@ -439,6 +442,22 @@ class MyXSearch(SearchList):
             return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
         except:
             return [0, 'count']
+    
+    def hash_resource(self, type, html_root):
+        resource_path = os.path.join(html_root, type)
+        hash_value = ""
+        if os.path.exists(resource_path):
+            for fname in os.listdir(resource_path):
+                if fname.endswith(type):
+                    with open(os.path.join(resource_path, fname), "rb") as f:
+                        file_hash = hashlib.sha1()
+                        while chunk := f.read(8192):
+                            file_hash.update(chunk)
+                    hash_value += file_hash.hexdigest()
+            hash_value = hash(hash_value)
+        else:
+            hash_value = self.search_list_extension['fuzzy_archer_version']
+        return hash_value
 
 
 class FormatCell(SearchList):
