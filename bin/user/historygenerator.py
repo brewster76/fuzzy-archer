@@ -35,7 +35,7 @@ import os.path
 
 import weewx.units
 import weeutil.weeutil
-import hashlib
+import math
 
 try:
     from weeutil.weeutil import accumulateLeaves
@@ -61,8 +61,8 @@ class MyXSearch(SearchList):
 
         self.search_list_extension = {}
         self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version']  
-        self.search_list_extension['css_hash'] = self.hash_resource('css', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
-        self.search_list_extension['js_hash'] = self.hash_resource('js', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
+        self.search_list_extension['css_mtime'] = self.last_mtime_resources('css', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
+        self.search_list_extension['js_mtime'] = self.last_mtime_resources('js', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
 
         # Make some config available to templates
         self.add_to_extension_list('Navigation', generator.skin_dict)
@@ -443,24 +443,19 @@ class MyXSearch(SearchList):
         except:
             return [0, 'count']
     
-    def hash_resource(self, type, weewx_root, html_root):
+    def last_mtime_resources(self, type, weewx_root, html_root):
         if not os.path.isabs(html_root):
             html_root = os.path.join(weewx_root, html_root)
         resource_path = os.path.join(html_root, type)
-        hash_value = ""
+        last_mtime = 0
         if os.path.exists(resource_path):
             for fname in os.listdir(resource_path):
-                if fname.endswith(type):
-                    with open(os.path.join(resource_path, fname), "rb") as f:
-                        file_hash = hashlib.sha1()
-                        while chunk := f.read(8192):
-                            file_hash.update(chunk)
-                    hash_value += file_hash.hexdigest()
-            hash_value = hash(hash_value)
+                if fname.endswith(type) and  os.path.getmtime(os.path.join(resource_path, fname)) > last_mtime:
+                    last_mtime = os.path.getmtime(os.path.join(resource_path, fname))
         else:
             log.debug("Couldn't open %s, using version instead" % resource_path)
-            hash_value = self.search_list_extension['fuzzy_archer_version']
-        return hash_value
+            return self.search_list_extension['fuzzy_archer_version']
+        return str(math.floor(last_mtime))
 
 
 class FormatCell(SearchList):
