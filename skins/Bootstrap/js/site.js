@@ -53,6 +53,10 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
                 client = mqtt.connect(mqttConnection, mqttCredentials);
             }
             client.topics = connection.topics;
+            if(client.topics === undefined) {
+                console.log(`Configuration error: No topics defined for client with id "${connectionId}", check skin's MQTT configuration!`);
+                continue;
+            }
             clients.push(client);
 
             for (let topic of Object.keys(connection.topics)) {
