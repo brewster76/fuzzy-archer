@@ -338,15 +338,15 @@ function getTooltip(seriesConfigs) {
                     }
                     let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
                     let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
-                    let from = formatDateTime(fromDate);
-                    let to = formatTime(toDate);
+                    let from = formatDateTime(fromDate, eChartsTimezone);
+                    let to = formatTime(toDate, eChartsTimezone);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
                     let date = new Date(aggregateAxisValue);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
-                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date) + '</td></tr>';
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date, eChartsTimezone) + '</td></tr>';
                     }
                 }
 
@@ -534,7 +534,7 @@ function getTimestampDiv(parentId, timestamp) {
     timestampDiv.id = parentId + "_timestamp";
     timestampDiv.setAttribute("class", "chartTimestamp");
     if (timestamp > 0) {
-        timestampDiv.innerHTML = formatDateTime(timestamp);
+        timestampDiv.innerHTML = formatDateTime(timestamp, eChartsTimezone);
     }
     outerDiv.appendChild(timestampDiv);
     return outerDiv;

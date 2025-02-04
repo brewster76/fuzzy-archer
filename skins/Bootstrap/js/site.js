@@ -13,6 +13,7 @@ let lastGoodStamp = lastAsyncReloadTimestamp / 1000;
 let archiveIntervalSeconds;
 let lang;
 let eChartsLocale;
+let eChartsTimezone = 'local';
 let maxAgeHoursMS;
 let intervalData = {};
 
@@ -25,6 +26,7 @@ fetch(weewxDataUrl, {
     archiveIntervalSeconds = Number(weewxData.config.archive_interval);
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
+    eChartsTimezone = (weewxData.charts.timezone !== undefined) ? weewxData.charts.timezone : eChartsTimezone;
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
 
     let clients = [];
@@ -177,7 +179,7 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
 
         if (dataset.chartId !== undefined) {
             let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-            chartElem.innerHTML = formatDateTime(timestamp);
+            chartElem.innerHTML = formatDateTime(timestamp, eChartsTimezone);
         }
     }
 }
@@ -318,14 +320,16 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
     return (Math.atan(sumY / sumX) * 180 / Math.PI) + offset;
 }
 
-function formatDateTime(timestamp) {
-    let date = new Date(timestamp);
-    return date.toLocaleDateString(jsLocale) + ", " + formatTime(timestamp);
+function formatDateTime(timestamp, timezone='local') {
+    // Timestamp maybe seconds, maybe date object so create Luxon date via JSDate
+    let luxonDate = new luxon.DateTime.fromJSDate(new Date(timestamp), {zone: timezone, locale: jsLocale});
+    return luxonDate.toLocaleString() + ", " + formatTime(timestamp, timezone);
 }
 
-function formatTime(timestamp) {
-    let date = new Date(timestamp);
-    return date.toLocaleTimeString(jsLocale);
+function formatTime(timestamp, timezone='local') {
+    // Timestamp maybe seconds, maybe date object so create Luxon date via JSDate
+    let luxonDate = new luxon.DateTime.fromJSDate(new Date(timestamp), {zone: timezone, locale: jsLocale});
+    return luxonDate.toLocaleString(luxon.DateTime.TIME_SIMPLE)
 }
 
 function checkAsyncReload(isRetry) {
@@ -514,4 +518,74 @@ function aggregate(data, aggregateInterval, aggregateType, decimals) {
         }
     }
     return aggregatedData;
+}
+
+// eCharts only supports time formats in local browser timezone or UTC
+// This is due to inherent nature of Javascript Date object
+// To retain all the goodness of echarts formatting, and limitting extra 
+// formatters in chart config, a patched approach has been taken where
+// a patched date object is used in the echarts format routuine.
+// The call to parseDate (see reference link below) is replaced with 
+// function patchedEchartsParseDate() as a 'one line' change. The patched
+// echarts.patched.min.js is only used when a specific 'timezone' is set for [LiveCharts]
+// https://github.com/apache/echarts/blob/d54443d44d9a7a9b034bb064db83eec3592dd864/src/util/time.ts#L113
+
+class patchedDate {
+    constructor(date, timezone) {
+        this.luxonDate = luxon.DateTime.fromJSDate(date, {zone: timezone});
+        this.luxonDateUTC = this.luxonDate.toUTC();
+    }
+    getFullYear() {
+        return this.luxonDate.year;
+    }
+    getMonth() {
+        return this.luxonDate.month;
+    }
+    getDate() {
+        return this.luxonDate.day;
+    }
+    getDay() {
+        return this.luxonDate.weekday - 1;
+    }
+    getHours() {
+        return this.luxonDate.hour;
+    }
+    getMinutes() {
+        return this.luxonDate.minute;
+    }
+    getSeconds() {
+        return this.luxonDate.second;
+    }
+    getMilliseconds() {
+        return this.luxonDate.millisecond;
+    }
+    getUTCFullYear() {
+        return this.luxonDateUTC.year;
+    }
+    getUTCMonth() {
+        return this.luxonDateUTC.month;
+    }
+    getUTCDate() {
+        return this.luxonDateUTC.day;
+    }
+    getUTCDay() {
+        return this.luxonDateUTC.weekday - 1;
+    }
+    getUTCHours() {
+        return this.luxonDateUTC.hour;
+    }
+    getUTCMinutes() {
+        return this.luxonDateUTC.minute;
+    }
+    getUTCSeconds() {
+        return this.luxonDateUTC.second;
+    }
+    getUTCMilliseconds() {
+        return this.luxonDateUTC.millisecond;
+    }
+}
+
+function patchedEchartsParseDate(value) {
+    let date = echarts.number.parseDate(value)
+    return new patchedDate(date, eChartsTimezone)
 }
