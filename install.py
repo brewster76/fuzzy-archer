@@ -24,6 +24,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/graphMenu.html.inc',
              'skins/Bootstrap/head.html.inc',
              'skins/Bootstrap/history.html.tmpl',
+             'skins/Bootstrap/imaages.html.inc',
              'skins/Bootstrap/index.html.tmpl',
              'skins/Bootstrap/livegauges.html.inc',
              'skins/Bootstrap/location.html.inc',
