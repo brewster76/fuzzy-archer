@@ -26,13 +26,14 @@
         <div class="carousel-item $itemActive">
             #set $imagePadding = $image_item.get('imagePadding', '0')
             #set $imageReload = $image_item.get('imageReload', '0')
+            #set $linkTarget = $image_item.get('linkTarget', '_self')
             #if $image_item.get('useLightbox', 'true').lower == 'true'
             <img src="$image_item.imageUrl" class="d-block w-100" data-bs-toggle="modal" 
               data-bs-target="#imageCarousel-$imageCount-Modal" alt="$image_item.imageCaptionHeading" 
               style="cursor: pointer; padding-top: $imagePadding; padding-bottom: $imagePadding;" 
               onload='imageRefresh(this, $imageReload * 1000 * 60);'>
             #else
-            <a href="$image_item.imageLink"><img src="$image_item.imageUrl" class="d-block w-100" 
+            <a href="$image_item.imageLink" target="$linkTarget"><img src="$image_item.imageUrl" class="d-block w-100" 
               alt="$image_item.imageCaptionHeading" 
               style="padding-top: $imagePadding; padding-bottom: $imagePadding;" 
               onload='imageRefresh(this, $imageReload * 1000 * 60);'></a>
