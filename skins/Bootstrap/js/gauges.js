@@ -43,6 +43,7 @@ function loadGauges() {
             splitnumber = 4;
             axisTickSplitNumber = 4;
             colors = [[0.25, gauge.weewxData.lineColorN], [0.5, gauge.weewxData.lineColorS], [0.75, gauge.weewxData.lineColorS], [1, gauge.weewxData.lineColorN]];
+            gauge.weewxData.directionValuesEnabled = parseBooleanDefaultFalse(gauge.weewxData.directionValuesEnabled);
         } else {
             let lineColors = Array.isArray(gauge.weewxData.lineColor) ? gauge.weewxData.lineColor : [gauge.weewxData.lineColor];
             let lineColorUntilValues = Array.isArray(gauge.weewxData.lineColorUntil) ? gauge.weewxData.lineColorUntil : [gauge.weewxData.lineColorUntil];
@@ -88,6 +89,18 @@ function loadGauges() {
             };
             gaugeOption.series[0].title.offsetCenter = ['0', '-25%'];
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
+            if (gauge.weewxData.directionValuesEnabled) {
+                gaugeOption.series[0].detail.formatter = function (value) {
+                    let ordinals = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
+                    if(isNaN(value)) {
+                        return ordinals[-1];
+                    }
+                    let sectorSize = 360.0 / ((ordinals.length)-1);
+                    let degree = (value + sectorSize/2.0) % 360.0;
+                    let sector = Math.floor(degree / sectorSize);
+                    return ordinals[sector];
+                };
+            }
         }
         gauge.setOption(gaugeOption);
     }
@@ -102,8 +115,12 @@ function parseBooleanDefaultFalse(value) {
 }
 
 function parseBoolean(value, defaultValue) {
-    if (value !== undefined && value.toLowerCase() === "false") {
-        return false;
+    if (value !== undefined && value !== null) {
+        if (value.toLowerCase() === "false") {
+            return false;
+        } else if (value.toLowerCase() === "true") {
+            return true;
+        }
     }
     return defaultValue;
 }
