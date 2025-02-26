@@ -5,6 +5,7 @@
 <script src="js/mqtt.min.js"></script>
 <script src="js/units.js"></script>
 <script src="js/echarts.min.js"></script>
+<script src="js/luxon.min.js"></script>
 <script src="js/gauges.js"></script>
 <script src="js/site.js"></script>
 <script src="js/lang.js"></script>

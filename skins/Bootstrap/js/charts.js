@@ -263,7 +263,23 @@ function getChartOption(seriesConfigs) {
             type: "time",
             splitLine: {
                 show: true
-            }
+            },
+            axisLabel: {
+                formatter: function (value, idx) {
+                    let day = luxon.DateTime.fromMillis(value, { zone: stationTimezone }).startOf('day').toMillis();
+                    if (value === day) {
+                        return `{day|${formatDate(value, stationTimezone, { day: 'numeric' })}}`;
+                    } else {
+                        return formatTime(value, stationTimezone, luxon.DateTime.TIME_24_SIMPLE);
+                    }
+                },
+                rich: {
+                    day: {
+                        fontSize: '10px',
+                        fontWeight: 'bold'
+                    }
+                }
+            },
         },
         yAxis: yAxis,
         series: series
@@ -338,15 +354,15 @@ function getTooltip(seriesConfigs) {
                     }
                     let fromDate = new Date(aggregateAxisValue - halfAggregateInterval);
                     let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
-                    let from = formatDateTime(fromDate);
-                    let to = formatTime(toDate);
+                    let from = formatDateTime(fromDate, stationTimezone);
+                    let to = formatTime(toDate, stationTimezone);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
                     let date = new Date(aggregateAxisValue);
                     if (i == 0 || aggregateInterval !== intervals[i - 1]) {
-                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date) + '</td></tr>';
+                        tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date, stationTimezone) + '</td></tr>';
                     }
                 }
 
@@ -534,7 +550,7 @@ function getTimestampDiv(parentId, timestamp) {
     timestampDiv.id = parentId + "_timestamp";
     timestampDiv.setAttribute("class", "chartTimestamp");
     if (timestamp > 0) {
-        timestampDiv.innerHTML = formatDateTime(timestamp);
+        timestampDiv.innerHTML = formatDateTime(timestamp, stationTimezone);
     }
     outerDiv.appendChild(timestampDiv);
     return outerDiv;
