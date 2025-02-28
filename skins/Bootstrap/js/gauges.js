@@ -1,7 +1,7 @@
 let maxOpacity = 255 * 0.55;
 function loadGauges() {
     let gaugePanel = document.getElementById("gaugePanel");
-    if(gaugePanel !== null && gaugePanel !== undefined && window.getComputedStyle(gaugePanel).display === 'none') {
+    if (gaugePanel !== null && gaugePanel !== undefined && window.getComputedStyle(gaugePanel).display === 'none') {
         gaugePanel.remove();
         document.getElementById("mainPanel").setAttribute("class", "col-12 mt-1");
         return;
@@ -91,12 +91,12 @@ function loadGauges() {
             gaugeOption.series[0].detail.offsetCenter = ['0', '30%'];
             if (gauge.weewxData.directionValuesEnabled) {
                 gaugeOption.series[0].detail.formatter = function (value) {
-                    let ordinals = weewxData.units.Ordinates.directions === undefined ? ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N/A'] : weewxData.units.Ordinates.directions ;
-                    if(isNaN(value)) {
+                    let ordinals = weewxData.units.Ordinates.directions === undefined ? ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW', 'N/A'] : weewxData.units.Ordinates.directions;
+                    if (isNaN(value)) {
                         return ordinals[-1];
                     }
-                    let sectorSize = 360.0 / ((ordinals.length)-1);
-                    let degree = (value + sectorSize/2.0) % 360.0;
+                    let sectorSize = 360.0 / ((ordinals.length) - 1);
+                    let degree = (value + sectorSize / 2.0) % 360.0;
                     let sector = Math.floor(degree / sectorSize);
                     return ordinals[sector];
                 };
@@ -263,7 +263,7 @@ $(window).on('resize', function () {
 });
 
 function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
-    if(data === undefined || data === null ){
+    if (data === undefined || data === null) {
         return "#ffffff00";
     }
     let ticksNumber = splitNumber * axisTickSplitNumber;
@@ -275,7 +275,7 @@ function getHeatColor(max, min, splitNumber, axisTickSplitNumber, data) {
     let baseColor = '#ff0000';
     for (let item of data) {
         let value = item[1];
-        if(value === null || value === undefined) {
+        if (value === null || value === undefined) {
             continue;
         }
         let index = 0;

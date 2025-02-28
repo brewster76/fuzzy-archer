@@ -1,5 +1,6 @@
 #errorCatcher Echo
 #set $history_items = $to_list($HistoryReport.get('history_items', ['min_temp', 'avg_temp', 'max_temp', 'rain', 'rain_days', 'max_wind', 'NOAA']))
+#set $header_values = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 <!DOCTYPE html>
 <html lang="$lang">
 #include "head.html.inc"
@@ -15,63 +16,78 @@
         <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             #for $history_item in $history_items
             #set $table = $history_tables[$history_item]
-            <h3 class="historyHeader">$gettext($table.header_text)</h3>
             <table class="table historyTable text-center">
-                #if $table.noaa is False
+                <caption class="historyHeader">$gettext($table.header_text)</caption>
+                #if 'noaa' not in $table.settings or not $table.settings.noaa
                 <thead>
-                <tr>
-                    <th class="head">$table.header.head</th>
-                    #for $headervalue in $table.header.values
-                    <th class="month">$gettext($headervalue)</th>
-                    #end for
-                    #if "summary" in $table.header.keys()
-                    <th class="year">$gettext($table.header.summary)</th>
-                    #end if
-                </tr>
+                    <tr>
+                        <th class="head">$table.unit</th>
+                        #for $headervalue in $header_values
+                        <th class="month">$gettext($headervalue)</th>
+                        #end for
+                        #if $table.settings.summary_column
+                        <th class="year">$gettext('Year')</th>
+                        #end if
+                    </tr>
                 </thead>
                 <tbody>
-                #for $line in $table.lines
-                <tr>
-                    <th class="head">$line.head.value</th>
-                    #for $linevalue in $line.values
-                    #set $value = '-'
-                    #set $style = ''
-                    #if $linevalue.value
-                    #set $value = $linevalue.value
-                    #set $style = ' style="background-color:' + $linevalue.bgcolor + '; color:' + $linevalue.fontcolor + ';"'
-                    #end if
-                    <td class="month"$style>$value</td>
-                    #end for
-                    #set $style = ''
-                    #if "summary" in $line.keys()
-                    #set $style = ' style="background-color:' + $line.summary.bgcolor + '; color:' + $line.summary.fontcolor + ';"'
-                    <td class="year"$style>$line.summary.value</td>
-                    #end if
+                #for $line in $table.year
+                    <tr>
+                        <th class="head">$line.head.value</th>
+                        #for $linevalue in $line.values
+                        #set $cell_format = $format_cell($linevalue.value, $table.settings)
+                        <td class="month" style="background-color:$cell_format.background_color; color:$cell_format.font_color;">$cell_format.formatted_value</td>
+                        #end for
+                        #if "summary" in $line.keys()
+                        #set $cell_format = $format_cell($line.summary.value, $table.settings, True)
+                        <td class="year" style="background-color:$cell_format.background_color; color:$cell_format.font_color;">$cell_format.formatted_value</td>
+                        #end if
 
-                </tr>
+                    </tr>
                 #end for
                 </tbody>
-                #else
-                <thead>
-                <tr>
-                    <th class="head">$table.header.head</th>
-                    #for $headervalue in $table.header.values
-                    <th>$gettext($headervalue)</th>
+                #if "aggregations" in $table
+                <tfoot>
+                    <tr><th colspan="14" class="head">$gettext("Overall")</th><tr>
+                    #for $aggregation_type in ['min', 'avg', 'max']
+                    #if $aggregation_type in $table.aggregations.values[0].keys()
+                    <tr>
+                    <th class="head">$gettext($aggregation_type)</th>
+                    #for $line in $table.aggregations.values
+                        #set $value = $line.get($aggregation_type)
+                        #set $cell_format = $format_cell($value, $table.settings)
+                        <td class="month" style="background-color:$cell_format.background_color; color:$cell_format.font_color;">$cell_format.formatted_value</td>
                     #end for
-                </tr>
+                    #if "summary" in $table.aggregations.keys() and $aggregation_type in $table.aggregations.get("summary").keys()
+                    #set $cell_format = $format_cell($table.aggregations.get("summary").get($aggregation_type), $table.settings, True)
+                    <td class="year" style="background-color:$cell_format.background_color; color:$cell_format.font_color;">$cell_format.formatted_value</td>
+                    #end if
+                    </tr>
+                    #end if
+                    #end for
+                </tfoot>
+                #end if
+                #else if 'noaa' in $table.settings and $table.settings.noaa
+                <thead>
+                    <tr>
+                        <th class="head"></th>
+                        #for $headervalue in $header_values
+                        <th>$gettext($headervalue)</th>
+                        #end for
+                    </tr>
                 </thead>
                 <tbody>
-                #for $line in $table.lines
-                <tr>
-                    <th class="noaa"><a href="$line.head.url" class="btn btn-sm btn-primary primaryLive btnNOAA">$line.head.value</a></th>
-                    #for $linevalue in $line.values
-                    #set $data = '-'
-                    #if $linevalue.value
-                    #set $data = '<a href="' + $linevalue.url + '" class="btn btn-sm btn-light primaryLight btnNOAA">' + $linevalue.value + '</a>'
-                    #end if
-                    <td class="noaa">$data</td>
-                    #end for
-                </tr>
+                #for $line in $table.year
+                    <tr>
+                        <th class="noaa"><a href="$line.head.url" class="btn btn-sm btn-primary primaryLive btnNOAA">$line.head.value</a></th>
+                        #for $linevalue in $line.values
+                        #set $data = '-'
+                        #if $linevalue.value
+                        #set $data = '<a href="' + $linevalue.url + '" class="btn btn-sm btn-light primaryLight btnNOAA">' + $linevalue.value + '</a>'
+                        #end if
+                        <td class="noaa">$data</td>
+                        #end for
+                    </tr>
                 #end for
                 </tbody>
                 #end if

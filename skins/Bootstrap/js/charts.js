@@ -59,8 +59,10 @@ function loadCharts() {
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
+                interval: category.interval,
                 minInterval: category.minInterval,
                 maxInterval: category.maxInterval,
+                splitNumber: category.splitNumber,
                 showMaxMarkPoint: getBooleanOrDefault(category.showMaxMarkPoint, false),
                 showMinMarkPoint: getBooleanOrDefault(category.showMinMarkPoint, false),
                 showAvgMarkLine: getBooleanOrDefault(category.showAvgMarkLine, false),
@@ -156,7 +158,7 @@ function getChartOption(seriesConfigs) {
     let colors = [];
     let yAxisIndices = [];
     let legendData = [];
-    let z = 9999;
+    let z = seriesConfigs.length;
     for (let seriesConfig of seriesConfigs) {
         if (seriesConfig.plotType === SCATTER && seriesConfig.dataReferences.length < 1) {
             continue;
@@ -166,8 +168,10 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["unit"] = seriesConfig.unit;
         yAxisIndices[seriesConfig.yAxisIndex]["obs_group"] = seriesConfig.obs_group;
         yAxisIndices[seriesConfig.yAxisIndex]["decimals"] = seriesConfig.decimals;
+        yAxisIndices[seriesConfig.yAxisIndex]["interval"] = seriesConfig.interval;
         yAxisIndices[seriesConfig.yAxisIndex]["minInterval"] = seriesConfig.minInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["maxInterval"] = seriesConfig.maxInterval;
+        yAxisIndices[seriesConfig.yAxisIndex]["splitNumber"] = seriesConfig.splitNumber;
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
     }
 
@@ -189,14 +193,18 @@ function getChartOption(seriesConfigs) {
         let obs_group = yAxisIndices[yAxisIndex]["obs_group"];
         let unit = yAxisIndices[yAxisIndex]["unit"];
         let decimals = yAxisIndices[yAxisIndex]["decimals"];
+        let interval = yAxisIndices[yAxisIndex]["interval"];
         let minInterval = yAxisIndices[yAxisIndex]["minInterval"];
         let maxInterval = yAxisIndices[yAxisIndex]["maxInterval"];
+        let splitNumber = yAxisIndices[yAxisIndex]["splitNumber"];
         let yAxisItem = {
             name: Array.isArray(unit) && unit.length > 1 ? unit[1] : unit,
             type: "value",
             alignTicks: true,
+            interval: interval,
             minInterval: minInterval,
             maxInterval: maxInterval,
+            splitNumber: splitNumber,
             nameTextStyle: {
                 fontWeight: 'bold',
             },
@@ -485,13 +493,13 @@ function getSeriesConfig(seriesConfig, series, colors, z) {
         let markPoint = {};
         markPoint.symbolSize = 0;
         markPoint.data = [];
-        for (let dataPoint of weewxData[seriesConfig.weewxColumn + "_daily_high_low"]) {
-            let name = "dailyMax";
+        for (let dataPoint of weewxData[seriesConfig.weewxColumn + "_" + DAILY_HIGH_LOW_KEY]) {
+            let name = DAILY_MAX;
             let position = "top";
             let value = dataPoint[1];
             let valueTimestamp = dataPoint[0];
             if (dataPoint[2] === "min") {
-                name = "dailyMin";
+                name = DAILY_MIN;
                 position = "bottom";
             }
             markPoint.data.push({

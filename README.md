@@ -2,10 +2,10 @@ Theme for WeeWX weather station software.
 ============
 Gauge and Chart graphics showing current conditions.
 
-English example             |  German example with combined line/bar chart and scatter chart
-:-------------------------:|:-------------------------:
-![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/d3d948ff-763e-42cd-a653-e40f3e6fdacb)  |  ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)
-![mobile_en](https://github.com/brewster76/fuzzy-archer/assets/58649043/2b445b5c-250b-47ff-b80d-53e9c73b52d8) | ![mobile_de](https://github.com/brewster76/fuzzy-archer/assets/58649043/60abda1b-27b0-43ad-bff2-56881455f8b9)
+|                                                English example                                                |  German example with combined line/bar chart and scatter chart|
+|:-------------------------------------------------------------------------------------------------------------:|:-------------------------:|
+|   ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/d3d948ff-763e-42cd-a653-e40f3e6fdacb)   |  ![image](https://github.com/brewster76/fuzzy-archer/assets/58649043/aefe0b81-742a-453a-9e1f-3859330cc414)|
+| ![mobile_en](https://github.com/brewster76/fuzzy-archer/assets/58649043/2b445b5c-250b-47ff-b80d-53e9c73b52d8) | ![mobile_de](https://github.com/brewster76/fuzzy-archer/assets/58649043/60abda1b-27b0-43ad-bff2-56881455f8b9)|
 
 
 See it in action with live data (10s. refresh interval):
@@ -38,6 +38,17 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
+New in v4.4:
+
+- Upgraded dependencies
+- New Feature
+  - Support for all-time summaries for months and years on history page (https://github.com/brewster76/fuzzy-archer/issues/69)
+- Fixed issues
+  - https://github.com/brewster76/fuzzy-archer/issues/167 (thx to @[dcapslock](https://github.com/dcapslock))
+  - https://github.com/brewster76/fuzzy-archer/issues/169 (thx to @[dcapslock](https://github.com/dcapslock))
+
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...4.4
+
 New in v4.3:
 
 - Upgraded dependencies
@@ -58,7 +69,7 @@ New in v4.3:
 - symbolSize is configurable, even with a JS function (see shipped lightning chart configs)
 - Other smaller fixes
 
-Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.2...4.3
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.2...v4.3
 
 New in v4.2:
 
