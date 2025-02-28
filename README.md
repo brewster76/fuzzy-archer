@@ -41,11 +41,17 @@ Read the upgrading guides in the wiki, if you already have an older version inst
 New in v4.4:
 
 - Upgraded dependencies
-- New Feature
+- New Features
   - Support for all-time summaries for months and years on history page (https://github.com/brewster76/fuzzy-archer/issues/69)
+  - Images section for StationInfo Panel (https://github.com/brewster76/fuzzy-archer/discussions/173) (thx to @[dcapslock](https://github.com/dcapslock))
+  - Nav dropdown submenus (https://github.com/brewster76/fuzzy-archer/pull/174) (thx to @[dcapslock](https://github.com/dcapslock))
+  - Optional ordinate directions for windDir gauge (https://github.com/brewster76/fuzzy-archer/commit/fc995fe95b1949a9a6c41d24cd2016a08daa98db) (thx to @[dcapslock](https://github.com/dcapslock)) 
 - Fixed issues
   - https://github.com/brewster76/fuzzy-archer/issues/167 (thx to @[dcapslock](https://github.com/dcapslock))
   - https://github.com/brewster76/fuzzy-archer/issues/169 (thx to @[dcapslock](https://github.com/dcapslock))
+  - https://github.com/brewster76/fuzzy-archer/issues/163 (thx to @[dcapslock](https://github.com/dcapslock))
+
+Many thanks to all contributors for your open eyes, discussion inputs, PRs, filing issues! Namely @[Aslak Vaa](https://github.com/aslak47) for this version.
 
 Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...4.4
 
