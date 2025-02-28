@@ -5,6 +5,7 @@
 <script src="js/mqtt.min.js?v=$js_mtime"></script>
 <script src="js/units.js?v=$js_mtime"></script>
 <script src="js/echarts.min.js?v=$js_mtime"></script>
+<script src="js/luxon.min.js?v=$js_mtime"></script>
 <script src="js/gauges.js?v=$js_mtime"></script>
 <script src="js/site.js?v=$js_mtime"></script>
 <script src="js/lang.js?v=$js_mtime"></script>

@@ -70,6 +70,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/lang.js',
             'skins/Bootstrap/js/mqtt.min.js',
+            'skins/Bootstrap/js/luxon.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',

@@ -19,6 +19,7 @@ let lang;
 let eChartsLocale;
 let maxAgeHoursMS;
 let intervalData = {};
+let stationTimezone = "local";
 let liveData = [];
 
 fetch(weewxDataUrl + Date.now()).then(function (u) {
@@ -26,6 +27,7 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
 }).then(function (serverData) {
     weewxData = serverData;
     archiveIntervalSeconds = Number(weewxData.config.archive_interval);
+    stationTimezone = weewxData.config.station_timezone === undefined ? "local" : weewxData.config.station_timezone;
     lang = locale.split("_")[0];
     eChartsLocale = lang.toUpperCase();
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
@@ -89,7 +91,7 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
                 updateGaugesAndCharts(timestamp, jPayload);
 
                 let lastUpdate = document.getElementById("lastUpdate");
-                lastUpdate.innerHTML = formatDateTime(new Date(timestamp));
+                lastUpdate.innerHTML = formatDateTime(new Date(timestamp), stationTimezone);
             });
         }
     }
@@ -202,7 +204,7 @@ function addValueAndUpdateChart(chart, option, dataset, value, timestamp) {
 
         if (dataset.chartId !== undefined) {
             let chartElem = document.getElementById(dataset.chartId + "_timestamp");
-            chartElem.innerHTML = formatDateTime(timestamp);
+            chartElem.innerHTML = formatDateTime(timestamp, stationTimezone);
         }
     }
 }
@@ -370,14 +372,28 @@ function calcWindDir(windDirIntervaldata, windSpeedIntervaldata) {
     return (Math.atan(sumY / sumX) * 180 / Math.PI) + offset;
 }
 
-function formatDateTime(timestamp) {
-    let date = new Date(timestamp);
-    return date.toLocaleDateString(jsLocale) + ", " + formatTime(timestamp);
+function formatDateTime(timestamp, timezone='local', format=luxon.DateTime.DATETIME_SHORT_WITH_SECONDS) {
+    // for formatting hints see https://github.com/moment/luxon/blob/master/docs/formatting.md
+    // luxon.DateTime.DATETIME_SHORT_WITH_SECONDS = "10/14/1983, 1:30:23 PM" (locale=en-US)
+    return formatLuxon(timestamp, timezone, format);
 }
 
-function formatTime(timestamp) {
-    let date = new Date(timestamp);
-    return date.toLocaleTimeString(jsLocale);
+function formatDate(timestamp, timezone='local', format=luxon.DateTime.DATE_SHORT) {
+    // for formatting hints see https://github.com/moment/luxon/blob/master/docs/formatting.md
+    // luxon.DateTime.DATE_SHORT = "10/14/1983" (locale=en-US)
+    return formatLuxon(timestamp, timezone, format);
+}
+
+function formatTime(timestamp, timezone='local', format=luxon.DateTime.TIME_SIMPLE) {
+    // for formatting hints see https://github.com/moment/luxon/blob/master/docs/formatting.md
+    // luxon.DateTime.TIME_SIMPLE = "1:30 PM" (locale=en-US)
+    return formatLuxon(timestamp, timezone, format);
+}
+
+function formatLuxon(timestamp, timezone, format) {
+    // Timestamp maybe seconds, maybe date object so create Luxon date via JSDate
+    let luxonDate = new luxon.DateTime.fromJSDate(new Date(timestamp), {zone: timezone, locale: jsLocale});
+    return luxonDate.toLocaleString(format);
 }
 
 function checkAsyncReload(retryCount) {
@@ -418,7 +434,7 @@ function asyncReloadWeewxData() {
         appendLiveData();
         let date = new Date(lastGoodStamp);
         let lastUpdate = document.getElementById("lastUpdate");
-        lastUpdate.innerHTML = formatDateTime(date);
+        lastUpdate.innerHTML = formatDateTime(date, stationTimezone);
     });
 }
 
