@@ -225,7 +225,11 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             aggregate_types.append("min")
 
         timespan = TimeSpan(self.first_timestamp, self.lastGoodStamp)
-        series = weewx.xtypes.get_series(column_name, timespan, db_manager)
+        try:
+            series = weewx.xtypes.get_series(column_name, timespan, db_manager)
+        except weewx.UnknownType as e:
+            log.info("JSONGenerator: *** Could not find series for column '%s' ***" % column_name)
+            return 0, None, None
         daily_highlow_values = []
         for aggregate_type in aggregate_types:
             daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
