@@ -461,10 +461,13 @@ class MyXSearch(SearchList):
 class FormatCell(SearchList):
     def format_cell(self, value, table_settings, summary=False):
 
-        value_vh = weewx.units.ValueHelper(value)
         background_color = "#ffffff"
         font_color = "#000000"
 
+        if value is None:
+            return {"formatted_value": None, "font_color": font_color, "background_color": background_color}
+
+        value_vh = weewx.units.ValueHelper(value)
         value_vt = value_vh.value_t
 
         formatted_value = value_vh.format(table_settings["format_string"], "-")
