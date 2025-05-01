@@ -133,6 +133,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.first_timestamp = first_value_timestamp
 
         for chart in self.chart_dict.sections:
+            if chart not in self.chart_dict["live_chart_items"]:
+                continue
             for category in self.chart_dict[chart].sections:
                 category_config = self.frontend_data['charts'][chart][category]
                 ret, category_history, daily_highlow_values = self.gen_history_data(category, category_config, self.chart_dict[chart][category].get('data_binding'))
@@ -145,6 +147,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     self.frontend_data[category] = category_history
                     self.frontend_data[category + "_daily_high_low"] = daily_highlow_values
         for gauge in self.gauge_dict.sections:
+            if gauge not in self.gauge_dict["live_gauge_items"]:
+                continue
             gauge_config = self.frontend_data['gauges'][gauge]
             ret, gauge_history, _ = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
             gauge_config['target_unit'] = self.get_target_unit(gauge)
