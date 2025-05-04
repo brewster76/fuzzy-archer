@@ -334,10 +334,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         if station_timezone is None:
             # fallback to UTC offset
             offsetTotalSeconds = datetime.now().astimezone().utcoffset().total_seconds()
-            offsetSign = '-' if offsetTotalSeconds < 0 else '+'
             offsetMinutes = int(offsetTotalSeconds % 3600)
             offsetHours = int(offsetTotalSeconds // 3600)
             # Luxon on Front End accepts timezone in format '+HH:mm' or '-HH:mm' as alternative to IANA timezone
-            station_timezone = f'{offsetSign}{offsetHours:02d}:{offsetMinutes:02d}'
+            station_timezone = f'{offsetHours:+03d}:{offsetMinutes:02d}'
         
         return station_timezone
