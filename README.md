@@ -50,6 +50,9 @@ New in v4.4:
   - https://github.com/brewster76/fuzzy-archer/issues/167 (thx to @[dcapslock](https://github.com/dcapslock))
   - https://github.com/brewster76/fuzzy-archer/issues/169 (thx to @[dcapslock](https://github.com/dcapslock))
   - https://github.com/brewster76/fuzzy-archer/issues/163 (thx to @[dcapslock](https://github.com/dcapslock))
+  - https://github.com/brewster76/fuzzy-archer/issues/187 (thx to @[claudobahn](https://github.com/claudobahn))
+  - https://github.com/brewster76/fuzzy-archer/issues/188 (thx to @[claudobahn](https://github.com/claudobahn))
+  - https://github.com/brewster76/fuzzy-archer/issues/191 (thx to @[claudobahn](https://github.com/claudobahn))
 
 Many thanks to all contributors for your open eyes, discussion inputs, PRs, filing issues! Namely @[Aslak Vaa](https://github.com/aslak47) for this version.
 
