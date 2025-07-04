@@ -72,6 +72,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/lang.js',
             'skins/Bootstrap/js/mqtt.min.js',
+            'skins/Bootstrap/js/luxon.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',
@@ -87,7 +88,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf',
              'skins/Bootstrap/lang/zh.conf'])]
 
-        version="4.3"
+        version="4.4"
         super(BootstrapInstaller, self).__init__(
             version=version,
             name='bootstrap',

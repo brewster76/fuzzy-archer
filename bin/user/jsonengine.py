@@ -26,6 +26,7 @@ import sys
 import logging
 import json
 import os.path
+import zoneinfo
 
 import weewx.reportengine
 import weewx.xtypes
@@ -41,6 +42,10 @@ from weeutil.weeutil import TimeSpan
 from datetime import datetime, time, timedelta
 from user.sunevents import SunEvents
 
+try:
+    from tzlocal import get_localzone_name
+except:
+    get_localzone_name = None
 
 log = logging.getLogger(__name__)
 
@@ -112,6 +117,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         self.frontend_data['config'] = self.json_dict
         self.frontend_data['config']['archive_interval'] = self.config_dict['StdArchive']['archive_interval']
+        self.frontend_data['config']['station_timezone'] = self.get_station_timezone()
 
         self.frontend_data['gauges'] = self.gauge_dict
         self.frontend_data['charts'] = self.chart_dict
@@ -127,6 +133,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.first_timestamp = first_value_timestamp
 
         for chart in self.chart_dict.sections:
+            if chart not in self.chart_dict["live_chart_items"]:
+                continue
             for category in self.chart_dict[chart].sections:
                 category_config = self.frontend_data['charts'][chart][category]
                 ret, category_history, daily_highlow_values = self.gen_history_data(category, category_config, self.chart_dict[chart][category].get('data_binding'))
@@ -139,6 +147,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     self.frontend_data[category] = category_history
                     self.frontend_data[category + "_daily_high_low"] = daily_highlow_values
         for gauge in self.gauge_dict.sections:
+            if gauge not in self.gauge_dict["live_gauge_items"]:
+                continue
             gauge_config = self.frontend_data['gauges'][gauge]
             ret, gauge_history, _ = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
             gauge_config['target_unit'] = self.get_target_unit(gauge)
@@ -308,3 +318,26 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             start_of_day = start_of_next_day
 
         return value_list
+    
+    def get_station_timezone(self):
+        station_timezone = None
+        if get_localzone_name is not None:
+            # return IANA timezone, or fallback, using tzlocal
+            # get_localzone_name can raise an exception if TZ environment variable is set to something it does not understand
+            try:
+                station_timezone = get_localzone_name()
+            except zoneinfo.ZoneInfoNotFoundError as err:
+                log.debug("tzlocal get_localzone_name execption. Will fallback to UTC offset: %s", err)
+        else:
+            log.warning("tzlocal not installed. Will fallback to UTC offset for station timezone")
+        
+        if station_timezone is None:
+            # fallback to UTC offset
+            offsetTotalSeconds = datetime.now().astimezone().utcoffset().total_seconds()
+            offsetSign = '-' if offsetTotalSeconds < 0 else '+'
+            offsetMinutes = int(offsetTotalSeconds % 3600)
+            offsetHours = int(offsetTotalSeconds // 3600)
+            # Luxon on Front End accepts timezone in format '+HH:mm' or '-HH:mm' as alternative to IANA timezone
+            station_timezone = f'{offsetSign}{offsetHours:02d}:{offsetMinutes:02d}'
+        
+        return station_timezone

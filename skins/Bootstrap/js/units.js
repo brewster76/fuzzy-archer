@@ -115,29 +115,29 @@ let observationGroups = {
 }
 
 function convert(itemConfig, value) {
-    if(isNaN(value)) {
-      return;
+    if (isNaN(value)) {
+        return;
     }
     value = Number.parseFloat(value);
 
-    if(itemConfig.convertFunction !== undefined && itemConfig.convertFunction !== null && itemConfig.convertFunction !== "") {
+    if (itemConfig.convertFunction !== undefined && itemConfig.convertFunction !== null && itemConfig.convertFunction !== "") {
         let convertFunction = new Function("return " + itemConfig.convertFunction)();
         return convertFunction(value);
     }
 
     let sourceUnit = weewxData.source_unit_system[itemConfig.obs_group];
-    if(sourceUnit === undefined && sourceUnit !== null && sourceUnit !== "") {
+    if (sourceUnit === undefined && sourceUnit !== null && sourceUnit !== "") {
         return value;
     }
 
     let group = observationGroups[itemConfig.observationType];
     let targetUnit = weewxData.units.Groups[group];
-    if(sourceUnit === targetUnit) {
-      return value;
+    if (sourceUnit === targetUnit) {
+        return value;
     }
     let functionName = sourceUnit + "_To_" + targetUnit;
-    if(window[functionName] !== undefined) {
-      return window[functionName](value);
+    if (window[functionName] !== undefined) {
+        return window[functionName](value);
     }
     //console.log("Couldn't find conversion function: '" + functionName + "', returning value without conversion");
     return value;
@@ -361,13 +361,13 @@ function degree_C_To_degree_F(value) {
 }
 
 function getUnitString(shownValue, unit) {
-    if(unit === undefined) {
+    if (unit === undefined) {
         return "";
     }
-    if(Array.isArray(unit) && unit.length > 1 && Number(shownValue) !== 1) {
+    if (Array.isArray(unit) && unit.length > 1 && Number(shownValue) !== 1) {
         return unit[1];
     }
-    if(Array.isArray(unit) && unit.length > 1 && Number(shownValue) === 1) {
+    if (Array.isArray(unit) && unit.length > 1 && Number(shownValue) === 1) {
         return unit[0];
     }
     return unit;
