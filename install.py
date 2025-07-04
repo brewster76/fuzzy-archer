@@ -14,6 +14,7 @@ def loader():
 
 class BootstrapInstaller(setup.ExtensionInstaller):
     _skin_conf_files = ['Bootstrap/skin.conf']
+    _version="4.4"
 
     def __init__(self):
         files=[('skins/Bootstrap',
@@ -72,6 +73,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/lang.js',
             'skins/Bootstrap/js/mqtt.min.js',
+            'skins/Bootstrap/js/luxon.min.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',
@@ -87,9 +89,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf',
              'skins/Bootstrap/lang/zh.conf'])]
 
-        version="4.3"
         super(BootstrapInstaller, self).__init__(
-            version=version,
+            version= self._version,
             name='bootstrap',
             description='A skin based around the bootstrap framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",

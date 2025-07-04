@@ -8,16 +8,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$gettext("Page Title") $station.location</title>
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="css/live.css" rel="stylesheet">
+    <link href="css/bootstrap.min.css?v=$css_mtime" rel="stylesheet">
+    <link href="css/bootstrap-icons.min.css?v=$css_mtime" rel="stylesheet">
+    <link href="css/live.css?v=$css_mtime" rel="stylesheet">
     #set $extra_css = $to_list($Extras.get('extra_css', []))
     #for $css in $extra_css
-    <link href="css/$css" rel="stylesheet">
+    <link href="css/$css?v=$css_mtime" rel="stylesheet">
     #end for
-    #set $extra_css = $to_list($Extras.get('extra_js', []))
-    #for $js in $extra_css
-    <script src="js/$js"></script>
+    #set $extra_js = $to_list($Extras.get('extra_js', []))
+    #for $js in $extra_js
+    <script src="js/$js?v=$js_mtime"></script>
     #end for
     <script type="text/javascript">
     let locale = "$locale";
