@@ -4,8 +4,6 @@
 """calculates events (before sunrise, before sunset, end of twilight, start of twilight for the
  given timespan and angle
 
-Tested on Weewx release 4.10.1
-
 ############################################################################################
 #
 """

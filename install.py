@@ -14,6 +14,7 @@ def loader():
 
 class BootstrapInstaller(setup.ExtensionInstaller):
     _skin_conf_files = ['Bootstrap/skin.conf']
+    _version="4.4"
 
     def __init__(self):
         files=[('skins/Bootstrap',
@@ -88,9 +89,8 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/lang/th.conf',
              'skins/Bootstrap/lang/zh.conf'])]
 
-        version="4.4"
         super(BootstrapInstaller, self).__init__(
-            version=version,
+            version= self._version,
             name='bootstrap',
             description='A skin based around the bootstrap framework',
             author="Nick Dajda, Michael Kainzbauer and other contributors",

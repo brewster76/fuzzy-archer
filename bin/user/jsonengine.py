@@ -3,7 +3,6 @@
 #    Author: Michael Kainzbauer (github: mkainzbauer)
 """generator for configuration and initializing live data skin
 
-Tested on Weewx release 4.10.1.
 Tested with sqlite, may not work with other databases.
 
 Directions for use:

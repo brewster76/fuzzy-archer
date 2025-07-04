@@ -5,7 +5,6 @@
 #
 """Extends the Cheetah generator search list to add html historic data tables in a nice color scheme.
 
-Tested on Weewx release 5.1.0.
 Works with all databases.
 Observes the units of measure and display formats specified in skin.conf.
 
@@ -60,7 +59,7 @@ class MyXSearch(SearchList):
         self.cache_time = 0
 
         self.search_list_extension = {}
-        self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version']  
+        self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version'] if 'version' in generator.skin_dict else ''
         self.search_list_extension['css_mtime'] = self.last_mtime_resources('css', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
         self.search_list_extension['js_mtime'] = self.last_mtime_resources('js', generator.config_dict['WEEWX_ROOT'], generator.skin_dict['HTML_ROOT'])
 
