@@ -56,7 +56,7 @@ New in v4.4:
 
 Many thanks to all contributors for your open eyes, discussion inputs, PRs, filing issues! Namely @[Aslak Vaa](https://github.com/aslak47) for this version.
 
-Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...4.4
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.3...v4.4
 
 New in v4.3:
 
