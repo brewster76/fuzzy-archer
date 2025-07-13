@@ -116,7 +116,7 @@ class BootstrapInstaller(setup.ExtensionInstaller):
 
         print("")
         print("Change to a different language following the description at:")
-        print("   http://www.weewx.com/docs/customizing.htm#localization")
+        print("   https://www.weewx.com/docs/5.1/custom/localization/")
 
         print("")
         print("Default location for HTML and image files is public_html/Bootstrap")
