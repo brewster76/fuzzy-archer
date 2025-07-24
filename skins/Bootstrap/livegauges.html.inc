@@ -1,4 +1,7 @@
+
+#if  len($LiveGauges.get('live_gauge_items')) > 0 or len($StationInfo.get('station_info_items')) > 0
 <div id="gaugePanel" class="col-md-6 col-lg-5 col-xl-4 col-xxl-3 d-md-block $display_gauge_panel">
+    #if len($LiveGauges.get('live_gauge_items')) > 0
     <div class="row">
         <div class="col-12 text-center">
             <h1 class="currentConditions">$gettext("Current Conditions")</h1>
@@ -19,6 +22,8 @@
     #end if
     #set $count = $count + 1
     #end for
+    #end if
+    #if len($StationInfo.get('station_info_items')) > 0
     <!-- Station info -->
     <div class="row mx-1">
         #set $station_info_items = $to_list($StationInfo.get('station_info_items', ['location', 'sunRiseSet', 'moonphase', 'rain', 'uptime']))
@@ -26,4 +31,6 @@
         #include $station_info_item + ".html.inc"
         #end for
     </div>
+    #end if
 </div>
+#end if
