@@ -546,7 +546,7 @@ function addUndefinedIfCurrentMissing(data) {
     if (data.length > 0) {
         latestTimestamp = data[data.length - 1][0];
     }
-    if (Date.now() - latestTimestamp > weewxData.config.archive_interval) {
+    if (Date.now() - latestTimestamp > weewxData.config.archive_interval * 1000) {
         data.push([Date.now(), undefined]);
     }
 }
