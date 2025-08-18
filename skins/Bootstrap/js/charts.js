@@ -81,7 +81,7 @@ function loadCharts() {
             chartSeriesConfigs.push(chartSeriesConfig);
 
             if (weewxData[categoryId] !== undefined && weewxData[categoryId] !== null && weewxData[categoryId].length > 1) {
-                let categoryTimestamp = weewxData[categoryId].slice(-2, -1)[0][0];
+                let categoryTimestamp = weewxData[categoryId].slice(-1)[0][0];
                 if (categoryTimestamp !== undefined && categoryTimestamp > timestamp) {
                     timestamp = categoryTimestamp;
                 }
