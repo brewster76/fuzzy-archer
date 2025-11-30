@@ -24,6 +24,7 @@ TODO: example
 import sys
 import logging
 import json
+import configobj
 import os.path
 import zoneinfo
 
@@ -258,10 +259,21 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
 
     def get_day_night_events(self, start, end, lon, lat, altitude_m):
-        if 'ephem' not in sys.modules or not self.show_daynight:
+        if 'skyfield' not in sys.modules or not self.show_daynight:
             return []
 
-        events = SunEvents(start, end, lon, lat, int(altitude_m)).get_transits(self.transition_angle)
+        sqlite_root = self.config_dict.get('DatabaseTypes',configobj.ConfigObj()).get('SQLite',configobj.ConfigObj()).get('SQLITE_ROOT','.')
+        path = os.path.join(
+            self.config_dict.get('WEEWX_ROOT','.'),
+            sqlite_root,
+            'skyfield'
+        )
+        if not os.path.isdir(path): os.mkdir(path)
+
+        events = SunEvents(start, end, lon, lat, int(altitude_m), path, self.skin_dict['Skyfield']['ephemeris']).get_transits(self.transition_angle)
+        if events is None:
+            return []
+        
         for event in events:
             event[0] = event[0] * 1000
             angle = event[1]
