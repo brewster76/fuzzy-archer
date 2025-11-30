@@ -23,13 +23,15 @@ except ImportError:
 
 
 class SunEvents():
-    def __init__(self, start_ts, end_ts, lon, lat, elev):
+    def __init__(self, start_ts, end_ts, lon, lat, elev, path, ephemeris):
         if api is None:
             log.info("skyfield not found, some features, like day/night background colors for charts are not available.")
             return
         # Load ephemeris data
-        self.ts = api.load.timescale()
-        self.eph = api.load('de440s.bsp')
+        load = api.Loader(path)
+        self.eph = load(ephemeris)
+
+        self.ts = load.timescale()
         self.start_ts = int(start_ts)
         self.end_ts = int(end_ts)
         self.sun = self.eph['sun']
