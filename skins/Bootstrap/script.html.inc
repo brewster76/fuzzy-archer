@@ -8,4 +8,11 @@
 <script src="js/luxon.min.js?v=$js_mtime"></script>
 <script src="js/gauges.js?v=$js_mtime"></script>
 <script src="js/site.js?v=$js_mtime"></script>
-<script src="js/lang.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langEN.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langDE.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langES.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langFR.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langIT.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langNL.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langTH.js?v=$js_mtime"></script>
+<script src="js/echarts_i18n/langZH.js?v=$js_mtime"></script>

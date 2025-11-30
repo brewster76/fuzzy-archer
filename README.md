@@ -39,6 +39,13 @@ Available in multiple languages. Help wanted! We need help with translations for
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
 New in v4.4:
+- Upgraded dependencies
+ - pyephem is deprecated and now skyfield is needed for day/night background in Live Charts
+ - 
+- More predefined config examples for [History]
+- 
+
+New in v4.4:
 
 - Upgraded dependencies
 - New Features
