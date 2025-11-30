@@ -315,11 +315,14 @@ class MyXSearch(SearchList):
                         "avg": None
                         }
 
+            startdate = table_options.get('startdate', None)
             for month in year.months():
                 # update the binding to access the right DB
                 obs_month = getattr(month, obs_type)
                 obs_month.data_binding = binding
-                if aggregation:
+                if startdate is not None and month.timespan.start < int(startdate):
+                    value = weewx.units.ValueTuple(None, reading.value_t.unit, reading.value_t.group)
+                elif aggregation:
                     value = self.getCount(obs_month, aggregate_type, threshold_value, threshold_units, obs_type)
                 elif unit_type is not None:
                     value = converter.convert(getattr(obs_month, aggregate_type).value_t)

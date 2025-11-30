@@ -38,7 +38,6 @@ class LargeImageGenerator(weewx.reportengine.ReportGenerator):
                 log.debug("using default value for large_image_height")
 
             self.generate_large_image_configs(image_generator_config, large_image_width, large_image_height)
-            log.debug("[ImageGenerator]: %s" % image_generator_config)
             log.debug("%s: Generated large images configs in %.2f seconds" %
                       (os.path.basename(__file__), time.time() - start_time))
         except KeyError:
@@ -48,8 +47,6 @@ class LargeImageGenerator(weewx.reportengine.ReportGenerator):
 
     def generate_large_image_configs(self, image_generator_config, large_image_width, large_image_height):
         for key, image_generator_config_item in image_generator_config.items():
-            log.debug("key: %s" % key)
-            log.debug("item: %s" % image_generator_config_item)
             if isinstance(image_generator_config_item, dict):
                 image_generator_config[large + key] = self.add_image_group(image_generator_config_item,
                                                                            large_image_width, large_image_height)
