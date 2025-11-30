@@ -38,12 +38,17 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
-New in v4.4:
+New in v4.5:
 - Upgraded dependencies
- - pyephem is deprecated and now skyfield is needed for day/night background in Live Charts
- - 
-- More predefined config examples for [History]
-- 
+  - pyephem is deprecated and now skyfield is used for day/night background in Live Charts
+  - configuration for ephemeris file
+  - make sure you install skyfield, if you want day/night background in Live Charts
+  - there is a [weewx-skyfield-almanac](https://github.com/roe-dl/weewx-skyfield-almanac) extension for WeeWX
+    - If you chose to install weewx-skyfield-almanac, it may be a good idea to use the same ephemeris file download location
+- More predefined config examples for [HistoryReport]
+- Additional norwegian translations (thx to @[Aslak Vaa](https://github.com/aslak47))
+
+Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.4...v4.5
 
 New in v4.4:
 
