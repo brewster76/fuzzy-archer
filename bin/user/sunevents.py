@@ -11,70 +11,31 @@
 from math import pi
 
 import logging
-from weeutil.weeutil import startOfDayUTC
-from weewx.almanac import djd_to_timestamp, timestamp_to_djd
+from datetime import datetime
+from datetime import timezone
 
 log = logging.getLogger(__name__)
 
 try:
-    import ephem
+    from skyfield import api, almanac
 except ImportError:
-    log.info("pyephem not found, some features are not available.")
-
-def rad_2_deg(value):
-    return value * 180.0 / pi
-
-
-def deg_2_rad(value):
-    return value * pi / 180.0
+    api = None
 
 
 class SunEvents():
     def __init__(self, start_ts, end_ts, lon, lat, elev):
-        self.start_ts = start_ts
-        self.end_ts = end_ts
-        station = ephem.Observer()
-        station.lon, station.lat, station.elevation = lon, lat, elev
-        self.station = station
+        if api is None:
+            log.info("skyfield not found, some features, like day/night background colors for charts are not available.")
+            return
+        # Load ephemeris data
+        self.ts = api.load.timescale()
+        self.eph = api.load('de440s.bsp')
+        self.start_ts = int(start_ts)
+        self.end_ts = int(end_ts)
+        self.sun = self.eph['sun']
+        self.topos = api.wgs84.latlon(float(lat), float(lon), elev)
+        self.observer = self.eph['earth'] + self.topos
         self.transits = []
-
-    def calc_rise_set(self, horizon, use_center=True):
-        self.station.horizon = horizon
-        try:
-            rise_ts = int(
-                djd_to_timestamp(self.station.next_rising(ephem.Sun(), use_center=use_center)))
-        except ephem.CircumpolarError as e:
-            rise_ts = None
-            log.debug(e.args[0])
-        try:
-            set_ts = int(
-                djd_to_timestamp(self.station.next_setting(ephem.Sun(), use_center=use_center)))
-        except ephem.CircumpolarError as e:
-            set_ts = None
-            log.debug(e.args[0])
-
-        return (rise_ts, horizon, "rising"), (set_ts, horizon, "setting")
-
-    def calc_transits(self):
-        transit_date = self.station.next_transit(ephem.Sun())
-        transit_date_ts = int(djd_to_timestamp(transit_date))
-        antitransit_date = self.station.next_antitransit(ephem.Sun())
-        antitransit_date_ts = int(djd_to_timestamp(antitransit_date))
-
-        station_date = self.station.date
-
-        self.station.date = transit_date
-        sun = ephem.Sun(self.station)
-        transit_alt = sun.alt
-
-        self.station.date = antitransit_date
-        sun = ephem.Sun(self.station)
-        antitransit_alt = sun.alt
-
-        self.station.date = station_date
-
-        return (transit_date_ts, transit_alt, "transit"), (
-        antitransit_date_ts, antitransit_alt, "antitransit")
 
     def append_transits(self, values):
         for value in values:
@@ -82,34 +43,53 @@ class SunEvents():
             value_angle = value[1]
             value_text = value[2]
             if value_ts is not None and self.start_ts <= value_ts <= self.end_ts:
-                self.transits.append([value_ts, rad_2_deg(value_angle), value_text])
+                self.transits.append([value_ts, value_angle, value_text])
 
-    def get_transits(self, angle_degree):
+    def get_transits(self, angle):
+        sf_start_time = self._ts_to_skyfield_time(self.start_ts)
+        sf_end_time = self._ts_to_skyfield_time(self.end_ts)
+        self.append_transits([[self.start_ts, self.sun_alt_degrees(sf_start_time), "start"]])
 
-        angle_rad = deg_2_rad(angle_degree)
-        ephem_start = ephem.Date(timestamp_to_djd(self.start_ts))
-        self.station.date = ephem_start
-        sun = ephem.Sun(self.station)
-        self.append_transits([[self.start_ts, sun.alt, "start"]])
+        lower_rise_times, y = almanac.find_risings(self.observer, self.sun, sf_start_time, sf_end_time, -angle)
+        for t in lower_rise_times:
+            self.append_transits([[self._skyfield_time_to_ts(t), -angle, "rising"]])
 
-        for t in range(self.start_ts - 3600 * 24, self.end_ts + 3600 * 24 + 1, 3600 * 24):
-            start_of_day_utc = startOfDayUTC(t)
+        upper_rise_times, y = almanac.find_risings(self.observer, self.sun, sf_start_time, sf_end_time, angle)
+        for t in upper_rise_times:
+            self.append_transits([[self._skyfield_time_to_ts(t), angle, "rising"]])
+        
+        lower_set_times, y = almanac.find_settings(self.observer, self.sun, sf_start_time, sf_end_time, angle)
+        for t in lower_set_times:
+            self.append_transits([[self._skyfield_time_to_ts(t), angle, "setting"]])
 
-            self.station.date = ephem.Date(timestamp_to_djd(start_of_day_utc))
+        upper_set_times, y = almanac.find_settings(self.observer, self.sun, sf_start_time, sf_end_time, -angle)
+        for t in upper_set_times:
+            self.append_transits([[self._skyfield_time_to_ts(t), -angle, "setting"]])
 
-            lower_rise_set = self.calc_rise_set(-angle_rad)
-            self.append_transits(lower_rise_set)
-            upper_rise_set = self.calc_rise_set(angle_rad)
-            self.append_transits(upper_rise_set)
+        f = almanac.meridian_transits(self.eph, self.sun, self.topos)
+        transits, y = almanac.find_discrete(sf_start_time, sf_end_time, f)
+        i = 0
+        for t in transits:
+            transit_type = "transit" if int(y[i]) == 1 else "antitransit"
+            i += 1
+            self.append_transits([[self._skyfield_time_to_ts(t), self.sun_alt_degrees(t), transit_type]])
 
-            transit_antitransit = self.calc_transits()
-            self.append_transits(transit_antitransit)
-
-        ephem_end = timestamp_to_djd(self.end_ts)
-        self.station.date = ephem_end
-        sun = ephem.Sun(self.station)
-        self.append_transits([[self.end_ts, sun.alt, "end"]])
+        self.append_transits([[self.end_ts, self.sun_alt_degrees(sf_end_time), "end"]])
 
         self.transits.sort(key=lambda x: x[0])
         return self.transits
+    
+    def _ts_to_skyfield_time(self, unix_timestamp: int):
+        """Convert Unix timestamp to Skyfield time object."""
+        dt = datetime.fromtimestamp(int(unix_timestamp), tz=timezone.utc)
+        return self.ts.utc(dt)
+    
+    def _skyfield_time_to_ts(self, sky_time) -> int:
+        """Convert Skyfield time object to Unix timestamp."""
+        dt = sky_time.utc_datetime()
+        return int(dt.timestamp())
+    
+    def sun_alt_degrees(self, time):
+        alt, _, _ = self.observer.at(time).observe(self.sun).apparent().altaz()
+        return int(alt.degrees)
 
