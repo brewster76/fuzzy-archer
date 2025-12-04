@@ -48,6 +48,9 @@ New in v4.5:
 - More predefined config examples for [HistoryReport]
 - Additional norwegian translations (thx to @[Aslak Vaa](https://github.com/aslak47))
 
+- Fixed issues
+    - https://github.com/brewster76/fuzzy-archer/issues/200 (thx to @[WernerKr](https://github.com/WernerKr))
+
 Change list: https://github.com/brewster76/fuzzy-archer/compare/v4.4...v4.5
 
 New in v4.4:
