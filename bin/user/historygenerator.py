@@ -156,7 +156,7 @@ class MyXSearch(SearchList):
 
             t2 = time.time()
 
-            log.info("%s: Generated %d tables in %.2f seconds" %
+            log.debug("%s: Generated %d tables in %.2f seconds" %
                      (os.path.basename(__file__), ngen, t2 - t1))
 
         return [self.search_list_extension]
