@@ -409,7 +409,7 @@ class MyXSearch(SearchList):
         else:
             if "min" in period_entry and (aggregate_type == "min" and (period_entry["min"] is None or value < period_entry["min"])):
                 period_entry["min"] = value
-            if "max" in period_entry and (aggregate_type == "max" and (period_entry["max"] is None or value > period_entry["max"])):
+            if "max" in period_entry and ((aggregate_type == "max" or value.unit == 'count') and (period_entry["max"] is None or value > period_entry["max"])):
                 period_entry["max"] = value
 
     def _statsDictNOAA(self, data_table, table_options, table_stats):
