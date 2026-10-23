@@ -182,7 +182,7 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             axisLabel: {
                 fontWeight: 'normal',
                 fontSize: weewxData.labelFontSize === undefined ? 8 : weewxData.labelFontSize,
-                color: '#777',
+                color: weewxData.labelColor === undefined ? '#777' : weewxData.labelColor,
                 formatter: function (value, index) {
                     return round(value, 1);
                 }
@@ -190,13 +190,13 @@ function getGaugeOption(name, min, max, splitNumber, axisTickSplitNumber, lineCo
             title: {
                 fontWeight: 'normal',
                 fontSize: weewxData.titleFontSize === undefined ? 10 : weewxData.titleFontSize,
-                color: '#777',
+                color: weewxData.titleColor === undefined ? '#777' : weewxData.titleColor,
                 offsetCenter: ['0', '28%']
             },
             detail: {
                 fontWeight: 'bold',
                 fontSize: weewxData.detailFontSize === undefined ? 12 : weewxData.detailFontSize,
-                color: '#777',
+                color: weewxData.detailColor === undefined ? '#777' : weewxData.detailColor,
                 formatter: function (value) {
                     if (isNaN(value)) {
                         return undefined;
