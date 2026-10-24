@@ -51,7 +51,7 @@ function loadCharts() {
                 plotType: plotType,
                 dataReferences: dataReferences === undefined ? [] : dataReferences,
                 yAxisIndex: category.yAxisIndex === undefined ? 0 : category.yAxisIndex,
-                yAxisMin: category.yAxisMin === undefined ? 0 : category.yAxisMin,
+                yAxisMin: category.yAxisMin === undefined ? undefined : category.yAxisMin,
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
@@ -174,6 +174,7 @@ function getChartOption(seriesConfigs) {
         yAxisIndices[seriesConfig.yAxisIndex]["maxInterval"] = seriesConfig.maxInterval;
         yAxisIndices[seriesConfig.yAxisIndex]["splitNumber"] = seriesConfig.splitNumber;
         yAxisIndices[seriesConfig.yAxisIndex]["labelFontSize"] = seriesConfig.labelFontSize;
+        yAxisIndices[seriesConfig.yAxisIndex]["yAxisMin"] = seriesConfig.yAxisMin;
     }
 
     for (let serie of series) {
