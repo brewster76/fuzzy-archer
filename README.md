@@ -47,6 +47,8 @@ New in v4.5:
     - If you chose to install weewx-skyfield-almanac, it may be a good idea to use the same ephemeris file download location
 - More predefined config examples for [HistoryReport]
 - Additional norwegian translations (thx to @[Aslak Vaa](https://github.com/aslak47))
+- Additional czech translations (thx to @[Jiri Dobry](https://github.com/dobryj))
+- Additional italian translations (thx to @[Claudio Baldari](https://github.com/bald982))
 
 - Fixed issues
     - https://github.com/brewster76/fuzzy-archer/issues/200 (thx to @[WernerKr](https://github.com/WernerKr))
