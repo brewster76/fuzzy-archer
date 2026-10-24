@@ -37,7 +37,7 @@ function loadCharts() {
             chart.weewxData[categoryId].observationType = categoryId;
             addUndefinedIfCurrentMissing(weewxData[categoryId]);
 
-            let plotType = category.plotType == undefined ? LINE : category.plotType;
+            let plotType = category.plotType === undefined ? LINE : category.plotType;
             let aggregateType = category.aggregateType === undefined ? SUM : category.aggregateType;
             let aggregateInterval = category.aggregateInterval;
 
@@ -55,7 +55,7 @@ function loadCharts() {
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
                 labelFontSize: category.labelFontSize === undefined ? 11 : category.labelFontSize,
-                showTooltipValueNone: getBooleanOrDefault(category.showTooltipValueNone, plotType === BAR ? true : false),
+                showTooltipValueNone: getBooleanOrDefault(category.showTooltipValueNone, plotType === BAR),
                 obs_group: category.obs_group,
                 weewxColumn: categoryId,
                 decimals: Number(category.decimals),
@@ -211,12 +211,12 @@ function getChartOption(seriesConfigs) {
             axisLabel: {
                 formatter: function (value, index) {
                     let formattedValue = format(value, decimals);
-                    if (value * Math.pow(10, decimals) % 1 != 0) {
+                    if (value * Math.pow(10, decimals) % 1 !== 0) {
                         formattedValue = "";
                     }
                     if (value >= 1000) {
                         formattedValue = value.toFixed();
-                        if (value % 1 != 0) {
+                        if (value % 1 !== 0) {
                             formattedValue = "";
                         }
                     }
@@ -226,7 +226,7 @@ function getChartOption(seriesConfigs) {
             },
             scale: true,
         };
-        if (obs_group === "group_speed" || obs_group === "group_distance") {
+        if (obs_group === "group_speed" || obs_group === "group_distance" || obs_group === "group_radiation") {
             yAxisItem.min = 0;
         }
         if (obs_group === "group_percent") {
@@ -365,12 +365,12 @@ function getTooltip(seriesConfigs) {
                     let toDate = new Date(aggregateAxisValue + halfAggregateInterval);
                     let from = formatDateTime(fromDate, stationTimezone);
                     let to = formatTime(toDate, stationTimezone);
-                    if (i == 0 || aggregateInterval !== intervals[i - 1]) {
+                    if (i === 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + from + " - " + to + '</td></tr>';
                     }
                 } else {
                     let date = new Date(aggregateAxisValue);
-                    if (i == 0 || aggregateInterval !== intervals[i - 1]) {
+                    if (i === 0 || aggregateInterval !== intervals[i - 1]) {
                         tooltipHTML += '<tr><td colspan="2" style="font-size: x-small;">' + formatDateTime(date, stationTimezone) + '</td></tr>';
                     }
                 }
@@ -407,7 +407,7 @@ function getAggregateAxisValue(axisValue, data, halfAggregateInterval) {
             return aggregateAxisValue;
         } else {
             aggregateAxisValue = item[0];
-            if (diff != halfAggregateInterval || aggregateAxisValue == data[0][0]) {
+            if (diff !== halfAggregateInterval || aggregateAxisValue === data[0][0]) {
                 diff = Math.abs(axisValue - aggregateAxisValue);
             } else {
                 diff = 0;
@@ -574,8 +574,8 @@ function getDayNightMarkArea() {
     dayNightEvents.forEach(
         (element, index) => {
             let last = dayNightEvents[index + 1];
-            let start = index == 0 ? undefined : element[0];
-            let end = index == (dayNightEvents.length - 1) ? undefined : last[0];
+            let start = index === 0 ? undefined : element[0];
+            let end = index === (dayNightEvents.length - 1) ? undefined : last[0];
             let extentEnd = last !== undefined ? last[1] : element[1];
             let part = getPart(start, end, element[1], extentEnd);
             data.push(part);
