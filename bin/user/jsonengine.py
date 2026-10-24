@@ -69,9 +69,17 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         self.gauge_dict = self.skin_dict['LiveGauges']
         self.chart_dict = self.skin_dict['LiveCharts']
         self.units_dict = self.skin_dict['Units']
-        merge_config(self.units_dict, self.config_dict['StdReport']['Defaults']['Units'])
+        try:
+            merge_config(self.units_dict, self.config_dict['StdReport']['Defaults']['Units'])
+        except KeyError as keyError:
+            log.debug("JSONGenerator: Could not merge ['StdReport']['Defaults']['Units'] because '%s' is missing" % keyError.args[0])
+        
         self.labels_dict = self.skin_dict['Labels']
-        merge_config(self.labels_dict, self.config_dict['StdReport']['Defaults']['Labels'])
+        try:
+            merge_config(self.labels_dict, self.config_dict['StdReport']['Defaults']['Labels'])
+        except KeyError as keyError:
+            log.debug("JSONGenerator: Could not merge ['StdReport']['Defaults']['Labels'] because '%s' is missing" % keyError.args[0])
+        
         self.frontend_data = {}
 
         # Create a converter to get this into the desired units

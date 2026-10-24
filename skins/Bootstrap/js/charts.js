@@ -70,7 +70,7 @@ function loadCharts() {
                 data: weewxData[categoryId],
                 unit: weewxData.units.Labels[category.target_unit],
                 symbol: category.symbol,
-                symbolSize: category.symbolSize,
+                symbolSize: category.symbolSize === undefined ? 4 : category.symbolSize,
                 chartId: chartId,
             }
             if (category.lineWidth !== undefined) {
@@ -245,6 +245,7 @@ function getChartOption(seriesConfigs) {
     return {
         legend: {
             type: "plain",
+            top: 10,
             data: legendData
         },
         color: colors,

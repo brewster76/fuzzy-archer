@@ -156,7 +156,7 @@ class MyXSearch(SearchList):
 
             t2 = time.time()
 
-            log.info("%s: Generated %d tables in %.2f seconds" %
+            log.debug("%s: Generated %d tables in %.2f seconds" %
                      (os.path.basename(__file__), ngen, t2 - t1))
 
         return [self.search_list_extension]
@@ -315,11 +315,14 @@ class MyXSearch(SearchList):
                         "avg": None
                         }
 
+            startdate = table_options.get('startdate', None)
             for month in year.months():
                 # update the binding to access the right DB
                 obs_month = getattr(month, obs_type)
                 obs_month.data_binding = binding
-                if aggregation:
+                if startdate is not None and month.timespan.start < int(startdate):
+                    value = weewx.units.ValueTuple(None, reading.value_t.unit, reading.value_t.group)
+                elif aggregation:
                     value = self.getCount(obs_month, aggregate_type, threshold_value, threshold_units, obs_type)
                 elif unit_type is not None:
                     value = converter.convert(getattr(obs_month, aggregate_type).value_t)
@@ -406,7 +409,7 @@ class MyXSearch(SearchList):
         else:
             if "min" in period_entry and (aggregate_type == "min" and (period_entry["min"] is None or value < period_entry["min"])):
                 period_entry["min"] = value
-            if "max" in period_entry and (aggregate_type == "max" and (period_entry["max"] is None or value > period_entry["max"])):
+            if "max" in period_entry and ((aggregate_type == "max" or value.unit == 'count') and (period_entry["max"] is None or value > period_entry["max"])):
                 period_entry["max"] = value
 
     def _statsDictNOAA(self, data_table, table_options, table_stats):
