@@ -51,6 +51,7 @@ function loadCharts() {
                 plotType: plotType,
                 dataReferences: dataReferences === undefined ? [] : dataReferences,
                 yAxisIndex: category.yAxisIndex === undefined ? 0 : category.yAxisIndex,
+                yAxisMin: category.yAxisMin === undefined ? 0 : category.yAxisMin,
                 aggregateType: aggregateType,
                 aggregateInterval: aggregateInterval,
                 payloadKey: category.payload_key,
@@ -238,6 +239,9 @@ function getChartOption(seriesConfigs) {
             yAxisItem.max = 360;
             yAxisItem.minInterval = 90;
             yAxisItem.maxInterval = 90;
+        }
+        if(yAxisIndices[yAxisIndex]["yAxisMin"] !== undefined) {
+            yAxisItem.min = yAxisIndices[yAxisIndex]["yAxisMin"];
         }
         yAxis.push(yAxisItem);
     }
