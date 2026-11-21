@@ -150,6 +150,9 @@ test("buildOption: bar charts start at zero, direction axis 0..360, legend selec
     const rain = cc.buildOption({view: "day", data: file(), chartConfig: chartConfig.rain, env: env,
         legendSelected: {Rain: false}}).option;
     assert.strictEqual(rain.series[0].type, "custom");
+    assert.deepStrictEqual(rain.series[0].encode, {x: 4, y: 2});
+    assert.deepStrictEqual(rain.series[0].data.map((point) => point[4]), [1800000, 5400000]);
+    assert.strictEqual(rain.tooltip.axisPointer.snap, true);
     assert.strictEqual(rain.yAxis[0].min, 0);
     assert.deepStrictEqual(rain.legend.selected, {Rain: false});
     assert.strictEqual(rain.legend.formatter("Rain"), "Rain (Σ 25.4 mm)");

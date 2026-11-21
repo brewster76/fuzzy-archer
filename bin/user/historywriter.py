@@ -70,7 +70,8 @@ def atomic_write(path, data):
             f.write(data)
             f.flush()
             os.fsync(f.fileno())
-        os.chmod(tmp, 0o644)
+        # Published under HTML_ROOT: clients need read access, but only the owner may write.
+        os.chmod(tmp, 0o644)  # NOSONAR(S2612)
         os.replace(tmp, path)
     except BaseException:
         try:
@@ -237,6 +238,8 @@ class Manifest(object):
             'backfill': {'state': 'idle', 'done': 0, 'total': 0, 'updated': 0},
             'segments': {},
         }
+        if not isinstance(self.index.get('segments'), dict):
+            self.index['segments'] = {}
         self.index['week_start'] = self.week_start
 
     def segment(self, period, key):
@@ -275,7 +278,7 @@ class Manifest(object):
     def entries(self, period):
         """All (pid, entry) of a period type, loading every listed segment."""
         result = {}
-        for key in list(self.index['segments'].get(period, {})):
+        for key in self.index['segments'].get(period, {}):
             result.update(self.segment(period, key)['entries'])
         for (p, key), segment in self._segments.items():
             if p == period:
@@ -296,8 +299,10 @@ class Manifest(object):
             self.index['segments'].setdefault(period, {})[key] = rev
         self._dirty.clear()
         self.index['generated'] = int(now if now is not None else time.time())
-        self.index['segments'] = dict((p, dict(sorted(self.index['segments'][p].items())))
-                                      for p in PERIODS if p in self.index['segments'])
+        self.index['segments'] = {
+            p: dict(sorted(self.index['segments'][p].items()))
+            for p in PERIODS if p in self.index['segments']
+        }
         return write_json(os.path.join(self.root, 'manifest.json'), self.index)
 
 

@@ -300,9 +300,11 @@
             return Object.assign(base, {
                 type: "custom",
                 renderItem: barRenderer(series, env),
-                dimensions: ["start", "end", "value", "provisional"],
-                encode: {x: [0, 1], y: 2},
-                data: series.points.map(function (p) { return [p.start, p.end, p.value, p.provisional ? 1 : 0]; }),
+                dimensions: ["start", "end", "value", "provisional", "center"],
+                encode: {x: 4, y: 2},
+                data: series.points.map(function (p) {
+                    return [p.start, p.end, p.value, p.provisional ? 1 : 0, (p.start + p.end) / 2];
+                }),
                 itemStyle: {color: series.color},
                 clip: true,
             }, markers(series, env));
@@ -528,7 +530,7 @@
             },
             tooltip: {
                 trigger: "axis",
-                axisPointer: {type: "line", snap: false},
+                axisPointer: {type: "line", snap: true},
                 show: true,
                 confine: true,
                 formatter: tooltipFormatter(prepared, env),

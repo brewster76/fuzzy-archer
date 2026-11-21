@@ -310,7 +310,8 @@ function getTooltip(seriesConfigs) {
     return {
         trigger: containsScatter ? "item" : "axis",
         axisPointer: {
-            type: LINE
+            type: LINE,
+            snap: true
         },
         show: true,
         position: containsScatter ? "top" : "inside",

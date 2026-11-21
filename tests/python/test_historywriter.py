@@ -1,6 +1,7 @@
 import gzip
 import json
 import os
+import stat
 import subprocess
 import sys
 
@@ -31,8 +32,14 @@ def test_atomic_write_and_deterministic_gzip(tmp_path):
     rev1 = hw.write_json(path, {'x': 1}, compress=True)
     with open(path, 'rb') as f:
         raw = f.read()
-    assert raw[:2] == b'\x1f\x8b' and json.loads(gzip.decompress(raw)) == {'x': 1}
-    assert rev1 == hw.rev_of(raw) and len(rev1) == 12
+    assert raw[:2] == b'\x1f\x8b'
+    assert json.loads(gzip.decompress(raw)) == {'x': 1}
+    assert rev1 == hw.rev_of(raw)
+    assert len(rev1) == 12
+    if os.name == 'posix':
+        mode = stat.S_IMODE(os.stat(path).st_mode)
+        assert mode & 0o444 == 0o444
+        assert mode & 0o222 == 0o200
     assert hw.write_json(path, {'x': 1}, compress=True) == rev1
     assert hw.write_json(path, {'x': 2}, compress=True) != rev1
     assert [p for p in os.listdir(tmp_path / 'a')] == ['b.json.gz']  # no temp files left
@@ -52,16 +59,20 @@ def test_publish_period_states(tmp_path):
     root = str(tmp_path)
     required = ['wx_binding/outTemp', 'wx_binding/UV']
     entry = hw.publish_period(root, period_data(), required)
-    assert entry['s'] == 'ok' and entry['file'] == 'day/20261120.json.gz'
+    assert entry['s'] == 'ok'
+    assert entry['file'] == 'day/20261120.json.gz'
     assert entry['missing'] == ['wx_binding/UV']
     assert os.path.exists(os.path.join(root, 'day', '20261120.json.gz'))
     assert hw.publish_period(root, period_data('gaps', pid='20261121'), required)['s'] == 'gaps'
     nodata = hw.publish_period(root, period_data(counts={}, pid='20261122'), required)
-    assert nodata == {'s': 'nodata'} and not os.path.exists(os.path.join(root, 'day', '20261122.json.gz'))
+    assert nodata == {'s': 'nodata'}
+    assert not os.path.exists(os.path.join(root, 'day', '20261122.json.gz'))
+    running_data = period_data('running')
     with pytest.raises(ValueError):
-        hw.publish_period(root, period_data('running'), required)
+        hw.publish_period(root, running_data, required)
+    invalid_id_data = period_data(pid='../../x')
     with pytest.raises(ValueError):
-        hw.publish_period(root, period_data(pid='../../x'), required)
+        hw.publish_period(root, invalid_id_data, required)
 
 
 def test_manifest_segments_and_index(tmp_path):
@@ -74,7 +85,8 @@ def test_manifest_segments_and_index(tmp_path):
     m.set_backfill('running', 1, 10, 1000)
     m.flush(now=1000)
     index = hw.read_json(os.path.join(root, 'manifest.json'))
-    assert set(index['segments']['day']) == {'2025', '2026'} and 'all' in index['segments']['year']
+    assert set(index['segments']['day']) == {'2025', '2026'}
+    assert 'all' in index['segments']['year']
     seg = hw.read_json(os.path.join(root, 'manifest', 'day', '2026.json'))
     assert seg['entries'] == {'20260101': {'s': 'error', 'tries': 3}}
     v = validator('manifest-v1.schema.json')
@@ -91,6 +103,23 @@ def test_manifest_segments_and_index(tmp_path):
     assert set(m2.entries('day')) == {'20251231', '20260101'}
     with pytest.raises(ValueError):
         m2.set('day', '20260102', {'s': 'weird'})
+
+
+def test_manifest_index_without_segments_is_migrated(tmp_path):
+    root = str(tmp_path)
+    hw.write_json(os.path.join(root, 'manifest.json'), {
+        'schema_version': 1, 'generated': 100, 'week_start': 6,
+        'archive': {'first': None, 'last': None},
+        'backfill': {'state': 'idle', 'done': 0, 'total': 0, 'updated': 100},
+    })
+
+    manifest = hw.Manifest(root, 6)
+    assert manifest.entries('week') == {}
+    manifest.flush(now=200)
+
+    index = hw.read_json(os.path.join(root, 'manifest.json'))
+    assert index['segments'] == {}
+    validator('manifest-v1.schema.json').validate(index)
 
 
 def test_current_index(tmp_path):
@@ -118,11 +147,14 @@ def test_retry_state(tmp_path):
     r = hw.RetryState(str(tmp_path), max_retries=3, retry_backoff=600)
     assert r.due('day', '20261120', 0)
     assert r.failure('day', '20261120', 1000, 'boom') == 1
-    assert not r.due('day', '20261120', 1599) and r.due('day', '20261120', 1600)
+    assert not r.due('day', '20261120', 1599)
+    assert r.due('day', '20261120', 1600)
     r.failure('day', '20261120', 1600, 'boom')
-    assert not r.due('day', '20261120', 2799) and r.due('day', '20261120', 2800)
+    assert not r.due('day', '20261120', 2799)
+    assert r.due('day', '20261120', 2800)
     r.failure('day', '20261120', 2800, 'boom')
-    assert r.exhausted('day', '20261120') and not r.due('day', '20261120', 10 ** 9)
+    assert r.exhausted('day', '20261120')
+    assert not r.due('day', '20261120', 10 ** 9)
     r2 = hw.RetryState(str(tmp_path), max_retries=3)
     assert r2.tries('day', '20261120') == 3
     r2.clear('day')
@@ -132,8 +164,9 @@ def test_retry_state(tmp_path):
 def test_worker_lock(tmp_path):
     lock = hw.WorkerLock(str(tmp_path))
     with lock:
+        duplicate_lock = hw.WorkerLock(str(tmp_path))
         with pytest.raises(hw.LockBusy):
-            hw.WorkerLock(str(tmp_path)).acquire()
+            duplicate_lock.acquire()
         lock.refresh()
     assert not os.path.exists(lock.path)
 
@@ -152,8 +185,9 @@ def test_worker_lock_stale_by_age(tmp_path):
     lock_path = os.path.join(str(tmp_path), 'worker.lock')
     with open(lock_path, 'w') as f:
         json.dump({'pid': os.getpid(), 'host': 'other-host', 'start': 0}, f)
+    lock = hw.WorkerLock(str(tmp_path))
     with pytest.raises(hw.LockBusy):
-        hw.WorkerLock(str(tmp_path)).acquire()
+        lock.acquire()
     old = os.path.getmtime(lock_path) - 3600
     os.utime(lock_path, (old, old))
     hw.WorkerLock(str(tmp_path)).acquire().release()
