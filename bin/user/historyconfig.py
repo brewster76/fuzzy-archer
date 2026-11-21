@@ -78,19 +78,20 @@ def series_key(binding, data_type, aggregate_type, resolution):
 class ViewSeries(object):
     """A series as computed for one view (day/week/month/year)."""
 
-    def __init__(self, binding, data_type, aggregate_type, resolution, statistics):
+    def __init__(self, binding, data_type, aggregate_type, resolution, statistics, show=True):
         self.binding = binding
         self.data_type = data_type
         self.aggregate_type = aggregate_type if resolution != NATIVE else None
         self.resolution = resolution
         self.statistics = statistics
+        self.show = show
         self.key = series_key(binding, data_type, self.aggregate_type, resolution)
         self.obs_key = observation_key(binding, data_type)
 
     def to_dict(self):
         return {'key': self.key, 'observation': self.obs_key, 'data_binding': self.binding,
                 'data_type': self.data_type, 'aggregate_type': self.aggregate_type or 'none',
-                'resolution': self.resolution, 'statistics': list(self.statistics)}
+                'resolution': self.resolution, 'statistics': list(self.statistics), 'show': self.show}
 
 
 class SeriesConfig(object):
@@ -173,7 +174,7 @@ class PeriodChartsConfig(object):
     def _resolve_series(self, chart_id, series_id, section):
         options = dict((k, v) for k, v in section.items() if not isinstance(v, dict))
         binding = str(section.get('data_binding') or self.default_binding).strip()
-        data_type = str(section.get('data_type') or series_id).strip()
+        data_type = str(section.get('obs_type') or section.get('data_type') or series_id).strip()
         plot_type = str(section.get('plotType') or 'line').strip()
         if plot_type not in PLOT_TYPES:
             raise ConfigError("unknown plotType '%s'" % plot_type)
@@ -218,7 +219,8 @@ class PeriodChartsConfig(object):
 
         statistics = explicit_statistics if explicit_statistics is not None \
             else default_statistics(aggregate_type, effective_type)
-        return ViewSeries(binding, effective_type, aggregate_type, resolution, statistics)
+        show = as_bool(view_section.get('show'), True)
+        return ViewSeries(binding, effective_type, aggregate_type, resolution, statistics, show)
 
     # -----------------------------------------------------------------------------------------
 
@@ -233,6 +235,8 @@ class PeriodChartsConfig(object):
         for chart in self.charts:
             for s in chart.series:
                 vs = s.views[view]
+                if not vs.show:
+                    continue
                 series.setdefault(vs.key, vs)
                 obs = observations.setdefault(vs.obs_key, {'data_binding': vs.binding,
                                                            'data_type': vs.data_type,
@@ -340,7 +344,7 @@ def frontend_charts(config, obs_group_of, target_unit_of, generic_labels=None):
         chart_dict = result['charts'][chart.chart_id]
         for s in chart.series:
             series_dict = chart_dict['series'][s.series_id]
-            data_type = str(s.options.get('data_type') or s.series_id)
+            data_type = str(s.options.get('obs_type') or s.options.get('data_type') or s.series_id)
             series_dict['data_type'] = data_type
             series_dict['label'] = str(s.options.get('seriesName') or generic_labels.get(data_type) or data_type)
             series_dict['obs_group'] = obs_group_of(data_type)

@@ -16,7 +16,7 @@ const env = {
         return v;
     },
     decode: (t) => t,
-    text: (k) => k,
+    text: (k) => ({max: "Maximum", avg: "Average", Sum: "Sum"})[k] || k,
     formatInterval: (s, e) => s + "-" + e,
     axisLabel: (v) => String(v),
     clipRect: (r) => r,
@@ -80,11 +80,28 @@ test("prepareSeries converts units, keeps provisional flags and flags missing se
     assert.strictEqual(temp.points[2].value, null);
     assert.strictEqual(temp.points[3].provisional, true);
     assert.strictEqual(temp.unitLabel, "°C");
+    assert.strictEqual(temp.label, "Temperature");
     assert.deepStrictEqual(temp.stats.max, {value: 10, ms: 2200000, unitLabel: "°C", group: "group_temperature"});
     assert.ok(Math.abs(temp.stats.avg.value - 5) < 1e-9);
     const [missing] = cc.prepareSeries(chartConfig.missing, file(), "day", env);
     assert.strictEqual(missing.missing, true);
     assert.deepStrictEqual(missing.points, []);
+});
+
+test("prepareSeries excludes a series hidden for the selected view", () => {
+    const config = {series: {foo: {label: "Foo", views: {
+        year: Object.assign(view("wx/foo/avg/P1D", "wx/foo", "avg", "P1D", "group_temperature", "degree_C"),
+            {show: false}),
+    }}}};
+    assert.deepStrictEqual(cc.prepareSeries(config, file(), "year", env), []);
+});
+
+test("prepareSeries appends the translated aggregate type to the series label", () => {
+    const config = {series: {foo: {label: "Outside temperature", views: {
+        year: view("wx/foo/max/P1D", "wx/foo", "max", "P1D", "group_temperature", "degree_C"),
+    }}}};
+    const [series] = cc.prepareSeries(config, file(), "year", env);
+    assert.strictEqual(series.label, "Outside temperature (Maximum)");
 });
 
 test("stat_units are used for statistics with a different unit", () => {
@@ -148,14 +165,14 @@ test("buildOption: axis range, day/night only for day/week, tooltip with interva
 
 test("buildOption: bar charts start at zero, direction axis 0..360, legend selection kept", () => {
     const rain = cc.buildOption({view: "day", data: file(), chartConfig: chartConfig.rain, env: env,
-        legendSelected: {Rain: false}}).option;
+        legendSelected: {"Rain (Sum)": false}}).option;
     assert.strictEqual(rain.series[0].type, "custom");
     assert.deepStrictEqual(rain.series[0].encode, {x: 4, y: 2});
     assert.deepStrictEqual(rain.series[0].data.map((point) => point[4]), [1800000, 5400000]);
     assert.strictEqual(rain.tooltip.axisPointer.snap, true);
     assert.strictEqual(rain.yAxis[0].min, 0);
-    assert.deepStrictEqual(rain.legend.selected, {Rain: false});
-    assert.strictEqual(rain.legend.formatter("Rain"), "Rain (Σ 25.4 mm)");
+    assert.deepStrictEqual(rain.legend.selected, {"Rain (Sum)": false});
+    assert.strictEqual(rain.legend.formatter("Rain (Sum)"), "Rain (Sum) (Σ 25.4 mm)");
     const rainTip = rain.tooltip.formatter([{axisValue: 5000000}]);
     assert.match(rainTip, /Rain.*-/);
     const dir = cc.buildOption({view: "day", data: file(), chartConfig: chartConfig.dir, env: env}).option;

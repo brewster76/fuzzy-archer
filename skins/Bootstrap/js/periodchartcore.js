@@ -26,6 +26,17 @@
     const DAY_NIGHT = "__daynight";
     const PROVISIONAL_OPACITY = 0.45;
     const X_MIN_INTERVAL = {day: 3 * 3600000, week: 86400000};
+    const AGGREGATE_LABELS = {
+        min: "min",
+        avg: "avg",
+        max: "max",
+        sum: "Sum",
+        count: "Count",
+        first: "First",
+        last: "Last",
+        vecavg: "avg",
+        vecdir: "Vector direction",
+    };
 
     function boolOption(value, defaultValue) {
         if (value === undefined || value === null || value === "") {
@@ -140,7 +151,7 @@
         for (let seriesId of Object.keys(seriesConfigs)) {
             let options = seriesConfigs[seriesId];
             let viewConfig = options.views ? options.views[view] : undefined;
-            if (!viewConfig) {
+            if (!viewConfig || viewConfig.show === false) {
                 continue;
             }
             let fileSeries = data.series ? data.series[viewConfig.key] : undefined;
@@ -157,9 +168,14 @@
                 }
             }
             let plotType = options.plotType || "line";
+            let label = env.decode(options.label || seriesId);
+            let aggregateType = viewConfig.aggregate_type;
+            if (aggregateType && aggregateType !== "none") {
+                label += " (" + env.text(AGGREGATE_LABELS[aggregateType] || aggregateType) + ")";
+            }
             prepared.push({
                 id: seriesId,
-                label: env.decode(options.label || seriesId),
+                label: label,
                 plotType: plotType,
                 color: options.lineColor,
                 decimals: numberOption(options.decimals, group === "group_direction" ? 0 : 1),
@@ -167,7 +183,7 @@
                 unitLabel: env.unitLabel(target),
                 group: group,
                 resolution: viewConfig.resolution,
-                aggregateType: viewConfig.aggregate_type || null,
+                aggregateType: aggregateType || null,
                 points: points,
                 stats: convertStats(env, data.observations ? data.observations[viewConfig.observation] : undefined, target, group),
                 options: options,

@@ -1,5 +1,5 @@
 ## Period views Day / Week / Month / Year (js/periods.js). Hidden while Live! is active.
-#set $periodTextKeys = ['Current', 'Today', 'rolling', 'Previous period', 'Next period', 'Select period', 'Loading', 'No data available', 'Data not yet available', 'Incomplete data', 'Generation failed', 'Regeneration required', 'History is being built', 'provisional', 'Data as of']
+#set $periodTextKeys = ['Current', 'Today', 'rolling', 'Previous period', 'Next period', 'Select period', 'Loading', 'No data available', 'Data not yet available', 'Incomplete data', 'Generation failed', 'Regeneration required', 'History is being built', 'provisional', 'Data as of', 'min', 'avg', 'max', 'Sum', 'Count', 'First', 'Last', 'Vector direction']
 <template id="periodTexts">
     #for $key in $periodTextKeys
     <span data-key="$key">$gettext($key)</span>

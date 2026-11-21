@@ -385,7 +385,8 @@ New section; `[LiveCharts]` is untouched.
     [[outTemp]]                     # chart id
         [[[outTemp]]]               # series id (unique inside the chart)
             # data_binding = wx_binding   # default: WeeWX default binding
-            # data_type = outTemp         # default: series id
+            # obs_type = outTemp           # WeeWX observation type; defaults to series id
+            # data_type = outTemp          # legacy alias for obs_type
             # plotType = line             # line | bar | scatter
             # aggregateType = avg         # explicit aggregation (required for non-native bars)
             # aggregateInterval = PT15M   # explicit resolution for all views
@@ -397,12 +398,19 @@ New section; `[LiveCharts]` is untouched.
             decimals = 1
             [[[[day]]]]                   # optional per-view override of
                 aggregateInterval = PT5M  # aggregateType / aggregateInterval
+            [[[[year]]]]
+                show = false              # hide this series in the year chart only
 ```
 
 Display options (`seriesName`, `plotType`, `lineColor`, `lineWidth`, `decimals`, `yAxisIndex`,
 `yAxisMin`, `symbol`, `symbolSize`, `interval`, `minInterval`, `maxInterval`, `splitNumber`,
 `labelFontSize`, `showTooltipValueNone`, `dataReferences`, `showMaxMarkPoint`, `showMinMarkPoint`,
-`showAvgMarkLine`) have the same meaning as in `[LiveCharts]`. `payload_key`, `convertFunction`
+`showAvgMarkLine`) have the same meaning as in `[LiveCharts]`. The per-view `show` option defaults
+to `true`; set it to `false` to omit a series from that period's chart. Hidden series are also
+excluded from that view's generated data unless another visible series needs the same data.
+For aggregated views, the localized aggregation type is appended to the series label (for example,
+`Outside temperature (Max)`); translations come from `[Texts]` in the selected language file.
+`payload_key`, `convertFunction`
 and MQTT options are Live-only and ignored. Min/max mark points and the avg mark line use the
 server-side statistics (§3.5), not values derived from chart points. They are drawn only for series
 whose values are comparable with the raw record extremes: not for `sum` or `vecdir` aggregations
@@ -458,7 +466,8 @@ Added by `jsonengine.py` (Live ignores them; on any error the three keys are omi
 data is written unchanged):
 
 * `period_charts` – `{"order": [chart ids], "charts": {id: {<chart options>, "series": {id: …}}}}`.
-  Each series carries its display options, `data_type`, `label` (`seriesName`, else
+  Each series carries its display options, resolved `data_type` (`obs_type`, legacy `data_type`, else
+  series id), `label` (`seriesName`, else
   `[Labels][[Generic]]`, else data type), `obs_group`, `target_unit` and
   `views.<view>` = `{key, observation, data_binding, data_type, aggregate_type, resolution,
   statistics, obs_group, target_unit}` (`obs_group` of a `vecdir` view is `group_direction`).

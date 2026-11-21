@@ -7,7 +7,8 @@ SECTION = {
     'outTemp': {
         'animation': 'false',
         'outTemp': {'lineColor': '#b44242', 'day': {'aggregateInterval': 'PT5M'}},
-        'dewpoint': {'statistics': 'min, max'},
+        'min_outTemp': {'obs_type': 'outTemp', 'seriesName': 'Daily minimum'},
+        'dewpoint': {'statistics': 'min, max', 'year': {'show': 'false'}},
     },
     'rain': {'rain': {'plotType': 'bar', 'aggregateType': 'sum', 'aggregateInterval': '1800',
                       'year': {'aggregateInterval': 'P1D'}}},
@@ -48,6 +49,8 @@ def test_priority_and_keys():
     assert temp['day'].key == 'wx_binding/outTemp/avg/PT5M'
     assert temp['week'].key == 'wx_binding/outTemp/avg/PT30M'
     assert temp['year'].key == 'wx_binding/outTemp/avg/P1D'
+    minimum = c.charts[0].series[1].views
+    assert minimum['day'].key == 'wx_binding/outTemp/none/native'
     rain = c.charts[1].series[0].views
     assert rain['day'].key == 'wx_binding/rain/sum/PT30M'
     assert rain['year'].key == 'wx_binding/rain/sum/P1D'
@@ -68,14 +71,24 @@ def test_view_plan_union_and_dedupe():
     assert list(series) == ['wx_binding/outTemp/avg/PT2H', 'wx_binding/dewpoint/avg/PT2H']
     assert observations['wx_binding/outTemp']['statistics'] == ['min', 'max', 'avg', 'sum']
     assert observations['wx_binding/dewpoint']['statistics'] == ['min', 'max']
+    year_series, year_observations = c.view_plan('year')
+    assert list(year_series) == ['wx_binding/outTemp/avg/P1D']
+    assert 'wx_binding/dewpoint' not in year_observations
 
 
 def test_frontend_export():
-    exported = config().to_frontend()
+    exported = frontend_charts(config(), lambda data_type: 'group_temperature', lambda group: 'degree_C',
+                               {'outTemp': 'Outside temperature'})
     assert exported['order'] == ['outTemp', 'rain', 'windDir']
     series = exported['charts']['outTemp']['series']['outTemp']
     assert series['lineColor'] == '#b44242'
     assert series['views']['week']['resolution'] == 'PT30M'
+    assert series['views']['year']['show'] is True
+    minimum = exported['charts']['outTemp']['series']['min_outTemp']
+    assert minimum['data_type'] == 'outTemp'
+    assert minimum['label'] == 'Daily minimum'
+    dewpoint = exported['charts']['outTemp']['series']['dewpoint']
+    assert dewpoint['views']['year']['show'] is False
     assert exported['charts']['outTemp']['animation'] == 'false'
 
 
