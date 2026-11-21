@@ -95,7 +95,7 @@ function loadCharts() {
         chartOption = getChartOption(chartSeriesConfigs);
 
         for (let serie of chartOption.series) {
-            if (serie.data === undefined || serie.data === null) {
+            if (serie.data === undefined || serie.data === null || serie.data.length < 1) {
                 continue;
             }
             let currenStart = serie.data[0][0] - archiveIntervalSeconds * 1000;
