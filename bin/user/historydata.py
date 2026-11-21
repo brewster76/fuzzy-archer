@@ -76,7 +76,8 @@ def generate_mutable(root, state_directory, config, zone, week_start, now, db_ma
         series, observations = config.view_plan(period)
         data = build(db_managers, default_binding, series, observations, zone,
                      'calendar' if kind == 'current' else 'rolling', period, period_id, span, now,
-                     week_start=week_start, sun_events=sun_events, fallback_interval=archive_interval)
+                     week_start=week_start, sun_events=sun_events, fallback_interval=archive_interval,
+                     gap_threshold=config.gap_threshold)
         rel, rev = hw.write_current_file(root, kind, period, data)
         written.append((kind, period))
         return {'file': rel, 'rev': rev, 'generated': now, 'refresh': refresh_of(period)}

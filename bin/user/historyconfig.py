@@ -6,6 +6,7 @@ Works on plain dicts (configobj sections are dicts). See docs/historic-data-cont
 """
 
 import logging
+import math
 
 from user.historyperiods import PERIODS, NATIVE, normalize_resolution
 
@@ -123,6 +124,12 @@ class PeriodChartsConfig(object):
         self.max_retries = _number(section.get('max_retries'), 3, int)
         self.retry_backoff = _number(section.get('retry_backoff'), 600, int)
         self.backfill_pause = _number(section.get('backfill_pause'), 0.02, float)
+        try:
+            self.gap_threshold = _number(section.get('gap_threshold'), 1.0, float)
+        except ValueError as e:
+            raise ConfigError("gap_threshold must be a percentage between 0 and 100") from e
+        if not math.isfinite(self.gap_threshold) or not 0 <= self.gap_threshold <= 100:
+            raise ConfigError("gap_threshold must be a percentage between 0 and 100")
 
         refresh = section.get('refresh') or {}
         self.refresh = dict((view, _number(refresh.get(view), DEFAULT_REFRESH[view], int)) for view in PERIODS)
@@ -256,7 +263,7 @@ class PeriodChartsConfig(object):
             views[view] = {'series': sorted(series), 'observations':
                            dict((k, sorted(v['statistics'])) for k, v in sorted(observations.items()))}
         return {'views': views, 'show_daynight': self.show_daynight,
-                'transition_angle': self.transition_angle}
+                'transition_angle': self.transition_angle, 'gap_threshold': self.gap_threshold}
 
 
 # ---------------------------------------------------------------------------------------------
@@ -349,5 +356,6 @@ def frontend_config(config, week_start, archive_interval):
     """'period_config' for weewxData.json."""
     return {'data_url': config.data_url, 'generate': config.generate, 'week_start': int(week_start),
             'refresh': dict(config.refresh), 'archive_interval': int(archive_interval),
+            'gap_threshold': config.gap_threshold,
             'show_daynight': config.show_daynight, 'view_resolutions': config.view_resolutions,
             'errors': list(config.errors)}

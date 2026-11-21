@@ -398,6 +398,41 @@
             if (hasBars && allPositive && item.min === undefined) {
                 item.min = 0;   // bars grow from zero
             }
+            let dataValues = [];
+            let markerValues = [];
+            for (let series of axis.series) {
+                for (let point of series.points) {
+                    if (Number.isFinite(point.value)) {
+                        dataValues.push(point.value);
+                    }
+                }
+                let comparable = series.aggregateType !== "sum" && series.aggregateType !== "vecdir"
+                    && series.group !== "group_direction";
+                if (!comparable) {
+                    continue;
+                }
+                if (boolOption(series.options.showMinMarkPoint, false) && series.stats.min
+                        && Number.isFinite(series.stats.min.value)) {
+                    markerValues.push(series.stats.min.value);
+                }
+                if (boolOption(series.options.showMaxMarkPoint, false) && series.stats.max
+                        && Number.isFinite(series.stats.max.value)) {
+                    markerValues.push(series.stats.max.value);
+                }
+            }
+            if (dataValues.length > 0 && markerValues.length > 0) {
+                let dataMin = Math.min.apply(null, dataValues);
+                let dataMax = Math.max.apply(null, dataValues);
+                let extentMin = Math.min(dataMin, Math.min.apply(null, markerValues));
+                let extentMax = Math.max(dataMax, Math.max.apply(null, markerValues));
+                let padding = Math.max((extentMax - extentMin) * 0.05, Math.pow(10, -decimals));
+                if (item.min === undefined && extentMin < dataMin) {
+                    item.min = extentMin - padding;
+                }
+                if (item.max === undefined && extentMax > dataMax) {
+                    item.max = extentMax + padding;
+                }
+            }
             if (options.yAxisMin !== undefined && options.yAxisMin !== "") {
                 item.min = numberOption(options.yAxisMin, item.min);
             }

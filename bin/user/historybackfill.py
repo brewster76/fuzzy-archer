@@ -134,7 +134,8 @@ class Backfill(object):
         series, observations = self.config.view_plan(period)
         data = self.build(self.db_managers, self.default_binding, series, observations, self.zone, 'calendar',
                           period, pid, span, max(now, span[1]), week_start=self.week_start,
-                          sun_events=self.sun_events, fallback_interval=self.archive_interval)
+                          sun_events=self.sun_events, fallback_interval=self.archive_interval,
+                          gap_threshold=self.config.gap_threshold)
         entry = hw.publish_period(self.root, data, list(observations))
         if entry['s'] == 'nodata':
             hw.remove_period_file(self.root, period, pid)

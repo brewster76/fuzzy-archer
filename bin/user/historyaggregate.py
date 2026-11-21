@@ -220,7 +220,8 @@ class SunEventProvider(object):
 
 
 def build_period_data(db_managers, default_binding, series_plan, observation_plan, zone, kind, period,
-                      period_id, span, generated, week_start=None, sun_events=None, fallback_interval=None):
+                      period_id, span, generated, week_start=None, sun_events=None, fallback_interval=None,
+                      gap_threshold=1.0):
     """Assemble a complete period file dict (contract 3).
 
     db_managers: callable binding -> db_manager.
@@ -270,7 +271,9 @@ def build_period_data(db_managers, default_binding, series_plan, observation_pla
     if running:
         state = 'running'
     else:
-        state = 'gaps' if coverage.records < coverage.expected else 'complete'
+        missing_percent = (max(0, coverage.expected - coverage.records) * 100.0 / coverage.expected
+                           if coverage.expected else 0)
+        state = 'gaps' if missing_percent > gap_threshold else 'complete'
 
     data = {
         'schema_version': SCHEMA_VERSION,

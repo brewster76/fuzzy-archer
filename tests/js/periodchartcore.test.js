@@ -164,6 +164,26 @@ test("buildOption: bar charts start at zero, direction axis 0..360, legend selec
     assert.deepStrictEqual(dir.series[0].data, [[3600000, 270], [7200000, 90]]);
 });
 
+test("buildOption: visible max marker expands the value axis beyond averaged yearly points", () => {
+    const annual = file({
+        period: "year",
+        observations: {
+            "wx/outTemp": {unit: "degree_C", group: "group_temperature", count: 2,
+                stats: {min: [10, 1600], max: [40, 2200], avg: 20}},
+        },
+        series: {
+            "wx/outTemp/avg/P1D": {unit: "degree_C", group: "group_temperature",
+                points: [[1000, 2000, 19], [2000, 3000, 21]]},
+        },
+    });
+    const annualConfig = {series: {outTemp: {label: "Temperature", lineColor: "#b44242",
+        showMaxMarkPoint: "true",
+        views: {year: view("wx/outTemp/avg/P1D", "wx/outTemp", "avg", "P1D", "group_temperature", "degree_C")}}}};
+    const option = cc.buildOption({view: "year", data: annual, chartConfig: annualConfig, env: env}).option;
+    assert.ok(option.yAxis[0].max > 40);
+    assert.strictEqual(option.series[0].markPoint.data[0].coord[1], 40);
+});
+
 test("scatter dataReferences null out points whose reference is zero or missing", () => {
     const config = {series: {
         speed: {label: "Speed", views: {day: view("wx/s/none/native", "wx/s", null, "native", "group_speed", "km_per_hour")}},

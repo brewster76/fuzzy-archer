@@ -47,7 +47,8 @@ New in the next version (unreleased):
 - Data files are written to `historic_data/` in the report directory: the running and rolling periods by the new
   `user.historydata.PeriodDataGenerator` on every report run, completed periods by a low-priority background
   worker that builds the whole history once and then keeps up with new periods.
-- Regenerate completed periods after correcting archive data or changing `[PeriodCharts]`:
+- Regenerate completed periods after correcting archive data or changing `[PeriodCharts]`
+  (including `gap_threshold`; completed periods are not automatically recalculated):
   `python -m user.historyregen --period all` (run with WeeWX's Python, the WeeWX `bin` directory
   on `PYTHONPATH`; see `python -m user.historyregen --help`).
 - Removed: `day.html`, `week.html`, `month.html`, `year.html`, the `ImageGenerator` / `LargeImageGenerator`

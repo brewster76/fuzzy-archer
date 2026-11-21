@@ -23,11 +23,23 @@ def config():
 def test_options_and_defaults():
     c = config()
     assert c.generate and c.data_url == 'historic_data'
+    assert c.gap_threshold == 1
     assert c.refresh == {'day': 0, 'week': 600, 'month': 10800, 'year': 21600}
     assert c.view_resolutions['week'] == {'line': 'PT30M', 'bar': 'PT1H'}
     assert [ch.chart_id for ch in c.charts] == ['outTemp', 'rain', 'windDir']
     assert len(c.errors) == 2  # missing section, bar without aggregateType
     assert any('UV' in e for e in c.errors)
+
+
+def test_gap_threshold_validation():
+    assert PeriodChartsConfig({'gap_threshold': '2.5'}).gap_threshold == 2.5
+    for threshold in ('-1', '100.1', 'nan'):
+        try:
+            PeriodChartsConfig({'gap_threshold': threshold})
+        except ValueError as error:
+            assert 'gap_threshold' in str(error)
+        else:
+            raise AssertionError('Expected invalid gap_threshold %s to be rejected' % threshold)
 
 
 def test_priority_and_keys():
@@ -136,5 +148,6 @@ def test_frontend_charts_and_config():
     cfg = frontend_config(config, 6, '300')
     assert cfg['week_start'] == 6 and cfg['archive_interval'] == 300 and cfg['data_url'] == 'historic_data'
     assert cfg['refresh']['week'] == 3600 and cfg['view_resolutions']['day']['line'] == 'native'
+    assert cfg['gap_threshold'] == 1
     import json
     json.dumps(charts), json.dumps(cfg)

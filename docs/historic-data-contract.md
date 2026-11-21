@@ -196,9 +196,12 @@ Technically failed generations are **never published** (state (c) of the specifi
 only in the worker state and as manifest status `error`). A series whose query failed makes the
 whole period fail; it is never written as a gap.
 
-`gaps` ⇔ `coverage.records < coverage.expected`, with
+`gaps` ⇔ the percentage of missing archive records is greater than `[PeriodCharts] gap_threshold`
+(default `1`, valid range `0..100`), with
 `expected = floor((min(end, generated) - start) / archive_interval)` and `archive_interval`
 = most frequent record `interval` in the span, in seconds.
+Changing `gap_threshold` does not update already-published completed periods; regenerate them with
+`python -m user.historyregen --period all` to apply the new threshold to the full history.
 
 ### 3.2 Keys
 
@@ -354,6 +357,8 @@ New section; `[LiveCharts]` is untouched.
     data_url = historic_data    # URL of the data root relative to this report's pages (E22)
     show_daynight = true        # day/week only
     transition_angle = 8
+    gap_threshold = 1           # tolerated missing archive records before status "gaps" (%; 0..100)
+                                # Changing it requires: python -m user.historyregen --period all
     state_root =                # default <WEEWX_ROOT>/<SQLITE_ROOT>/fuzzy_archer
     max_retries = 3             # then manifest status "error"
     retry_backoff = 600         # seconds, doubled per try

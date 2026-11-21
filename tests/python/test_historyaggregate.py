@@ -61,12 +61,12 @@ def schema_validator():
     return jsonschema.Draft202012Validator(schema)
 
 
-def build(db, view, kind, span, generated, period_id=None, sun_events=None):
+def build(db, view, kind, span, generated, period_id=None, sun_events=None, gap_threshold=1.0):
     config = PeriodChartsConfig(SECTION, 'wx_binding')
     series, observations = config.view_plan(view)
     data = build_period_data(lambda binding: db, 'wx_binding', series, observations, ZONE, kind, view,
                              period_id, span, generated, week_start=6, sun_events=sun_events,
-                             fallback_interval=300)
+                             fallback_interval=300, gap_threshold=gap_threshold)
     return json.loads(json.dumps(data, allow_nan=False))
 
 
@@ -100,6 +100,16 @@ def test_gaps_state(db, schema_validator):
     schema_validator.validate(data)
     assert data['state'] == 'gaps'
     assert data['coverage']['records'] == 285 and data['coverage']['expected'] == 288
+
+
+def test_gap_threshold_is_a_percentage(db):
+    day = FIRST_DAY + dt.timedelta(days=2)
+    span = hp.period_span(ZONE, 'day', day)
+    period_id = hp.period_id('day', day)
+    tolerated = build(db, 'day', 'calendar', span, span[1] + 60, period_id, gap_threshold=1.1)
+    exceeded = build(db, 'day', 'calendar', span, span[1] + 60, period_id, gap_threshold=1.0)
+    assert tolerated['state'] == 'complete'
+    assert exceeded['state'] == 'gaps'
 
 
 def test_running_day_provisional_buckets(db, schema_validator):
