@@ -19,8 +19,6 @@ class BootstrapInstaller(setup.ExtensionInstaller):
     def __init__(self):
         files=[('skins/Bootstrap',
             ['skins/Bootstrap/about.html.tmpl',
-             'skins/Bootstrap/chartimages.html.inc',
-             'skins/Bootstrap/day.html.tmpl',
              'skins/Bootstrap/foot.html.inc',
              'skins/Bootstrap/graphMenu.html.inc',
              'skins/Bootstrap/head.html.inc',
@@ -29,16 +27,14 @@ class BootstrapInstaller(setup.ExtensionInstaller):
              'skins/Bootstrap/index.html.tmpl',
              'skins/Bootstrap/livegauges.html.inc',
              'skins/Bootstrap/location.html.inc',
-             'skins/Bootstrap/month.html.tmpl',
              'skins/Bootstrap/moonphase.html.inc',
              'skins/Bootstrap/nav.html.inc',
              'skins/Bootstrap/news.html.tmpl',
+             'skins/Bootstrap/periodview.html.inc',
              'skins/Bootstrap/script.html.inc',
              'skins/Bootstrap/stats.html.tmpl',
              'skins/Bootstrap/sunRiseSet.html.inc',
              'skins/Bootstrap/uptime.html.inc',
-             'skins/Bootstrap/week.html.tmpl',
-             'skins/Bootstrap/year.html.tmpl',
              'skins/Bootstrap/reportData.json.tmpl',
              'skins/Bootstrap/rain.html.inc',
              'skins/Bootstrap/stationInfo.json.inc',
@@ -46,16 +42,16 @@ class BootstrapInstaller(setup.ExtensionInstaller):
            ('skins/Bootstrap/NOAA',
             ['skins/Bootstrap/NOAA/NOAA-YYYY.txt.tmpl',
              'skins/Bootstrap/NOAA/NOAA-YYYY-MM.txt.tmpl']),
-           ('skins/Bootstrap/font',
-            ['skins/Bootstrap/font/FreeMonoBold.ttf',
-            'skins/Bootstrap/font/GNU_FreeFont.txt',
-            'skins/Bootstrap/font/Kanit-Bold.ttf',
-            'skins/Bootstrap/font/Kanit-Regular.ttf',
-            'skins/Bootstrap/font/OFL.txt']),
            ('bin/user',
-            ['bin/user/historygenerator.py',
+            ['bin/user/historyaggregate.py',
+             'bin/user/historybackfill.py',
+             'bin/user/historyconfig.py',
+             'bin/user/historydata.py',
+             'bin/user/historygenerator.py',
+             'bin/user/historyperiods.py',
+             'bin/user/historyregen.py',
+             'bin/user/historywriter.py',
              'bin/user/jsonengine.py',
-             'bin/user/largeimagegenerator.py',
              'bin/user/sunevents.py']),
            ('skins/Bootstrap/css',
             ['skins/Bootstrap/css/bootstrap.min.css',
@@ -81,6 +77,13 @@ class BootstrapInstaller(setup.ExtensionInstaller):
             'skins/Bootstrap/js/gauges.js',
             'skins/Bootstrap/js/mqtt.min.js',
             'skins/Bootstrap/js/luxon.min.js',
+            'skins/Bootstrap/js/periodchartcore.js',
+            'skins/Bootstrap/js/periodcharts.js',
+            'skins/Bootstrap/js/periodcore.js',
+            'skins/Bootstrap/js/periodpicker.js',
+            'skins/Bootstrap/js/periods.js',
+            'skins/Bootstrap/js/periodsdata.js',
+            'skins/Bootstrap/js/periodstore.js',
             'skins/Bootstrap/js/site.js',
             'skins/Bootstrap/js/units.js']),
            ('skins/Bootstrap/lang',
@@ -126,6 +129,10 @@ class BootstrapInstaller(setup.ExtensionInstaller):
         print("   https://www.weewx.com/docs/5.1/custom/localization/")
 
         print("")
-        print("Default location for HTML and image files is public_html/Bootstrap")
+        print("Default location for HTML files is public_html/Bootstrap")
         print("*** POINT YOUR BROWSER TO: public_html/Bootstrap/index.html ***")
+        print("")
+        print("Day/week/month/year charts are built from the archive by a background worker;")
+        print("after an upgrade, old day.html/week.html/month.html/year.html and *.png files")
+        print("in the report directory are no longer generated and can be deleted.")
         print("")

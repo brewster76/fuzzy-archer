@@ -134,6 +134,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             self.frontend_data['source_unit_system'][unit_system_item[0]] = unit_system_item[1]
         self.frontend_data['units'] = self.units_dict
         self.frontend_data['labels'] = self.labels_dict
+        self.add_period_data()
         live_options = accumulateLeaves(self.json_dict)
         duration = int(live_options.get('timespan'))
         first_value_timestamp = self.lastGoodStamp - duration * 60 * 60
@@ -188,6 +189,29 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
         log.info("JSONGenerator: Generated %d data items for %s in %.2f seconds" %
                  (ngen, self.skin_dict['REPORT_NAME'], finish_time - start_time))
+
+    def add_period_data(self):
+        """Additive keys for the Day/Week/Month/Year views (docs/historic-data-contract.md, section 8).
+        Never affects the Live data: errors are logged and the keys omitted."""
+        section = self.skin_dict.get('PeriodCharts')
+        if not section:
+            return
+        try:
+            from user.historyconfig import PeriodChartsConfig, frontend_charts, frontend_config, period_titles
+            from user.historydata import resolve_week_start
+            config = PeriodChartsConfig(section, self.skin_dict.get('data_binding', 'wx_binding'))
+            groups = self.units_dict.get('Groups', {})
+            self.frontend_data['period_charts'] = frontend_charts(
+                config, lambda data_type: weewx.units.obs_group_dict.get(data_type, ''),
+                lambda group: groups.get(group, ''), self.labels_dict.get('Generic', {}))
+            self.frontend_data['period_config'] = frontend_config(
+                config, resolve_week_start(self.config_dict, self.stn_info),
+                self.config_dict['StdArchive']['archive_interval'])
+            self.frontend_data['period_titles'] = period_titles(self.units_dict.get('TimeFormats', {}))
+        except Exception as e:
+            log.error("JSONGenerator: could not add period view configuration: %s", e, exc_info=True)
+            for key in ('period_charts', 'period_config', 'period_titles'):
+                self.frontend_data.pop(key, None)
 
     def get_target_unit(self, column_name):
         try:

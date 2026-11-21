@@ -68,7 +68,6 @@ class MyXSearch(SearchList):
         self.add_to_extension_list('StationInfo', generator.skin_dict)
         self.add_to_extension_list('TranslationLinks', generator.skin_dict)
         self.add_to_extension_list('HistoryReport', generator.skin_dict)
-        self.add_to_extension_list('ImageGenerator', generator.skin_dict)
         self.add_to_extension_list('BootstrapLabels', generator.skin_dict)
         self.add_to_extension_list('Labels', generator.skin_dict)
         self.add_to_extension_list('Units', generator.skin_dict)

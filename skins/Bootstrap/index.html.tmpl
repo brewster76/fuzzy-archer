@@ -15,7 +15,7 @@
         <!-- Main panel -->
         <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             #include "graphMenu.html.inc"
-            <div class="row">
+            <div class="row" id="liveView">
                 #for $chartName in $live_chart_items
                 #set $value = $LiveCharts[$chartName]
                 #if isinstance($value, dict)
@@ -23,11 +23,19 @@
                 #end if
                 #end for
             </div>
+            #include "periodview.html.inc"
         </div>
     </div>
     #include "foot.html.inc"
 </div>
 #include "script.html.inc"
 <script src="js/charts.js?v=$js_mtime"></script>
+<script src="js/periodcore.js?v=$js_mtime"></script>
+<script src="js/periodstore.js?v=$js_mtime"></script>
+<script src="js/periods.js?v=$js_mtime"></script>
+<script src="js/periodsdata.js?v=$js_mtime"></script>
+<script src="js/periodchartcore.js?v=$js_mtime"></script>
+<script src="js/periodcharts.js?v=$js_mtime"></script>
+<script src="js/periodpicker.js?v=$js_mtime"></script>
 </body>
 </html>

@@ -1,14 +1,20 @@
-#set $graphMenuItems = [{'href': 'index.html', 'text': 'Live'}, {'href': 'day.html', 'text': '24 Hours'}, {'href': 'week.html', 'text': 'Week'}, {'href': 'month.html', 'text': 'Month'}, {'href': 'year.html', 'text': 'Year'}]
+#set $graphMenuItems = [{'view': 'live', 'text': 'Live'}, {'view': 'day', 'text': 'Day'}, {'view': 'week', 'text': 'Week'}, {'view': 'month', 'text': 'Month'}, {'view': 'year', 'text': 'Year'}]
+#set $onIndexPage = 'index.html' in $filename
 <section id="menu"></section>
 <p id="graphMenu" class="my-1 mt-md-0">
     #for $graphMenuItem in $graphMenuItems
     #set $classlist = ' btn-light primaryLight'
-    #set $href = $graphMenuItem['href']
-    #if $graphMenuItem['href'] in $filename
+    #if $graphMenuItem['view'] == 'live' and $onIndexPage
     #set $classlist = ' btn-primary primaryLive'
-    #set $href = '#'
     #end if
-    <a class="btn${classlist}" href="$href">$gettext($graphMenuItem['text'])</a>
+    #if $graphMenuItem['view'] == 'live'
+    #set $href = 'index.html'
+    #elif $onIndexPage
+    #set $href = '#' + $graphMenuItem['view']
+    #else
+    #set $href = 'index.html#' + $graphMenuItem['view']
+    #end if
+    <a class="btn${classlist}" href="$href" data-view="$graphMenuItem['view']">$gettext($graphMenuItem['text'])</a>
     #end for
 </p>
 <script type="text/javascript">
@@ -17,14 +23,6 @@
     let graphMenu = document.getElementById("graphMenu");
     if(graphMenu !== null && graphMenu !== undefined) {
       document.getElementById("indexHtml").classList.add("active");
-      let listItems = document.evaluate("a", graphMenu, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-      for(let i = 0; i < listItems.snapshotLength; i++) {
-        let item = listItems.snapshotItem(i);
-        if(window.innerWidth < 768) {
-          let hash = item.href.endsWith('#') ? '' : '#';
-          item.href += hash + "menu";
-        }
-      }
     }
 #end raw
 </script>

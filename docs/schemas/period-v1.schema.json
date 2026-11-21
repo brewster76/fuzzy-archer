@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fuzzy-archer/period-v1.schema.json",
+  "title": "fuzzy-archer period file, schema version 1",
+  "type": "object",
+  "required": ["schema_version", "time_unit", "kind", "period", "period_id", "state", "timezone",
+               "generated", "period_span", "axis", "coverage", "unit_system", "observations",
+               "series", "sun_events", "errors"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "time_unit": {"const": "s"},
+    "kind": {"enum": ["calendar", "rolling"]},
+    "period": {"enum": ["day", "week", "month", "year"]},
+    "period_id": {"type": ["string", "null"], "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"},
+    "state": {"enum": ["complete", "gaps", "running"]},
+    "week_start": {"type": "integer", "minimum": 0, "maximum": 6},
+    "timezone": {
+      "type": "object",
+      "required": ["name", "transitions"],
+      "properties": {
+        "name": {"type": ["string", "null"]},
+        "transitions": {
+          "type": "array", "minItems": 1,
+          "items": {"type": "array", "prefixItems": [{"type": "integer"}, {"type": "integer"}], "minItems": 2, "maxItems": 2}
+        }
+      }
+    },
+    "generated": {"type": "integer"},
+    "period_span": {"$ref": "#/$defs/span"},
+    "axis": {"$ref": "#/$defs/span"},
+    "coverage": {
+      "type": "object",
+      "required": ["first", "last", "records", "expected", "archive_interval"],
+      "properties": {
+        "first": {"type": ["integer", "null"]},
+        "last": {"type": ["integer", "null"]},
+        "records": {"type": "integer", "minimum": 0},
+        "expected": {"type": "integer", "minimum": 0},
+        "archive_interval": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "unit_system": {"enum": [1, 16, 17]},
+    "observations": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[^/]+/[^/]+$"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["data_binding", "data_type", "unit", "group", "count", "stats"],
+        "properties": {
+          "data_binding": {"type": "string"},
+          "data_type": {"type": "string"},
+          "unit": {"type": ["string", "null"]},
+          "group": {"type": ["string", "null"]},
+          "count": {"type": "integer", "minimum": 0},
+          "stat_units": {
+            "type": "object",
+            "additionalProperties": {"type": "array", "prefixItems": [{"type": ["string", "null"]}, {"type": ["string", "null"]}], "minItems": 2, "maxItems": 2}
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "min": {"$ref": "#/$defs/valueAtTime"},
+              "max": {"$ref": "#/$defs/valueAtTime"},
+              "avg": {"type": ["number", "null"]},
+              "sum": {"type": ["number", "null"]},
+              "vecavg": {"type": ["number", "null"]},
+              "vecdir": {"type": ["number", "null"]}
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    "series": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[^/]+/[^/]+/[^/]+/(native|PT5M|PT10M|PT15M|PT30M|PT1H|PT2H|PT3H|PT6H|P1D)$"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["observation", "aggregate_type", "resolution", "unit", "group", "points"],
+        "properties": {
+          "observation": {"type": "string"},
+          "aggregate_type": {"type": "string"},
+          "resolution": {"enum": ["native", "PT5M", "PT10M", "PT15M", "PT30M", "PT1H", "PT2H", "PT3H", "PT6H", "P1D"]},
+          "unit": {"type": ["string", "null"]},
+          "group": {"type": ["string", "null"]},
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "prefixItems": [{"type": "integer"}, {"type": "integer"}, {"type": ["number", "null"]}, {"const": 1}],
+              "minItems": 3, "maxItems": 4
+            }
+          }
+        }
+      }
+    },
+    "sun_events": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {"type": "integer"},
+          {"type": "number", "minimum": 0, "maximum": 1},
+          {"enum": ["start", "rising", "setting", "transit", "antitransit", "end"]}
+        ],
+        "minItems": 3, "maxItems": 3
+      }
+    },
+    "errors": {"type": "array", "maxItems": 0}
+  },
+  "allOf": [
+    {"if": {"properties": {"kind": {"const": "rolling"}}},
+     "then": {"properties": {"period_id": {"const": null}, "state": {"const": "running"}, "period": {"enum": ["week", "month", "year"]}}}},
+    {"if": {"properties": {"kind": {"const": "calendar"}}},
+     "then": {"properties": {"period_id": {"type": "string"}}}},
+    {"if": {"properties": {"period": {"const": "week"}}},
+     "then": {"required": ["week_start"]}}
+  ],
+  "$defs": {
+    "span": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {"start": {"type": "integer"}, "end": {"type": "integer"}}
+    },
+    "valueAtTime": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "array", "prefixItems": [{"type": "number"}, {"type": "integer"}], "minItems": 2, "maxItems": 2}
+      ]
+    }
+  }
+}

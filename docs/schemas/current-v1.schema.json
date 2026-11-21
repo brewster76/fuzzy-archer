@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fuzzy-archer/current-v1.schema.json",
+  "title": "fuzzy-archer current.json, schema version 1",
+  "type": "object",
+  "required": ["schema_version", "generated", "week_start", "current", "rolling"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "generated": {"type": "integer"},
+    "week_start": {"type": "integer", "minimum": 0, "maximum": 6},
+    "current": {
+      "type": "object",
+      "propertyNames": {"enum": ["day", "week", "month", "year"]},
+      "additionalProperties": {
+        "allOf": [{"$ref": "#/$defs/ref"}],
+        "required": ["period_id"],
+        "properties": {"period_id": {"type": "string", "pattern": "^(\\d{4}|\\d{6}|\\d{8})$"}}
+      }
+    },
+    "rolling": {
+      "type": "object",
+      "propertyNames": {"enum": ["week", "month", "year"]},
+      "additionalProperties": {"$ref": "#/$defs/ref"}
+    }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "required": ["file", "rev", "generated", "refresh"],
+      "properties": {
+        "file": {"type": "string", "pattern": "^(current|rolling)/(day|week|month|year)\\.json\\.gz$"},
+        "rev": {"type": "string", "pattern": "^[0-9a-f]{12}$"},
+        "generated": {"type": "integer"},
+        "refresh": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

@@ -38,6 +38,23 @@ Available in multiple languages. Help wanted! We need help with translations for
 
 Read the upgrading guides in the wiki, if you already have an older version installed: https://github.com/brewster76/fuzzy-archer/wiki
 
+New in the next version (unreleased):
+- Day / Week / Month / Year are now interactive ECharts views inside the Live page (`index.html#day`, `#week/20261116`,
+  `#month/202611`, `#year/2026`) instead of PNG images. Live! is unchanged.
+  - Week, month and year open as rolling windows (last 8 / 32 / 367 days); the arrows and the calendar
+    picker switch to calendar periods. The running day/period is refreshed in the background.
+  - Charts are configured in the new section `[PeriodCharts]` of skin.conf (same display options as `[LiveCharts]`).
+- Data files are written to `historic_data/` in the report directory: the running and rolling periods by the new
+  `user.historydata.PeriodDataGenerator` on every report run, completed periods by a low-priority background
+  worker that builds the whole history once and then keeps up with new periods.
+- Regenerate completed periods after correcting archive data or changing `[PeriodCharts]`:
+  `python -m user.historyregen --period all` (run with WeeWX's Python, the WeeWX `bin` directory
+  on `PYTHONPATH`; see `python -m user.historyregen --help`).
+- Removed: `day.html`, `week.html`, `month.html`, `year.html`, the `ImageGenerator` / `LargeImageGenerator`
+  configuration and the bundled fonts. Old generated pages and PNG files in the report directory can be deleted.
+- Requires WeeWX 5.5 or newer.
+- File formats and behaviour are specified in [docs/historic-data-contract.md](docs/historic-data-contract.md).
+
 New in v4.5:
 - Upgraded dependencies
   - pyephem is deprecated and now skyfield is used for day/night background in Live Charts
