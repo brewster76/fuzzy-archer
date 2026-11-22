@@ -227,13 +227,7 @@ function showWindRadarTooltip(directionIndex, event) {
 
 function getWindRadarDirectionLabels() {
     let configured = weewxData.units && weewxData.units.Ordinates && weewxData.units.Ordinates.directions;
-    if (Array.isArray(configured) && configured.length >= 16) {
-        return configured.filter(function (_, index) { return index % 2 === 0; }).slice(0, 8);
-    }
-    if (Array.isArray(configured) && configured.length === 8) {
-        return configured.slice();
-    }
-    return WindRadarCore.DIRECTIONS.slice();
+    return WindRadarCore.compassLabels(configured);
 }
 
 function getWindRadarRows(observation) {

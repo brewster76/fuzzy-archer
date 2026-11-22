@@ -11,6 +11,18 @@ test("assigns compass angles to the nearest eight sectors, including north wrapa
     assert.deepEqual(core.DIRECTIONS, ["N", "NO", "O", "SO", "S", "SW", "W", "NW"]);
 });
 
+test("uses localized eight-point compass labels from WeeWX ordinal translations", () => {
+    assert.deepEqual(
+        core.compassLabels(["N", "NNO", "NO", "ONO", "O", "OSO", "SO", "SSO",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "-"]),
+        ["N", "NO", "O", "SO", "S", "SW", "W", "NW"]);
+    assert.deepEqual(
+        core.compassLabels("N, NNO, NO, ONO, O, OSO, SO, SSO, S, SSW, SW, WSW, W, WNW, NW, NNW, -"),
+        ["N", "NO", "O", "SO", "S", "SW", "W", "NW"]);
+    assert.deepEqual(core.compassLabels(["Nord", "Nordost", "Ost", "Südost", "Süd", "Südwest", "West", "Nordwest"]),
+        ["Nord", "Nordost", "Ost", "Südost", "Süd", "Südwest", "West", "Nordwest"]);
+});
+
 test("detects pointer interaction along each radar axis and near its label", () => {
     const width = 360;
     const height = 340;

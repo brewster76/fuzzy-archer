@@ -151,6 +151,11 @@ test("buildOption: axis range, day/night only for day/week, tooltip with interva
     assert.strictEqual(option.xAxis.max, 4600000);
     assert.strictEqual(option.toolbox.show, true);
     assert.deepStrictEqual(option.toolbox.feature.dataZoom, {yAxisIndex: "none"});
+    assert.strictEqual(option.yAxis[0].axisLabel.formatter(5), "5");
+    assert.strictEqual(option.yAxis[0].axisLabel.formatter(5.5), "5.5");
+    assert.strictEqual(option.yAxis[0].axisLabel.formatter(1000), "1000");
+    assert.strictEqual(option.yAxis[0].axisLabel.formatter(1000.5), "1000.5");
+    assert.strictEqual(option.yAxis[0].axisLabel.formatter(4.9999999999), "5");
     const dayNight = option.series.find((s) => s.id === cc.DAY_NIGHT);
     assert.strictEqual(dayNight.markArea.data.length, 2);
     assert.strictEqual(dayNight.markArea.data[0][0].xAxis, 1000000);

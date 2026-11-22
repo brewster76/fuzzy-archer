@@ -398,11 +398,15 @@
                 axisLabel: {
                     fontSize: numberOption(options.labelFontSize, 11),
                     formatter: function (value) {
-                        if (Math.abs(value) >= 1000) {
-                            return value % 1 === 0 ? value.toFixed() : "";
+                        let roundedInteger = Math.round(value);
+                        if (Math.abs(value - roundedInteger) <= 1e-9) {
+                            return env.format(roundedInteger, 0);
                         }
                         let scaled = value * Math.pow(10, decimals);
-                        return Math.abs(scaled - Math.round(scaled)) > 1e-9 ? "" : env.format(value, decimals);
+                        if (Math.abs(scaled - Math.round(scaled)) > 1e-9 && decimals > 0) {
+                            return "";
+                        }
+                        return env.format(value, Math.max(decimals, 1));
                     },
                 },
             };

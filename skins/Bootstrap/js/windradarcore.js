@@ -20,6 +20,23 @@
         return Math.floor((normalized + 22.5) / 45) % DIRECTIONS.length;
     }
 
+    function compassLabels(configured) {
+        let labels = configured;
+        if (typeof labels === "string") {
+            labels = labels.split(",").map(function (label) { return label.trim(); });
+        }
+        if (!Array.isArray(labels)) {
+            return DIRECTIONS.slice();
+        }
+        if (labels.length >= 16) {
+            return labels.filter(function (_, index) { return index % 2 === 0; }).slice(0, 8);
+        }
+        if (labels.length === DIRECTIONS.length) {
+            return labels.slice();
+        }
+        return DIRECTIONS.slice();
+    }
+
     function directionIndexAtPoint(x, y, width, height, hitRadius) {
         let viewSize = Math.min(width, height) / 2;
         let axisRadius = viewSize * 0.65;
@@ -166,6 +183,7 @@
     return {
         DIRECTIONS: DIRECTIONS,
         sectorIndex: sectorIndex,
+        compassLabels: compassLabels,
         directionIndexAtPoint: directionIndexAtPoint,
         calculate: calculate,
         buildOption: buildOption,
