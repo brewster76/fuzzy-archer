@@ -44,7 +44,7 @@ New in the next version (unreleased):
   - Week, month and year open as rolling windows (last 8 / 32 / 367 days); the arrows and the calendar
     picker switch to calendar periods. The running day/period is refreshed in the background.
   - Charts are configured in the new section `[PeriodCharts]` of skin.conf (same display options as `[LiveCharts]`).
-  - Set `[PeriodCharts] generate_history = false` to disable automatic historical backfill and show only today's day plus rolling week/month/year views.
+  - The bundled Bootstrap skin defaults to `[PeriodCharts] generate_history = false`: it generates today's day and rolling week/month/year views, without automatic historical backfill. See the [history data contract](docs/historic-data-contract.md#6-configuration-periodcharts) for details and the custom-configuration fallback.
 - Data files are written to `historic_data/` in the report directory: the running and rolling periods by the new
   `user.historydata.PeriodDataGenerator` on every report run, completed periods by a low-priority background
   worker that builds the whole history once and then keeps up with new periods.

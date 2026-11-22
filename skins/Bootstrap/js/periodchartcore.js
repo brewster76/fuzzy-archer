@@ -224,6 +224,19 @@
         });
     }
 
+    function hasData(prepared) {
+        return prepared.some(function (series) {
+            if (series.plotType === "scatter") {
+                return scatterData(series, prepared).some(function (point) {
+                    return Number.isFinite(point[1]);
+                });
+            }
+            return series.points.some(function (point) {
+                return Number.isFinite(point.value);
+            });
+        });
+    }
+
     function barRenderer(series, env) {
         return function (params, api) {
             let value = api.value(2);
@@ -627,6 +640,7 @@
         findPoint: findPoint,
         convertStats: convertStats,
         prepareSeries: prepareSeries,
+        hasData: hasData,
         lineData: lineData,
         scatterData: scatterData,
         barRenderer: barRenderer,

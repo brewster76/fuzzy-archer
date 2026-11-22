@@ -123,7 +123,7 @@ class PeriodChartsConfig(object):
     def _resolve_options(self, section):
         self.chart_items = as_list(section.get('period_chart_items'))
         self.generate = as_bool(section.get('generate'), True)
-        self.generate_history = as_bool(section.get('generate_history'), True)
+        self.generate_history = as_bool(section.get('generate_history'), False)
         self.data_url = str(section.get('data_url') or 'historic_data').strip().strip('/') or 'historic_data'
         self.show_daynight = as_bool(section.get('show_daynight'), True)
         self.transition_angle = _number(section.get('transition_angle'), 8, int)

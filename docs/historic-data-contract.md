@@ -354,7 +354,7 @@ New section; `[LiveCharts]` is untouched.
 [PeriodCharts]
     period_chart_items = outTemp, barometer, rain, outHumidity, wind, windDir
     generate = true             # false: this report only displays data of another report
-    generate_history = true     # false: current day + rolling windows only; no automatic history backfill
+    generate_history = false    # bundled Bootstrap default: current day + rolling windows only
     data_url = historic_data    # URL of the data root relative to this report's pages (E22)
     show_daynight = true        # day/week only
     transition_angle = 8
@@ -384,6 +384,7 @@ New section; `[LiveCharts]` is untouched.
             line = P1D
             bar = P1D
     [[outTemp]]                     # chart id
+        showEmpty = true              # optional; default false, keep this chart visible with no plotted data
         [[[outTemp]]]               # series id (unique inside the chart)
             # data_binding = wx_binding   # default: WeeWX default binding
             # obs_type = outTemp           # WeeWX observation type; defaults to series id
@@ -403,13 +404,22 @@ New section; `[LiveCharts]` is untouched.
                 show = false              # hide this series in the year chart only
 ```
 
-With `generate_history = false`, the report generates only today's calendar day (from local midnight)
-and rolling week/month/year windows. It omits calendar week/month/year files and does not start the
-automatic worker that builds completed historical periods. The period picker and
-previous/next/current/today controls are hidden.
-Links to past days resolve to today; links to calendar weeks, months, or years resolve to their
-rolling view. Existing historical files are left untouched, and `historyregen` can still be run
-explicitly. `generate_history` defaults to `true`.
+The bundled Bootstrap `skin.conf` sets `generate_history = false` by default, and the generator also
+defaults to `false` when the option is omitted from a custom configuration. Set it explicitly to
+`true` to enable full historical generation.
+
+With `generate_history = false`, each report run generates today's calendar day, starting at station
+local midnight, and rolling week/month/year windows. Each rolling window is a fixed-length span ending
+at the generation time: 8 days for week, 32 days for month, and 367 days for year. The report writes
+the current-day and rolling files and updates `current.json`; it omits calendar week/month/year files
+and does not start the automatic worker that builds completed historical periods or its manifest.
+The period picker and previous/next/current/today controls are hidden. Links to past days resolve to
+today, while links to calendar weeks, months, and years resolve to the corresponding rolling view.
+
+This setting does not delete existing historical files. `historyregen` can still be run explicitly,
+but automatic historical backfill stays disabled. When enabling history generation, the backfill
+worker may take a long time on a large archive and use hundreds of megabytes of disk space; configure
+`backfill_pause` to limit its load.
 
 Display options (`seriesName`, `plotType`, `lineColor`, `lineWidth`, `decimals`, `yAxisIndex`,
 `yAxisMin`, `symbol`, `symbolSize`, `interval`, `minInterval`, `maxInterval`, `splitNumber`,
@@ -417,6 +427,10 @@ Display options (`seriesName`, `plotType`, `lineColor`, `lineWidth`, `decimals`,
 `showAvgMarkLine`) have the same meaning as in `[LiveCharts]`. The per-view `show` option defaults
 to `true`; set it to `false` to omit a series from that period's chart. Hidden series are also
 excluded from that view's generated data unless another visible series needs the same data.
+Period charts are hidden when none of their visible series has a non-null data point in the selected
+view. Set the chart-level `showEmpty = true` option to keep a chart visible even when it has no
+plotted data; it defaults to `false`. This option belongs directly under the chart section
+(`[[outTemp]]`), not under an individual series.
 For aggregated views, the localized aggregation type is appended to the series label (for example,
 `Outside temperature (Max)`); translations come from `[Texts]` in the selected language file.
 `payload_key`, `convertFunction`

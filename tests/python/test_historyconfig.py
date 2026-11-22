@@ -24,7 +24,7 @@ def config():
 def test_options_and_defaults():
     c = config()
     assert c.generate
-    assert c.generate_history
+    assert not c.generate_history
     assert c.data_url == 'historic_data'
     assert c.gap_threshold == 1
     assert c.refresh == {'day': 0, 'week': 600, 'month': 10800, 'year': 21600}
@@ -92,7 +92,7 @@ def test_frontend_export():
     dewpoint = exported['charts']['outTemp']['series']['dewpoint']
     assert dewpoint['views']['year']['show'] is False
     assert exported['charts']['outTemp']['animation'] == 'false'
-    assert frontend_config(config(), 6, 300)['generate_history'] is True
+    assert frontend_config(config(), 6, 300)['generate_history'] is False
 
 
 def test_generate_history_option():
@@ -100,6 +100,7 @@ def test_generate_history_option():
     assert c.generate is True
     assert c.generate_history is False
     assert frontend_config(c, 6, 300)['generate_history'] is False
+    assert PeriodChartsConfig({'generate_history': 'true'}).generate_history is True
 
 
 def test_default_statistics():

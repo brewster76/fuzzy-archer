@@ -112,7 +112,7 @@ const PeriodCharts = (function () {
             return null;
         }
         let chart = echarts.init(element, null, {locale: typeof eChartsLocale !== "undefined" ? eChartsLocale : undefined});
-        entry = {chart: chart, data: null, view: null};
+        entry = {chart: chart, data: null, view: null, visible: false};
         instances[chartId] = entry;
         return entry;
     }
@@ -133,6 +133,7 @@ const PeriodCharts = (function () {
                 entry.chart.clear();
             }
             entry.data = null;
+            entry.visible = false;
         }
         let element = container();
         if (element !== null) {
@@ -142,30 +143,52 @@ const PeriodCharts = (function () {
 
     function render(event) {
         lastEvent = event;
-        let element = container();
-        if (element !== null) {
-            element.classList.remove("d-none");
+        let chartsElement = container();
+        if (chartsElement !== null) {
+            chartsElement.classList.remove("d-none");
         }
         let view = event.route.view;
         let chartsConfig = views.ctx.chartsConfig;
+        let hasVisibleChart = false;
         for (let chartId of chartIds()) {
-            let entry = instance(chartId);
-            if (entry === null) {
+            let chartElement = document.getElementById("period_" + chartId + "Chart");
+            let chartConfig = chartsConfig.charts[chartId];
+            if (chartElement === null) {
                 continue;
             }
-            entry.chart.resize();
-            if (event.changed === false && entry.data === event.data && entry.view === view) {
-                continue;   // same file object: nothing to redraw
-            }
+            let entry = instances[chartId];
             try {
-                let keepLegend = entry.view === view && entry.data !== null ? legendSelected(entry.chart) : undefined;
+                let keepLegend = entry && !entry.chart.isDisposed()
+                    && entry.view === view && entry.data !== null
+                    ? legendSelected(entry.chart) : undefined;
                 let built = chartCore.buildOption({
                     view: view,
                     data: event.data,
-                    chartConfig: chartsConfig.charts[chartId],
+                    chartConfig: chartConfig,
                     env: env(view),
                     legendSelected: keepLegend,
                 });
+                let visible = chartCore.boolOption(chartConfig.showEmpty, false) || chartCore.hasData(built.series);
+                chartElement.classList.toggle("d-none", !visible);
+                if (!visible) {
+                    if (entry && !entry.chart.isDisposed()) {
+                        entry.chart.clear();
+                        entry.data = event.data;
+                        entry.view = view;
+                        entry.visible = false;
+                    }
+                    continue;
+                }
+                entry = instance(chartId);
+                if (entry === null) {
+                    continue;
+                }
+                entry.chart.resize();
+                if (event.changed === false && entry.data === event.data && entry.view === view
+                        && entry.visible) {
+                    hasVisibleChart = true;
+                    continue;   // same file object: nothing to redraw
+                }
                 for (let s of built.series) {
                     if (s.missing) {
                         console.log("period charts: series " + s.id + " of chart " + chartId + " not in period file");
@@ -174,11 +197,20 @@ const PeriodCharts = (function () {
                 entry.chart.setOption(built.option, {notMerge: true});
                 entry.data = event.data;
                 entry.view = view;
+                entry.visible = true;
+                hasVisibleChart = true;
             } catch (err) {
                 console.log("period charts: could not render chart " + chartId, err);
-                entry.chart.clear();
-                entry.data = null;
+                chartElement.classList.add("d-none");
+                if (entry && !entry.chart.isDisposed()) {
+                    entry.chart.clear();
+                    entry.data = null;
+                    entry.visible = false;
+                }
             }
+        }
+        if (chartsElement !== null) {
+            chartsElement.classList.toggle("d-none", !hasVisibleChart);
         }
     }
 

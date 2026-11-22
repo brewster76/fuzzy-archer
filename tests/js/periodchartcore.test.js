@@ -217,6 +217,12 @@ test("scatter dataReferences null out points whose reference is zero or missing"
     assert.deepStrictEqual(cc.scatterData(prepared[1], prepared), [[300000, 90], [600000, null], [900000, null]]);
 });
 
+test("hasData ignores null values and counts zero as data", () => {
+    assert.strictEqual(cc.hasData([{plotType: "line", points: [{value: null}]}]), false);
+    assert.strictEqual(cc.hasData([{plotType: "bar", points: [{value: 0}]}]), true);
+    assert.strictEqual(cc.hasData([{plotType: "scatter", points: [{end: 1, value: null}], options: {}}]), false);
+});
+
 test("missing unit conversion keeps the database unit and its label", () => {
     const noConv = Object.assign({}, env, {canConvert: (from, to) => !(from === "degree_F" && to === "degree_C")});
     const [temp] = cc.prepareSeries(chartConfig.temp, file(), "day", noConv);
@@ -230,6 +236,8 @@ test("escapeHtml and option parsing", () => {
     assert.strictEqual(cc.escapeHtml("<a href='x'>&</a>"), "&lt;a href=&#39;x&#39;&gt;&amp;&lt;/a&gt;");
     assert.strictEqual(cc.boolOption("True", false), true);
     assert.strictEqual(cc.boolOption(undefined, true), true);
+    assert.strictEqual(cc.boolOption(undefined, false), false);
+    assert.strictEqual(cc.boolOption("true", false), true);
     assert.strictEqual(cc.numberOption("x", 3), 3);
     assert.strictEqual(cc.numberOption("2", 3), 2);
 });

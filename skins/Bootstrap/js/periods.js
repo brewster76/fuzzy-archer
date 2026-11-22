@@ -285,7 +285,7 @@ const PeriodViews = (function () {
         for (let chartId of ctx.chartsConfig.order || []) {
             let div = document.createElement("div");
             div.id = "period_" + chartId + "Chart";
-            div.className = "chart periodChart";
+            div.className = "chart periodChart d-none";
             div.setAttribute("data-chart-id", chartId);
             elements.charts.appendChild(div);
         }
