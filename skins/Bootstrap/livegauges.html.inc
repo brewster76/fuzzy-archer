@@ -1,5 +1,5 @@
-
-#if  len($LiveGauges.get('live_gauge_items')) > 0 or len($StationInfo.get('station_info_items')) > 0
+#set $wind_radar = $LiveGauges.get('wind_radar', {})
+#if len($LiveGauges.get('live_gauge_items')) > 0 or $wind_radar.get('enabled', 'false').lower == 'true' or len($StationInfo.get('station_info_items')) > 0
 <div id="gaugePanel" class="col-md-6 col-lg-5 col-xl-4 col-xxl-3 d-md-block $display_gauge_panel">
     #if len($LiveGauges.get('live_gauge_items')) > 0
     <div class="row">
@@ -22,6 +22,16 @@
     #end if
     #set $count = $count + 1
     #end for
+    #end if
+    #if $wind_radar.get('enabled', 'false').lower == 'true'
+    <div class="row">
+        <div class="col-12 text-center">
+            <h2 class="currentConditions">$gettext("Wind radar")</h2>
+        </div>
+        <div class="col-12 d-flex justify-content-center">
+            <div id="windRadarChart" class="windRadarChart"></div>
+        </div>
+    </div>
     #end if
     #if len($StationInfo.get('station_info_items')) > 0
     <!-- Station info -->

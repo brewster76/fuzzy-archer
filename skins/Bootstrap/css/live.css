@@ -19,6 +19,46 @@ body {
   min-height:140px;
 }
 
+.windRadarChart {
+  width: 100%;
+  max-width: 360px;
+  height: 340px;
+  position: relative;
+}
+
+.windRadarTooltip {
+  position: absolute;
+  z-index: 10;
+  display: none;
+  min-width: 145px;
+  padding: 8px 10px;
+  border: 1px solid #c8d0d8;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  color: #555;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.windRadarScaleLabel {
+  position: absolute;
+  z-index: 1;
+  padding: 1px 2px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #777;
+  font: 10px sans-serif;
+  line-height: 1.2;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.windRadarTooltipHeading {
+  margin-bottom: 3px;
+  font-weight: bold;
+}
+
 .chart {
   width: 475px;
   height:275px;
@@ -56,7 +96,7 @@ body {
 }
 .btnNOAA {
   font-size: calc(5px + 0.5vw);
-  padding: 0px 2px;
+  padding: 0 2px;
 }
 .historyHeader, .statsHeader {
   font-weight: bold;

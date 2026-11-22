@@ -1,4 +1,10 @@
 let maxOpacity = 255 * 0.55;
+let windRadarChart;
+let windRadarPinnedDirection = null;
+let windRadarTooltip;
+let windRadarData;
+let windRadarScaleLabels = [];
+
 function loadGauges() {
     let gaugePanel = document.getElementById("gaugePanel");
     if (gaugePanel !== null && gaugePanel !== undefined && window.getComputedStyle(gaugePanel).display === 'none') {
@@ -103,6 +109,213 @@ function loadGauges() {
             }
         }
         gauge.setOption(gaugeOption);
+    }
+    loadWindRadar();
+}
+
+function isWindRadarEnabled() {
+    let enabled = weewxData && weewxData.gauges && weewxData.gauges.wind_radar &&
+        weewxData.gauges.wind_radar.enabled;
+    return enabled !== undefined && enabled !== null && String(enabled).toLowerCase() === "true";
+}
+
+function loadWindRadar() {
+    let element = document.getElementById("windRadarChart");
+    if (!isWindRadarEnabled() || element === null || element === undefined) {
+        if (windRadarChart !== undefined) {
+            windRadarChart.dispose();
+            windRadarChart = undefined;
+        }
+        if (windRadarTooltip !== undefined) {
+            windRadarTooltip.remove();
+            windRadarTooltip = undefined;
+        }
+        windRadarPinnedDirection = null;
+        return;
+    }
+
+    if (windRadarChart === undefined) {
+        windRadarChart = echarts.init(element, null, {locale: eChartsLocale});
+        windRadarTooltip = document.createElement("div");
+        windRadarTooltip.className = "windRadarTooltip";
+        windRadarTooltip.setAttribute("role", "tooltip");
+        windRadarTooltip.setAttribute("aria-live", "polite");
+        element.appendChild(windRadarTooltip);
+        windRadarScaleLabels = [];
+        for (let i = 0; i < 4; i++) {
+            let label = document.createElement("div");
+            label.className = "windRadarScaleLabel";
+            label.setAttribute("aria-hidden", "true");
+            element.appendChild(label);
+            windRadarScaleLabels.push(label);
+        }
+
+        windRadarChart.getZr().on("mousemove", function (event) {
+            if (windRadarPinnedDirection !== null) {
+                return;
+            }
+            let direction = getWindRadarDirectionAtEvent(event);
+            element.style.cursor = direction === null ? "" : "pointer";
+            showWindRadarTooltip(direction, event);
+        });
+        windRadarChart.getZr().on("click", function (event) {
+            let direction = getWindRadarDirectionAtEvent(event);
+            windRadarPinnedDirection = direction;
+            element.style.cursor = direction === null ? "" : "pointer";
+            showWindRadarTooltip(direction, event);
+        });
+        windRadarChart.getZr().on("globalout", function () {
+            if (windRadarPinnedDirection === null) {
+                element.style.cursor = "";
+                showWindRadarTooltip(null);
+            }
+        });
+    }
+    updateWindRadar();
+}
+
+function getWindRadarDirectionAtEvent(event) {
+    let x = Number(event.offsetX);
+    let y = Number(event.offsetY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return null;
+    }
+    return WindRadarCore.directionIndexAtPoint(
+        x, y, windRadarChart.getWidth(), windRadarChart.getHeight());
+}
+
+function showWindRadarTooltip(directionIndex, event) {
+    if (windRadarTooltip === undefined) {
+        return;
+    }
+    if (directionIndex === null || directionIndex === undefined) {
+        windRadarTooltip.style.display = "none";
+        return;
+    }
+    let labels = getWindRadarDirectionLabels();
+    let speedConfig = weewxData.gauges.windSpeed || {};
+    let gustConfig = weewxData.gauges.windGust || {};
+    let decimals = Number.isInteger(Number(speedConfig.decimals)) ? Number(speedConfig.decimals) : 1;
+    let unit = weewxData.units.Labels[speedConfig.target_unit] || "";
+    if (windRadarData === undefined) {
+        updateWindRadar();
+    }
+    let heading = document.createElement("div");
+    heading.className = "windRadarTooltipHeading";
+    heading.textContent = labels[directionIndex];
+    let rows = [
+        [speedConfig.gaugeName || weewxData.labels.Generic.windSpeed || "Wind speed", windRadarData.speed[directionIndex]],
+        [gustConfig.gaugeName || weewxData.labels.Generic.windGust || "Gust", windRadarData.gust[directionIndex]],
+    ];
+    while (windRadarTooltip.firstChild !== null) {
+        windRadarTooltip.removeChild(windRadarTooltip.firstChild);
+    }
+    windRadarTooltip.appendChild(heading);
+    for (let row of rows) {
+        let line = document.createElement("div");
+        line.textContent = decodeHtml(row[0]) + ": " + format(row[1], decimals) + getUnitString(row[1], unit);
+        windRadarTooltip.appendChild(line);
+    }
+    let x = Number(event && event.offsetX);
+    let y = Number(event && event.offsetY);
+    let width = windRadarChart.getWidth();
+    let height = windRadarChart.getHeight();
+    windRadarTooltip.style.display = "block";
+    windRadarTooltip.style.left = Math.max(0, Math.min(Number.isFinite(x) ? x + 12 : width / 2, width - windRadarTooltip.offsetWidth)) + "px";
+    windRadarTooltip.style.top = Math.max(0, Math.min(Number.isFinite(y) ? y + 12 : height / 2, height - windRadarTooltip.offsetHeight)) + "px";
+}
+
+function getWindRadarDirectionLabels() {
+    let configured = weewxData.units && weewxData.units.Ordinates && weewxData.units.Ordinates.directions;
+    if (Array.isArray(configured) && configured.length >= 16) {
+        return configured.filter(function (_, index) { return index % 2 === 0; }).slice(0, 8);
+    }
+    if (Array.isArray(configured) && configured.length === 8) {
+        return configured.slice();
+    }
+    return WindRadarCore.DIRECTIONS.slice();
+}
+
+function getWindRadarRows(observation) {
+    let cutoff = Date.now() - maxAgeHoursMS;
+    let valuesByTimestamp = new Map();
+    let history = weewxData[observation];
+    if (Array.isArray(history)) {
+        for (let row of history) {
+            if (Array.isArray(row) && row[1] !== null && row[1] !== undefined && row[1] !== "" &&
+                Number.isFinite(Number(row[0])) && Number(row[0]) >= cutoff && Number.isFinite(Number(row[1]))) {
+                valuesByTimestamp.set(Number(row[0]), Number(row[1]));
+            }
+        }
+    }
+
+    let gaugeConfig = weewxData.gauges[observation];
+    if (gaugeConfig !== undefined && gaugeConfig.payload_key !== undefined) {
+        for (let entry of liveData) {
+            let timestamp = Number(entry[0]);
+            if (timestamp < cutoff) {
+                continue;
+            }
+            let raw = getValue(entry[1], gaugeConfig.payload_key);
+            if (raw === null || raw === undefined || raw === "") {
+                continue;
+            }
+            let value = convert(Object.assign({observationType: observation}, gaugeConfig), raw);
+            if (Number.isFinite(Number(value))) {
+                valuesByTimestamp.set(timestamp, Number(value));
+            }
+        }
+    }
+    return Array.from(valuesByTimestamp.entries()).sort(function (left, right) {
+        return left[0] - right[0];
+    });
+}
+
+function updateWindRadar() {
+    if (windRadarChart === undefined || !isWindRadarEnabled()) {
+        return;
+    }
+    windRadarData = WindRadarCore.calculate(
+        getWindRadarRows("windDir"),
+        getWindRadarRows("windSpeed"),
+        getWindRadarRows("windGust"));
+    let speedConfig = weewxData.gauges.windSpeed || {};
+    let gustConfig = weewxData.gauges.windGust || {};
+    let unit = weewxData.units.Labels[speedConfig.target_unit] || "";
+    let decimals = Number.isInteger(Number(speedConfig.decimals)) ? Number(speedConfig.decimals) : 1;
+    let speedName = speedConfig.gaugeName === undefined ?
+        (weewxData.labels.Generic.windSpeed || "Wind speed") : decodeHtml(speedConfig.gaugeName);
+    let gustName = gustConfig.gaugeName === undefined ?
+        (weewxData.labels.Generic.windGust || "Gust") : decodeHtml(gustConfig.gaugeName);
+    let radarConfig = weewxData.gauges.wind_radar || {};
+    let speedColor = radarConfig.wind_speed_color;
+    let gustColor = radarConfig.wind_gust_color;
+    windRadarChart.setOption(WindRadarCore.buildOption(windRadarData, {
+        speedName: speedName,
+        gustName: gustName,
+        speedColor: speedColor,
+        gustColor: gustColor,
+        directionLabels: getWindRadarDirectionLabels(),
+        unit: unit,
+        decimals: decimals,
+        format: function (value) { return format(value, decimals); },
+    }));
+    updateWindRadarScaleLabels(decimals);
+}
+
+function updateWindRadarScaleLabels(decimals) {
+    let width = windRadarChart.getWidth();
+    let height = windRadarChart.getHeight();
+    let centerX = width * 0.5;
+    let centerY = height * 0.48;
+    let radius = Math.min(width, height) / 2 * 0.65;
+    let step = windRadarData.axisMax / windRadarScaleLabels.length;
+    for (let index = 0; index < windRadarScaleLabels.length; index++) {
+        let value = step * (index + 1);
+        let label = windRadarScaleLabels[index];
+        label.textContent = format(value, decimals);
+        label.style.left = (centerX + 5) + "px";
+        label.style.top = (centerY - radius * (index + 1) / windRadarScaleLabels.length) + "px";
     }
 }
 
@@ -259,6 +472,10 @@ $(window).on('resize', function () {
         if (gauge != null && gauge != undefined) {
             gauge.resize();
         }
+    }
+    if (windRadarChart !== undefined) {
+        windRadarChart.resize();
+        updateWindRadar();
     }
 });
 

@@ -40,3 +40,14 @@ def test_add_period_data_without_section_or_on_error():
     gen.config_dict['Station']['week_start'] = '9'  # invalid -> keys omitted, Live data untouched
     jsonengine.JSONGenerator.add_period_data(gen)
     assert set(gen.frontend_data) == {'charts'}
+
+
+def test_live_gauge_data_items_include_radar_observations_only_when_enabled():
+    pytest.importorskip('weewx')
+    jsonengine = pytest.importorskip('user.jsonengine')
+    gauges = {'live_gauge_items': ['outTemp', 'windSpeed'], 'wind_radar': {'enabled': 'false'}}
+    assert jsonengine.live_gauge_data_items(gauges) == ['outTemp', 'windSpeed']
+
+    gauges['wind_radar']['enabled'] = 'true'
+    assert jsonengine.live_gauge_data_items(gauges) == [
+        'outTemp', 'windSpeed', 'windDir', 'windGust']

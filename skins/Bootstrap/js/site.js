@@ -33,7 +33,7 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
 
     let clients = [];
-    if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
+    if (weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
         for (let connectionId of Object.keys(weewxData.config.MQTT.connections)) {
             let connection = weewxData.config.MQTT.connections[connectionId];
             let mqttConnection = connection.broker_connection;
@@ -120,6 +120,7 @@ function updateGaugesAndCharts(timestamp, jPayload) {
         chart.chartId = chartId;
         addValues(chart, jPayload, timestamp);
     }
+    updateWindRadar();
 }
 
 function clearStaleLiveData() {
@@ -414,7 +415,6 @@ function checkAsyncReload(retryCount) {
             if (retryCount < 10) {
                 console.log('Retrying fetch #%d, %d', retryCount, Date.now());
                 setTimeout(checkAsyncReload, 1000, retryCount);
-                return;
             } else {
                 throw err;
             }

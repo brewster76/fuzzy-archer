@@ -20,6 +20,17 @@ Interactive charts showing conditions over a timespan
 MQTT enabled Gauges and charts - live weather data! 
 (Live data needs extra extensions and configurations for publishing and subscribing MQTT messages and topics) see: https://github.com/brewster76/fuzzy-archer/wiki/MQTT-setup
 
+An optional wind-direction radar can be enabled with `enabled = true` in `[LiveGauges][[wind_radar]]`. It shows
+the mean wind speed and maximum gust for N, NO, O, SO, S, SW, W and NW over the configured Live timespan.
+The default is `false`; when enabled, the required wind observations are generated even if their gauges are
+not listed in `live_gauge_items`. MQTT sources should provide matching timestamps and the `windDir`, `windSpeed`
+and `windGust` payloads used by the corresponding `[LiveGauges]` observation settings. Direction labels use
+the selected locale's `[Units][[Ordinates]] directions`; series names use `[Labels][[Generic]] windSpeed` and
+`windGust`. Hovering a direction label shows only that direction's speed and gust; clicking a label pins the
+tooltip until another direction label or an empty area of the radar is clicked.
+The two radar series colors can be customized in `[LiveGauges][[wind_radar]]` with `wind_speed_color` and
+`wind_gust_color` (CSS color values); they default to `#428bca` and `#b44242`.
+
 Statistics: daily/weekly/monthly/yearly/alltime, highs/lows, ...
 
 Historic data in color coded html tables.

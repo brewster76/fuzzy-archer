@@ -6,6 +6,7 @@
 <script src="js/units.js?v=$js_mtime"></script>
 <script src="js/echarts.min.js?v=$js_mtime"></script>
 <script src="js/luxon.min.js?v=$js_mtime"></script>
+<script src="js/windradarcore.js?v=$js_mtime"></script>
 <script src="js/gauges.js?v=$js_mtime"></script>
 <script src="js/site.js?v=$js_mtime"></script>
 <script src="js/echarts_i18n/langEN.js?v=$js_mtime"></script>

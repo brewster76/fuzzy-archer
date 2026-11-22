@@ -49,6 +49,19 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+def live_gauge_data_items(gauge_dict):
+    """Return configured gauges plus observations required by the optional wind radar."""
+    items = gauge_dict.get('live_gauge_items', [])
+    if isinstance(items, str):
+        items = [item.strip() for item in items.split(',') if item.strip()]
+    items = list(items or [])
+    wind_radar = gauge_dict.get('wind_radar', {})
+    if to_bool(wind_radar.get('enabled', False)):
+        for observation in ('windDir', 'windSpeed', 'windGust'):
+            if observation not in items:
+                items.append(observation)
+    return items
+
 class JSONGenerator(weewx.reportengine.ReportGenerator):
     """Class for managing the JSON generator."""
 
@@ -155,8 +168,11 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     log.debug("Adding %s to frontend_data." % category)
                     self.frontend_data[category] = category_history
                     self.frontend_data[category + "_daily_high_low"] = daily_highlow_values
+        gauge_data_items = live_gauge_data_items(self.gauge_dict)
         for gauge in self.gauge_dict.sections:
-            if gauge not in self.gauge_dict["live_gauge_items"]:
+            if gauge == 'wind_radar':
+                continue
+            if gauge not in gauge_data_items:
                 continue
             gauge_config = self.frontend_data['gauges'][gauge]
             ret, gauge_history, _ = self.gen_history_data(gauge, gauge_config, self.gauge_dict[gauge].get('data_binding'))
