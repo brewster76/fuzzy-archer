@@ -573,6 +573,15 @@
             textStyle: {fontSize: numberOption(chartOptions.fontSize, 10)},
             backgroundColor: BACKGROUND_COLOR,
             color: prepared.map(function (s) { return s.color; }),
+            toolbox: {
+                show: true,
+                top: 10,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: "none",
+                    },
+                },
+            },
             legend: {
                 type: "plain",
                 top: 10,
