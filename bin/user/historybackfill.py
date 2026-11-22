@@ -24,7 +24,7 @@ from user import historyperiods as hp
 from user import historywriter as hw
 from user.historyconfig import PeriodChartsConfig
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('user.historybackfill')
 
 JOB_FILE = 'job.json'
 WORKER_STATE_FILE = 'worker.json'
@@ -37,7 +37,7 @@ FLUSH_SECONDS = 10
 def plain(value):
     """configobj sections -> plain JSON-serializable dicts/lists/strings."""
     if isinstance(value, dict):
-        return dict((str(k), plain(v)) for k, v in value.items())
+        return {str(k): plain(v) for k, v in value.items()}
     if isinstance(value, (list, tuple)):
         return [plain(v) for v in value]
     if value is None or isinstance(value, (bool, int, float)):
@@ -87,29 +87,38 @@ class Backfill(object):
         Returns (tasks, next_check): tasks = [(period, start_date, (start, end))]; next_check = time when
         the next period becomes complete.
         """
+        if first is None:
+            return [], None
+        first_date = self.zone.local(first - 1).date()
         tasks = []
         next_check = None
-        if first is None:
-            return tasks, None
-        first_date = self.zone.local(first - 1).date()
         for period in hp.PERIODS:
-            current = hp.current_period(self.zone, period, now, self.week_start)
-            last_date = hp.previous_period_date(period, current, self.week_start)
-            if hp.period_span(self.zone, period, last_date)[1] <= first:
-                continue
-            for start_date in hp.iter_periods(period, first_date, last_date, self.week_start, newest_first=True):
-                span = hp.period_span(self.zone, period, start_date)
-                if span[1] <= first:
-                    break
-                if span[1] > (last or 0) and span[1] + COMPLETION_GRACE > now:
-                    # end not yet in the archive, maybe the last record is still being written
-                    candidate = span[1] + COMPLETION_GRACE
-                    next_check = candidate if next_check is None else min(next_check, candidate)
-                    continue
-                tasks.append((period, start_date, span))
-            end_of_current = hp.period_span(self.zone, period, current)[1]
-            next_check = end_of_current if next_check is None else min(next_check, end_of_current)
+            period_tasks, period_check = self._tasks_for_period(period, first, last, first_date, now)
+            tasks.extend(period_tasks)
+            if period_check is not None:
+                next_check = period_check if next_check is None else min(next_check, period_check)
         tasks.sort(key=lambda t: (-t[2][1], hp.PERIODS.index(t[0])))
+        return tasks, next_check
+
+    def _tasks_for_period(self, period, first, last, first_date, now):
+        tasks = []
+        next_check = None
+        current = hp.current_period(self.zone, period, now, self.week_start)
+        last_date = hp.previous_period_date(period, current, self.week_start)
+        if hp.period_span(self.zone, period, last_date)[1] <= first:
+            return tasks, next_check
+        for start_date in hp.iter_periods(period, first_date, last_date, self.week_start, newest_first=True):
+            span = hp.period_span(self.zone, period, start_date)
+            if span[1] <= first:
+                break
+            if span[1] > (last or 0) and span[1] + COMPLETION_GRACE > now:
+                # The last record may still be written; recheck after the completion grace period.
+                candidate = span[1] + COMPLETION_GRACE
+                next_check = candidate if next_check is None else min(next_check, candidate)
+                continue
+            tasks.append((period, start_date, span))
+        end_of_current = hp.period_span(self.zone, period, current)[1]
+        next_check = end_of_current if next_check is None else min(next_check, end_of_current)
         return tasks, next_check
 
     def _handle_week_start_change(self):
@@ -141,70 +150,104 @@ class Backfill(object):
             hw.remove_period_file(self.root, period, pid)
         return entry
 
-    def run(self, lock=None):
-        """Process all outstanding periods. Returns the worker state dict (also saved to worker.json)."""
-        self.manifest = hw.Manifest(self.root, self.week_start)
-        self._handle_week_start_change()
-        first, last = archive_range(self.db_managers(self.default_binding))
-        self.manifest.set_archive(first, last)
-        now = int(self.clock())
-        tasks, next_check = self.tasks(first, last, now)
-        weeks_blocked = any(e.get('s') == 'incompatible' for e in self.manifest.entries('week').values())
-        if weeks_blocked:
-            tasks = [t for t in tasks if t[0] != 'week']
+    def _finished(self, period, pid):
+        entry = self.manifest.get(period, pid)
+        return entry is not None and entry.get('s') in FINAL_STATES
 
-        def finished(period, pid):
+    def _log_period_year(self, period, year, logged_years):
+        previous_year = logged_years.get(period)
+        if previous_year != year:
+            if previous_year is not None:
+                log.info("Backfill: finished %s periods for %s", period, previous_year)
+            logged_years[period] = year
+            log.info("Backfill: starting %s periods for %s", period, year)
+
+    def _record_period_result(self, period, pid, previous, entry):
+        self.manifest.set(period, pid, entry)
+        previous_state = previous.get('s') if previous else None
+        if entry.get('s') == 'nodata':
+            log.debug("Backfill: %s %s has no required archive data; period file %s and "
+                      "manifest state %s -> nodata", period, pid, 'removed if present',
+                      previous_state or 'none')
+            return
+        old_rev = previous.get('rev') if previous else None
+        new_rev = entry.get('rev')
+        data_changed = old_rev != new_rev
+        state_changed = previous_state != entry.get('s')
+        log.info("Backfill: %s %s period data %s (revision %s -> %s); manifest status "
+                 "%s (%s -> %s)", period, pid, 'changed' if data_changed else 'unchanged',
+                 old_rev or 'none', new_rev or 'none',
+                 'changed' if state_changed else 'unchanged',
+                 previous_state or 'none', entry.get('s', 'unknown'))
+
+    def _generate_period(self, period, start_date, span, pid, now, next_retry):
+        previous = self.manifest.get(period, pid)
+        log.debug("Backfill: generating %s %s because its manifest state is not final "
+                  "(previous state=%s)", period, pid, previous.get('s') if previous else 'none')
+        try:
+            entry = self.process(period, start_date, span, now)
+            self.retry.clear(period, pid)
+        except Exception as e:
+            tries = self.retry.failure(period, pid, now, e)
+            log.exception("Backfill of %s %s failed (try %d of %d)",
+                          period, pid, tries, self.config.max_retries)
+            if tries >= self.config.max_retries:
+                entry = {'s': 'error', 'tries': tries}
+            else:
+                item = self.retry.data['%s/%s' % (period, pid)]
+                next_retry = item['next'] if next_retry is None else min(next_retry, item['next'])
+                entry = None
+        if entry is None:
+            log.debug("Backfill: %s %s unchanged; no new data published after generation failure "
+                      "(existing file, if any, remains untouched)", period, pid)
+            return False, next_retry
+        self._record_period_result(period, pid, previous, entry)
+        return True, next_retry
+
+    def _process_task(self, period, start_date, span, done, total, next_retry, last_flush, lock):
+        pid = hp.period_id(period, start_date)
+        if self._finished(period, pid):
             entry = self.manifest.get(period, pid)
-            return entry is not None and entry.get('s') in FINAL_STATES
-
-        total = len(tasks)
-        done = sum(1 for p, d, _ in tasks if finished(p, hp.period_id(p, d)))
-        self.manifest.set_backfill('running' if done < total else 'done', done, total, now)
-        self.manifest.flush(now)
-        last_flush = self.clock()
-        next_retry = None
-
-        for period, start_date, span in tasks:
-            if self.stop_requested:
-                break
-            pid = hp.period_id(period, start_date)
-            if finished(period, pid):
-                continue
-            now = int(self.clock())
-            if self.retry.exhausted(period, pid):
-                self.manifest.set(period, pid, {'s': 'error', 'tries': self.retry.tries(period, pid)})
-                done += 1
-                continue
-            if not self.retry.due(period, pid, now):
-                item = self.retry.data.get('%s/%s' % (period, pid), {})
-                next_retry = item.get('next') if next_retry is None else min(next_retry, item.get('next', next_retry))
-                continue
-            try:
-                entry = self.process(period, start_date, span, now)
-                self.retry.clear(period, pid)
-            except Exception as e:
-                tries = self.retry.failure(period, pid, now, e)
-                log.error("Backfill of %s %s failed (try %d of %d): %s", period, pid, tries,
-                          self.config.max_retries, e, exc_info=True)
-                if tries >= self.config.max_retries:
-                    entry = {'s': 'error', 'tries': tries}
-                else:
-                    item = self.retry.data['%s/%s' % (period, pid)]
-                    next_retry = item['next'] if next_retry is None else min(next_retry, item['next'])
-                    entry = None
-            if entry is not None:
-                self.manifest.set(period, pid, entry)
-                done += 1
-            if lock is not None:
-                lock.refresh()
-            if self.clock() - last_flush >= FLUSH_SECONDS:
-                self.manifest.set_backfill('running', done, total, int(self.clock()))
-                self.manifest.flush(int(self.clock()))
-                last_flush = self.clock()
-            if self.config.backfill_pause > 0:
-                self.sleep(self.config.backfill_pause)
+            log.debug("Backfill: %s %s unchanged; manifest state is already final (%s)",
+                      period, pid, entry.get('s'))
+            return done, next_retry, last_flush
 
         now = int(self.clock())
+        if self.retry.exhausted(period, pid):
+            previous = self.manifest.get(period, pid)
+            self.manifest.set(period, pid, {'s': 'error', 'tries': self.retry.tries(period, pid)})
+            log.debug("Backfill: %s %s manifest state %s error because retries are exhausted "
+                      "(previous state=%s); period data file unchanged", period, pid,
+                      'remains' if previous and previous.get('s') == 'error' else 'changed to',
+                      previous.get('s') if previous else 'none')
+            return done + 1, next_retry, last_flush
+
+        if not self.retry.due(period, pid, now):
+            item = self.retry.data.get('%s/%s' % (period, pid), {})
+            next_retry = item.get('next') if next_retry is None else min(next_retry, item.get('next', next_retry))
+            log.debug("Backfill: %s %s unchanged; retry backoff is active until %s",
+                      period, pid, item.get('next'))
+            return done, next_retry, last_flush
+
+        processed, next_retry = self._generate_period(period, start_date, span, pid, now, next_retry)
+        if processed:
+            done += 1
+        if lock is not None:
+            lock.refresh()
+        if self.clock() - last_flush >= FLUSH_SECONDS:
+            updated = int(self.clock())
+            self.manifest.set_backfill('running', done, total, updated)
+            self.manifest.flush(updated)
+            last_flush = self.clock()
+        if self.config.backfill_pause > 0:
+            self.sleep(self.config.backfill_pause)
+        return done, next_retry, last_flush
+
+    def _finalize_run(self, done, total, next_check, next_retry, logged_years):
+        now = int(self.clock())
+        if not self.stop_requested:
+            for period, year in logged_years.items():
+                log.info("Backfill: finished %s periods for %s", period, year)
         state = 'done' if done >= total else 'idle'
         self.manifest.set_backfill(state, done, total, now)
         self.manifest.flush(now)
@@ -216,6 +259,35 @@ class Backfill(object):
         hw.write_json(os.path.join(self.state_directory, WORKER_STATE_FILE), worker_state)
         log.info("Backfill %s: %d of %d periods finished", state, done, total)
         return worker_state
+
+    def run(self, lock=None):
+        """Process all outstanding periods. Returns the worker state dict (also saved to worker.json)."""
+        self.manifest = hw.Manifest(self.root, self.week_start)
+        self._handle_week_start_change()
+        first, last = archive_range(self.db_managers(self.default_binding))
+        self.manifest.set_archive(first, last)
+        now = int(self.clock())
+        tasks, next_check = self.tasks(first, last, now)
+        weeks_blocked = any(e.get('s') == 'incompatible' for e in self.manifest.entries('week').values())
+        if weeks_blocked:
+            tasks = [task for task in tasks if task[0] != 'week']
+        total = len(tasks)
+        done = sum(1 for period, start_date, _ in tasks
+                   if self._finished(period, hp.period_id(period, start_date)))
+        self.manifest.set_backfill('running' if done < total else 'done', done, total, now)
+        self.manifest.flush(now)
+        last_flush = self.clock()
+        next_retry = None
+        logged_years = {}
+
+        for period, start_date, span in tasks:
+            if self.stop_requested:
+                break
+            self._log_period_year(period, start_date.year, logged_years)
+            done, next_retry, last_flush = self._process_task(
+                period, start_date, span, done, total, next_retry, last_flush, lock)
+
+        return self._finalize_run(done, total, next_check, next_retry, logged_years)
 
     def config_hash(self):
         from user.historydata import config_hash
@@ -328,8 +400,8 @@ def main(argv=None):
             backfill_from_job(job, environment, lock)
         finally:
             lock.release()
-    except Exception as e:
-        log.error("Backfill worker failed: %s", e, exc_info=True)
+    except Exception:
+        log.exception("Backfill worker failed")
         return 1
     finally:
         environment.close()

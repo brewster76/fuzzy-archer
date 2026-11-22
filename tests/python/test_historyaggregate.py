@@ -80,12 +80,16 @@ def test_complete_day(db, schema_validator):
     assert data['coverage'] == {'first': span[0] + 300, 'last': span[1], 'records': 288,
                                 'expected': 288, 'archive_interval': 300}
     temp = data['series']['wx_binding/outTemp/none/native']
-    assert len(temp['points']) == 288 and temp['unit'] == 'degree_F'
+    assert len(temp['points']) == 288
+    assert temp['unit'] == 'degree_F'
     assert temp['points'][0] == [span[0], span[0] + 300, 50.0]
     rain = data['series']['wx_binding/rain/sum/PT30M']['points']
-    assert len(rain) == 48 and rain[0][2] == pytest.approx(0.06) and rain[2][2] == 0
+    assert len(rain) == 48
+    assert rain[0][2] == pytest.approx(0.06)
+    assert rain[2][2] == 0
     stats = data['observations']['wx_binding/outTemp']['stats']
-    assert stats['min'] == [50.0, span[0] + 300] and stats['max'] == [78.7, span[1]]
+    assert stats['min'] == [50.0, span[0] + 300]
+    assert stats['max'] == [78.7, span[1]]
     wind = data['observations']['wx_binding/windDir']
     assert wind['stats']['vecdir'] == pytest.approx(90.0, abs=0.01)
     assert wind['stat_units']['vecavg'][1] == 'group_speed'
@@ -99,7 +103,8 @@ def test_gaps_state(db, schema_validator):
     data = build(db, 'day', 'calendar', span, span[1] + 60, hp.period_id('day', day))
     schema_validator.validate(data)
     assert data['state'] == 'gaps'
-    assert data['coverage']['records'] == 285 and data['coverage']['expected'] == 288
+    assert data['coverage']['records'] == 285
+    assert data['coverage']['expected'] == 288
 
 
 def test_gap_threshold_is_a_percentage(db):
@@ -123,8 +128,10 @@ def test_running_day_provisional_buckets(db, schema_validator):
     assert len(data['series']['wx_binding/outTemp/none/native']['points']) == 145
     rain = data['series']['wx_binding/rain/sum/PT30M']['points']
     assert len(rain) == 48
-    assert len(rain[23]) == 3 and len(rain[24]) == 4  # 11:30-12:00 final, 12:00-12:30 provisional
-    assert rain[24][2] == 0 and rain[25] == [rain[25][0], rain[25][1], None, 1]
+    assert len(rain[23]) == 3  # 11:30-12:00 final
+    assert len(rain[24]) == 4  # 12:00-12:30 provisional
+    assert rain[24][2] == 0
+    assert rain[25] == [rain[25][0], rain[25][1], None, 1]
 
 
 def test_week_daily_sums_match_daily_totals(db, schema_validator):
@@ -148,8 +155,10 @@ def test_rolling_week_edge_bucket(db, schema_validator):
     schema_validator.validate(data)
     temp = data['series']['wx_binding/outTemp/avg/PT15M']['points']
     first = temp[0]
-    assert first[0] == span[0] - 7 * 60 and first[1] == span[0] + 8 * 60
+    assert first[0] == span[0] - 7 * 60
+    assert first[1] == span[0] + 8 * 60
     # full nominal span (10:00, 10:15]: records 10:05, 10:10, 10:15 -> i%288 = 120..122
     assert first[2] == pytest.approx(50.0 + 12.1)
-    assert data['period_id'] is None and data['state'] == 'running'
+    assert data['period_id'] is None
+    assert data['state'] == 'running'
     assert data['sun_events'] == []

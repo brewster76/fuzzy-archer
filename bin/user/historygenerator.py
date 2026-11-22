@@ -38,12 +38,15 @@ import math
 
 try:
     from weeutil.weeutil import accumulateLeaves
-except:
+except ImportError:
     from weeutil.config import accumulateLeaves
 from weewx.cheetahgenerator import SearchList
 from weewx.tags import TimespanBinder
 
 log = logging.getLogger(__name__)
+
+TABLE_GENERATION_ERROR = "Could not generate table [HistoryReport][[%s]]"
+
 
 class MyXSearch(SearchList):
     def __init__(self, generator):
@@ -96,69 +99,42 @@ class MyXSearch(SearchList):
         name. If not given, then a default binding will be used.
         """
 
-        # Time to recalculate?
         if (time.time() - (self.refresh_interval * 60)) > self.cache_time:
             self.cache_time = time.time()
-
-            #
-            #  The html history tables
-            #
-
-            t1 = time.time()
-            ngen = 0
-            self.search_list_extension["history_tables"] = {}
-
-            for table_key in self.table_dict.sections:
-
-                table_options = accumulateLeaves(self.table_dict[table_key])
-
-                # Get the binding where the data is allocated
-                binding = table_options.get('data_binding', 'wx_binding')
-
-                #
-                # The all time statistics
-                #
-
-                # If this generator has been called in the [SummaryByMonth] or [SummaryByYear]
-                # section in skin.conf then valid_timespan won't contain enough history data for
-                # the colorful summary tables. Use the data binding provided as table option.
-                self.alltime_timespan = weeutil.weeutil.TimeSpan(db_lookup(data_binding=binding).first_timestamp, db_lookup(data_binding=binding).last_timestamp)
-
-
-                # First, get a TimeSpanStats object for all time. This one is easy
-                # because the object valid_timespan already holds all valid times to be
-                # used in the report. se the data binding provided as table option.
-                all_stats = TimespanBinder(self.alltime_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
-                                           converter=self.generator.converter)
-
-                # Now create a small dictionary with keys 'alltime' and 'seven_day':
-                self.search_list_extension['alltime'] = all_stats
-
-                # Show all time unless starting date specified
-                startdate = table_options.get('startdate', None)
-                if startdate is not None:
-                    startdate = weeutil.weeutil.startOfDay(int(startdate))
-                    table_timespan = weeutil.weeutil.TimeSpan(int(startdate), db_lookup(binding).last_timestamp)
-                    table_stats = TimespanBinder(table_timespan, db_lookup, data_binding=binding, formatter=self.generator.formatter,
-                                                 converter=self.generator.converter)
-                else:
-                    table_stats = all_stats
-
-                new_table = {
-                    "year": [],
-                    "settings": {"table_options": table_options, "color_dict": self.color_dict}
-                }
-
-                self._statsDict(table_key, new_table, table_options, table_stats, binding)
-                self.search_list_extension["history_tables"][table_key] = new_table
-                ngen += 1
-
-            t2 = time.time()
-
-            log.debug("%s: Generated %d tables in %.2f seconds" %
-                     (os.path.basename(__file__), ngen, t2 - t1))
-
+            self._refresh_history_tables(db_lookup)
         return [self.search_list_extension]
+
+    def _refresh_history_tables(self, db_lookup):
+        started = time.time()
+        self.search_list_extension["history_tables"] = {}
+        for table_key in self.table_dict.sections:
+            self._build_history_table(table_key, db_lookup)
+        log.debug("%s: Generated %d tables in %.2f seconds" %
+                  (os.path.basename(__file__), len(self.search_list_extension["history_tables"]),
+                   time.time() - started))
+
+    def _build_history_table(self, table_key, db_lookup):
+        table_options = accumulateLeaves(self.table_dict[table_key])
+        binding = table_options.get('data_binding', 'wx_binding')
+        manager = db_lookup(data_binding=binding)
+        self.alltime_timespan = weeutil.weeutil.TimeSpan(manager.first_timestamp, manager.last_timestamp)
+        all_stats = TimespanBinder(self.alltime_timespan, db_lookup, data_binding=binding,
+                                   formatter=self.generator.formatter, converter=self.generator.converter)
+        self.search_list_extension['alltime'] = all_stats
+        table_stats = self._table_stats(table_options, binding, all_stats, db_lookup)
+        new_table = {"year": [], "settings": {"table_options": table_options, "color_dict": self.color_dict}}
+        self._statsDict(table_key, new_table, table_options, table_stats, binding)
+        self.search_list_extension["history_tables"][table_key] = new_table
+
+    def _table_stats(self, table_options, binding, all_stats, db_lookup):
+        startdate = table_options.get('startdate')
+        if startdate is None:
+            return all_stats
+        startdate = weeutil.weeutil.startOfDay(int(startdate))
+        end = db_lookup(binding).last_timestamp
+        table_timespan = weeutil.weeutil.TimeSpan(int(startdate), end)
+        return TimespanBinder(table_timespan, db_lookup, data_binding=binding,
+                              formatter=self.generator.formatter, converter=self.generator.converter)
 
     def _parseTableOptions(self, table_options, table_key):
         if table_key == 'NOAA':
@@ -166,49 +142,48 @@ class MyXSearch(SearchList):
 
         obs_type = table_options.get('obs_type')
         colors_key = obs_type
-
         unit = self.units_dict["Groups"][weewx.units.obs_group_dict[obs_type]]
         if "colors" in table_options:
             colors_key = table_options.get("colors")[0]
             unit = table_options.get("colors")[1]
 
+        table_colors = self._table_colors(colors_key, unit, table_key)
+        if table_colors is None:
+            return None, None
+        if not self._valid_color_lengths(table_colors, table_key):
+            return None, None
+        summary_colors = self._summary_colors(colors_key, unit)
+        if summary_colors is not None and not self._valid_color_lengths(summary_colors, table_key, summary=True):
+            return None, None
+        summary_cell_colors = self._cell_colors(summary_colors) if summary_colors is not None else None
+        return self._cell_colors(table_colors), summary_cell_colors
+
+    def _table_colors(self, colors_key, unit, table_key):
         if colors_key in self.color_dict and unit in self.color_dict[colors_key]:
-            table_colors = self.color_dict[colors_key][unit]
-        else:
-            log.info("No colors defined for [HistoryReport][[%s]]" % table_key)
-            table_colors = {"minvalues": [0], "colors": ["#ffffff"]}
+            return self.color_dict[colors_key][unit]
+        log.info("No colors defined for [HistoryReport][[%s]]" % table_key)
+        return {"minvalues": [0], "colors": ["#ffffff"]}
 
-        # Check everything's the same length
-        l = len(table_colors['minvalues'])
+    def _summary_colors(self, colors_key, unit):
+        if colors_key in self.color_dict and unit in self.color_dict[colors_key]:
+            return self.color_dict[colors_key][unit].get('summary')
+        return None
 
-        for i in [table_colors['minvalues'], table_colors['colors']]:
-            if len(i) != l:
-                log.info("%s: minvalues and colors must have the same number of elements in [HistoryReport][[%s]]"
-                         % (os.path.basename(__file__), table_key))
-                return None, None
+    @staticmethod
+    def _valid_color_lengths(colors, table_key, summary=False):
+        length = len(colors['minvalues'])
+        if len(colors['colors']) == length:
+            return True
+        suffix = '[summary]' if summary else ''
+        log.info("%s: minvalues and colors must have the same number of elements in "
+                 "[HistoryReport][[%s]]%s" % (os.path.basename(__file__), table_key, suffix))
+        return False
 
-        summary_colors = None
-        if colors_key in self.color_dict and unit in self.color_dict[colors_key] and "summary" in self.color_dict[colors_key][unit]:
-            summary_colors = self.color_dict[colors_key][unit]["summary"]
-
-            # Check everything's the same length
-            l = len(summary_colors['minvalues'])
-
-            for i in [summary_colors['minvalues'], summary_colors['colors']]:
-                if len(i) != l:
-                    log.info("%s: minvalues and colors must have the same number of elements in [HistoryReport][[%s]][summary]"
-                             % (os.path.basename(__file__), table_key))
-                    return None, None
-
-        font_color_list = table_colors['fontColors'] if 'fontColors' in table_colors else ['#000000'] * l
-        cell_colors = list(zip(table_colors['minvalues'], table_colors['colors'], font_color_list))
-
-        summary_cell_colors = None
-        if None is not summary_colors:
-            font_color_list = summary_colors['fontColors'] if 'fontColors' in summary_colors else ['#000000'] * l
-            summary_cell_colors = list(zip(summary_colors['minvalues'], summary_colors['colors'], font_color_list))
-
-        return cell_colors, summary_cell_colors
+    @staticmethod
+    def _cell_colors(colors):
+        length = len(colors['minvalues'])
+        font_colors = colors.get('fontColors', ['#000000'] * length)
+        return list(zip(colors['minvalues'], colors['colors'], font_colors))
 
     def _statsDict(self, table_key, data_table, table_options, table_stats, binding):
         """
@@ -220,129 +195,131 @@ class MyXSearch(SearchList):
             return self._statsDictNOAA(data_table, table_options, table_stats)
 
         cell_colors, summary_cell_colors = self._parseTableOptions(table_options, table_key)
-        data_table["settings"]["summary_column"] = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
-        data_table["settings"]["alltime_min"] = weeutil.weeutil.to_bool(table_options.get("alltime_min", False))
-        data_table["settings"]["alltime_avg"] = weeutil.weeutil.to_bool(table_options.get("alltime_avg", False))
-        data_table["settings"]["alltime_max"] = weeutil.weeutil.to_bool(table_options.get("alltime_max", False))
-        table_name = table_key + '_table'
-        data_table["settings"]["table_name"] = table_name
+        self._set_table_settings(data_table, table_options, table_key, cell_colors, summary_cell_colors)
+        reading_info = self._resolve_reading(table_options, table_stats, table_key)
+        if isinstance(reading_info, str):
+            return reading_info
+        reading, aggregation, threshold_value, threshold_units = reading_info
+        unit_type = self._reading_unit(reading, table_key, table_options['obs_type'])
+        format_string = '%d' if unit_type is None or aggregation else reading.formatter.unit_format_dict[unit_type]
+        data_table["settings"]["format_string"] = format_string
+        data_table["header_text"] = table_options.get("header_text", table_key + '_tableheader_text')
+        populated = self._populate_table_years(data_table, table_options, table_stats, binding, reading, unit_type,
+                                               aggregation, threshold_value, threshold_units, table_key)
+        if not populated:
+            return
+        self.aggregations(data_table, table_options['aggregate_type'])
 
+    @staticmethod
+    def _set_table_settings(data_table, table_options, table_key, cell_colors, summary_cell_colors):
+        settings = data_table["settings"]
+        settings["summary_column"] = weeutil.weeutil.to_bool(table_options.get("summary_column", False))
+        settings["alltime_min"] = weeutil.weeutil.to_bool(table_options.get("alltime_min", False))
+        settings["alltime_avg"] = weeutil.weeutil.to_bool(table_options.get("alltime_avg", False))
+        settings["alltime_max"] = weeutil.weeutil.to_bool(table_options.get("alltime_max", False))
+        table_name = table_key + '_table'
+        settings["table_name"] = table_name
         if None is cell_colors:
             log.warning("Cell colors are not defined for [HistoryReport][[%s]]" % table_key)
-
         if None is summary_cell_colors:
             summary_cell_colors = cell_colors
 
-        unit_formatted = ""
-        unit_type = None
-        format_string = None
-
+    def _resolve_reading(self, table_options, table_stats, table_key):
         obs_type = table_options['obs_type']
         aggregate_type = table_options['aggregate_type']
-        converter = table_stats.converter
-
-        # obs_type
         reading_binder = getattr(table_stats, obs_type)
-        aggregation = False
-        # Some aggregate come with an argument
-        if aggregate_type in ['max_ge', 'max_le', 'min_ge', 'min_le',
-                                'sum_ge', 'sum_le', 'avg_ge', 'avg_le',
-                                'avg_gt', 'avg_lt']:
-            aggregation = True
-            try:
-                threshold_value = float(table_options['aggregate_threshold'][0])
-            except KeyError:
-                log.info("%s: Problem with aggregate_threshold. Should be in the format: [value], [units]" %
-                            (os.path.basename(__file__)))
-                return "Could not generate table [HistoryReport][[%s]]" % table_key
+        if aggregate_type not in ['max_ge', 'max_le', 'min_ge', 'min_le',
+                                  'sum_ge', 'sum_le', 'avg_ge', 'avg_le', 'avg_gt', 'avg_lt']:
+            return self._resolve_simple_reading(reading_binder, aggregate_type, table_key)
+        return self._resolve_threshold_reading(reading_binder, aggregate_type, table_options, table_key, obs_type)
 
-            threshold_units = table_options['aggregate_threshold'][1]
-
-            try:
-                reading = getattr(reading_binder, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type]))
-            except IndexError:
-                log.info("%s: Problem with aggregate_threshold units: %s" % (os.path.basename(__file__),
-                                                                                str(threshold_units)))
-                return "Could not generate table [HistoryReport][[%s]]" % table_key
-        else:
-            try:
-                reading = getattr(reading_binder, aggregate_type)
-            except KeyError:
-                log.info("%s: aggregate_type %s not found" % (os.path.basename(__file__),
-                                                                aggregate_type))
-                return "Could not generate table [HistoryReport][[%s]]" % table_key
-
+    @staticmethod
+    def _resolve_simple_reading(reading_binder, aggregate_type, table_key):
         try:
-            unit_type = reading.converter.group_unit_dict[reading.value_t[2]]
+            return getattr(reading_binder, aggregate_type), False, None, None
         except KeyError:
-            log.info("%s: obs_type %s no unit found" % (os.path.basename(__file__),
-                                                        obs_type))
+            log.info("%s: aggregate_type %s not found" % (os.path.basename(__file__), aggregate_type))
+            return TABLE_GENERATION_ERROR % table_key
 
-        # For aggregrate types which return number of occurrences (e.g. max_ge), set format to integer
+    @staticmethod
+    def _resolve_threshold_reading(reading_binder, aggregate_type, table_options, table_key, obs_type):
+        try:
+            threshold_value = float(table_options['aggregate_threshold'][0])
+        except KeyError:
+            log.info("%s: Problem with aggregate_threshold. Should be in the format: [value], [units]" %
+                     os.path.basename(__file__))
+            return TABLE_GENERATION_ERROR % table_key
+        threshold_units = table_options['aggregate_threshold'][1]
+        try:
+            reading = getattr(reading_binder, aggregate_type)(
+                (threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type]))
+        except IndexError:
+            log.info("%s: Problem with aggregate_threshold units: %s" %
+                     (os.path.basename(__file__), str(threshold_units)))
+            return TABLE_GENERATION_ERROR % table_key
+        return reading, True, threshold_value, threshold_units
 
-        # Don't catch error here - we absolutely need the string format
-        if None is unit_type or aggregation:
-            format_string = '%d'
-        else:
-            format_string = reading.formatter.unit_format_dict[unit_type]
+    @staticmethod
+    def _reading_unit(reading, table_key, obs_type):
+        try:
+            return reading.converter.group_unit_dict[reading.value_t[2]]
+        except KeyError:
+            log.info("%s: obs_type %s no unit found" % (os.path.basename(__file__), obs_type))
+            return None
 
-        data_table["settings"]["format_string"] = format_string
-
-        header_text = table_name + "header_text"
-
-        if "header_text" in table_options:
-            header_text = table_options["header_text"]
-
-        data_table["header_text"] = header_text
-
+    def _populate_table_years(self, data_table, table_options, table_stats, binding, reading, unit_type,
+                              aggregation, threshold_value, threshold_units, table_key):
+        aggregate_type = table_options['aggregate_type']
+        converter = table_stats.converter
+        obs_type = table_options['obs_type']
+        startdate = table_options.get('startdate')
         for year in table_stats.years():
-            # 'units' option in skin.conf?
             if 'units' in table_options:
                 unit_formatted = table_options['units']
+            elif unit_type in reading.formatter.unit_label_dict:
+                unit_formatted = reading.formatter.unit_label_dict[unit_type]
             else:
-                if unit_type in reading.formatter.unit_label_dict:
-                    unit_formatted = reading.formatter.unit_label_dict[unit_type]
-
+                unit_formatted = ""
             data_table["unit"] = unit_formatted
-
-            year_data = {"head": {"value": str(datetime.fromtimestamp(year.timespan[0]).year)}, 
-                        "values": [],
-                        "sum": None,
-                        "count": 0,
-                        "min": None,
-                        "max": None,
-                        "avg": None
-                        }
-
-            startdate = table_options.get('startdate', None)
+            year_data = self._new_year_data(year)
             for month in year.months():
-                # update the binding to access the right DB
                 obs_month = getattr(month, obs_type)
                 obs_month.data_binding = binding
-                if startdate is not None and month.timespan.start < int(startdate):
-                    value = weewx.units.ValueTuple(None, reading.value_t.unit, reading.value_t.group)
-                elif aggregation:
-                    value = self.getCount(obs_month, aggregate_type, threshold_value, threshold_units, obs_type)
-                elif unit_type is not None:
-                    value = converter.convert(getattr(obs_month, aggregate_type).value_t)
-                else:
-                    log.error("Error in [HistoryReport][[%s]]: check units" % table_key)
-                    return
-
+                value = self._month_value(obs_month, month, startdate, reading, unit_type, converter,
+                                          aggregate_type, aggregation, threshold_value, threshold_units,
+                                          obs_type, table_key)
+                if value is None:
+                    return False
                 year_data['values'].append({"value": value, "covers_timespan": self.covers_timespan(month)})
-        
-                obs_year = getattr(year, obs_type)
-                obs_year.data_binding = binding
-            
-            if aggregation:
-                value = self.getCount(obs_year, aggregate_type, threshold_value, threshold_units, obs_type)
-            else:
-                value = converter.convert(getattr(obs_year, aggregate_type).value_t)
+            obs_year = getattr(year, obs_type)
+            obs_year.data_binding = binding
+            value = self._year_value(obs_year, aggregate_type, aggregation, threshold_value, threshold_units,
+                                     obs_type, converter)
             year_data["summary"] = {"value": value, "covers_timespan": self.covers_timespan(year)}
-
             data_table["year"].append(year_data)
+        return True
 
-        self.aggregations(data_table, aggregate_type)
+    @staticmethod
+    def _new_year_data(year):
+        return {"head": {"value": str(datetime.fromtimestamp(year.timespan[0]).year)},
+                "values": [], "sum": None, "count": 0, "min": None, "max": None, "avg": None}
+
+    def _month_value(self, obs_month, month, startdate, reading, unit_type, converter, aggregate_type,
+                     aggregation, threshold_value, threshold_units, obs_type, table_key):
+        if startdate is not None and month.timespan.start < int(startdate):
+            return weewx.units.ValueTuple(None, reading.value_t.unit, reading.value_t.group)
+        if aggregation:
+            return self.getCount(obs_month, aggregate_type, threshold_value, threshold_units, obs_type)
+        if unit_type is not None:
+            return converter.convert(getattr(obs_month, aggregate_type).value_t)
+        log.error("Error in [HistoryReport][[%s]]: check units" % table_key)
+        return None
+
+    def _year_value(self, obs_year, aggregate_type, aggregation, threshold_value, threshold_units,
+                    obs_type, converter):
+        if aggregation:
+            return self.getCount(obs_year, aggregate_type, threshold_value, threshold_units, obs_type)
+        return converter.convert(getattr(obs_year, aggregate_type).value_t)
     
     def covers_timespan(self, period):
         return period.timespan.start >= self.alltime_timespan.start and period.timespan.stop <= self.alltime_timespan.stop
@@ -396,20 +373,30 @@ class MyXSearch(SearchList):
         if value.value is None:
             return
         if covers_timespan:
-            period_entry["count"] += 1
-            if period_entry["sum"] is not None:
-                period_entry["sum"] += value
-            else:
-                period_entry["sum"] = value
-            if "min" in period_entry and (period_entry["min"] is None or value < period_entry["min"]):
-                period_entry["min"] = value
-            if "max" in period_entry and (period_entry["max"] is None or value > period_entry["max"]):
-                period_entry["max"] = value
+            self._aggregate_complete_period(value, period_entry)
         else:
-            if "min" in period_entry and (aggregate_type == "min" and (period_entry["min"] is None or value < period_entry["min"])):
-                period_entry["min"] = value
-            if "max" in period_entry and ((aggregate_type == "max" or value.unit == 'count') and (period_entry["max"] is None or value > period_entry["max"])):
-                period_entry["max"] = value
+            self._aggregate_partial_period(value, period_entry, aggregate_type)
+
+    @staticmethod
+    def _aggregate_complete_period(value, period_entry):
+        period_entry["count"] += 1
+        if period_entry["sum"] is not None:
+            period_entry["sum"] += value
+        else:
+            period_entry["sum"] = value
+        if "min" in period_entry and (period_entry["min"] is None or value < period_entry["min"]):
+            period_entry["min"] = value
+        if "max" in period_entry and (period_entry["max"] is None or value > period_entry["max"]):
+            period_entry["max"] = value
+
+    @staticmethod
+    def _aggregate_partial_period(value, period_entry, aggregate_type):
+        if "min" in period_entry and aggregate_type == "min" and (
+                period_entry["min"] is None or value < period_entry["min"]):
+            period_entry["min"] = value
+        if "max" in period_entry and (aggregate_type == "max" or value.unit == 'count') and (
+                period_entry["max"] is None or value > period_entry["max"]):
+            period_entry["max"] = value
 
     def _statsDictNOAA(self, data_table, table_options, table_stats):
         """
@@ -441,7 +428,7 @@ class MyXSearch(SearchList):
     def getCount(self, obs_period, aggregate_type, threshold_value, threshold_units, obs_type):
         try:
             return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
-        except:
+        except Exception:
             return [0, 'count']
     
     def last_mtime_resources(self, type, weewx_root, html_root):

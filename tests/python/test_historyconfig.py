@@ -23,7 +23,9 @@ def config():
 
 def test_options_and_defaults():
     c = config()
-    assert c.generate and c.data_url == 'historic_data'
+    assert c.generate
+    assert c.generate_history
+    assert c.data_url == 'historic_data'
     assert c.gap_threshold == 1
     assert c.refresh == {'day': 0, 'week': 600, 'month': 10800, 'year': 21600}
     assert c.view_resolutions['week'] == {'line': 'PT30M', 'bar': 'PT1H'}
@@ -90,6 +92,14 @@ def test_frontend_export():
     dewpoint = exported['charts']['outTemp']['series']['dewpoint']
     assert dewpoint['views']['year']['show'] is False
     assert exported['charts']['outTemp']['animation'] == 'false'
+    assert frontend_config(config(), 6, 300)['generate_history'] is True
+
+
+def test_generate_history_option():
+    c = PeriodChartsConfig({'generate': 'true', 'generate_history': 'false'})
+    assert c.generate is True
+    assert c.generate_history is False
+    assert frontend_config(c, 6, 300)['generate_history'] is False
 
 
 def test_default_statistics():
@@ -135,10 +145,14 @@ def test_resolve_title_format():
 
 def test_period_titles():
     titles = period_titles({'period_title_month': '%B %Y', 'period_title_week': ['%a', ' %x']}, german_strftime)
-    assert titles['day'] == '%d.%m.%Y' and titles['year'] == '%Y' and titles['month'] == '%B %Y'
+    assert titles['day'] == '%d.%m.%Y'
+    assert titles['year'] == '%Y'
+    assert titles['month'] == '%B %Y'
     assert titles['week'] == '%a,  %d.%m.%Y'
-    assert titles['month_names'][2] == 'März' and len(titles['month_abbr']) == 12
-    assert titles['day_names'][0] == 'Montag' and titles['day_abbr'][6] == 'So'
+    assert titles['month_names'][2] == 'März'
+    assert len(titles['month_abbr']) == 12
+    assert titles['day_names'][0] == 'Montag'
+    assert titles['day_abbr'][6] == 'So'
     assert period_titles(None, german_strftime)['week'] == '%d.%m.%Y'
 
 
@@ -152,15 +166,20 @@ def test_frontend_charts_and_config():
     charts = frontend_charts(config, groups.get, units.get, {'windDir': 'Windrichtung', 'rain': 'Regen'})
     assert charts['order'] == ['wind', 'rain']
     wind_dir = charts['charts']['wind']['series']['windDir']
-    assert wind_dir['label'] == 'Windrichtung' and wind_dir['target_unit'] == 'degree_compass'
+    assert wind_dir['label'] == 'Windrichtung'
+    assert wind_dir['target_unit'] == 'degree_compass'
     assert wind_dir['views']['week']['key'] == 'wx_binding/wind/vecdir/PT15M'
     assert wind_dir['views']['week']['obs_group'] == 'group_direction'
     speed = charts['charts']['wind']['series']['windSpeed']
-    assert speed['label'] == 'Mean' and speed['views']['day']['target_unit'] == 'km_per_hour'
+    assert speed['label'] == 'Mean'
+    assert speed['views']['day']['target_unit'] == 'km_per_hour'
     assert charts['charts']['rain']['series']['rain']['views']['month']['key'] == 'wx_binding/rain/sum/P1D'
     cfg = frontend_config(config, 6, '300')
-    assert cfg['week_start'] == 6 and cfg['archive_interval'] == 300 and cfg['data_url'] == 'historic_data'
-    assert cfg['refresh']['week'] == 3600 and cfg['view_resolutions']['day']['line'] == 'native'
+    assert cfg['week_start'] == 6
+    assert cfg['archive_interval'] == 300
+    assert cfg['data_url'] == 'historic_data'
+    assert cfg['refresh']['week'] == 3600
+    assert cfg['view_resolutions']['day']['line'] == 'native'
     assert cfg['gap_threshold'] == 1
     import json
     json.dumps(charts), json.dumps(cfg)

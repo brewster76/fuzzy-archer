@@ -64,6 +64,7 @@ const PeriodViews = (function () {
             nowMs: ctx.nowMs(),
             zone: ctx.zone,
             weekStart: ctx.weekStart,
+            generateHistory: ctx.config === null || ctx.config.generate_history !== false,
             defaultDayId: hooks.defaultDayId ? hooks.defaultDayId() : null,
         };
     }
@@ -188,15 +189,21 @@ const PeriodViews = (function () {
 
     function updateToolbar() {
         let view = state.view;
+        let showHistoryControls = ctx.config === null || ctx.config.generate_history !== false;
         let rollingView = core.hasRolling(view);
         let prev = neighbour(-1);
         let next = neighbour(1);
-        setButton(elements.prev, true, prev !== null);
-        setButton(elements.next, true, next !== null);
-        setButton(elements.current, rollingView, rollingView && !state.rolling);
+        if (!showHistoryControls && typeof PeriodPicker !== "undefined") {
+            PeriodPicker.close(false);
+        }
+        setButton(elements.prev, showHistoryControls, showHistoryControls && prev !== null);
+        setButton(elements.next, showHistoryControls, showHistoryControls && next !== null);
+        setButton(elements.picker, showHistoryControls, showHistoryControls);
+        setButton(elements.current, showHistoryControls && rollingView, showHistoryControls && rollingView && !state.rolling);
         let today = currentId("day");
         let todaySelectable = !selectableFn("day") || selectableFn("day")(today) || today === state.id;
-        setButton(elements.today, view === "day", view === "day" && state.id !== today && todaySelectable);
+        setButton(elements.today, showHistoryControls && view === "day",
+            showHistoryControls && view === "day" && state.id !== today && todaySelectable);
         if (elements.rollingBadge !== null) {
             elements.rollingBadge.classList.toggle("d-none", !state.rolling);
         }
@@ -305,6 +312,7 @@ const PeriodViews = (function () {
             status: byId("periodStatus"),
             charts: byId("periodCharts"),
             prev: byId("periodPrev"),
+            picker: byId("periodPicker"),
             next: byId("periodNext"),
             current: byId("periodCurrent"),
             today: byId("periodToday"),

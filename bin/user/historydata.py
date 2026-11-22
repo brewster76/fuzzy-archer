@@ -41,6 +41,122 @@ def is_due(previous, period_id, refresh, now, force):
     return now - int(previous.get('generated', 0)) >= refresh - DUE_TOLERANCE
 
 
+def _refresh_of(config, period, archive_interval):
+    refresh = config.refresh[period]
+    return refresh if refresh > 0 else int(archive_interval)
+
+
+def _generation_reason(old, period_id, refresh, force):
+    if force:
+        return 'initial generation or configuration/week-start change'
+    if not old:
+        return 'no previously generated file'
+    if period_id is not None and old.get('period_id') != period_id:
+        return 'period rolled over from %s to %s' % (old.get('period_id'), period_id)
+    if refresh <= 0:
+        return 'refresh interval is zero'
+    return 'refresh interval elapsed'
+
+
+def _produce_mutable(root, kind, period, span, period_id, now, config, zone, week_start, db_managers,
+                     default_binding, sun_events, archive_interval, build, written):
+    started = time.time()
+    identifier = period_id or '%s..%s' % (span[0], span[1])
+    log.info("PeriodDataGenerator: starting %s %s generation (%s)", kind, period, identifier)
+    series, observations = config.view_plan(period)
+    data = build(db_managers, default_binding, series, observations, zone,
+                 'calendar' if kind == 'current' else 'rolling', period, period_id, span, now,
+                 week_start=week_start, sun_events=sun_events, fallback_interval=archive_interval,
+                 gap_threshold=config.gap_threshold)
+    rel, rev = hw.write_current_file(root, kind, period, data)
+    written.append((kind, period))
+    log.info("PeriodDataGenerator: finished %s %s generation (%s) in %.2f seconds; file=%s",
+             kind, period, identifier, time.time() - started, rel)
+    return {'file': rel, 'rev': rev, 'generated': now,
+            'refresh': _refresh_of(config, period, archive_interval)}
+
+
+def _generate_current_period(period, root, config, zone, week_start, now, db_managers,
+                             default_binding, sun_events, archive_interval, build, force, old,
+                             new_current, written):
+    if not config.generate_history and period != 'day':
+        log.debug("PeriodDataGenerator: current %s data unchanged/not generated because "
+                  "generate_history is false", period)
+        return
+    start_date = hp.current_period(zone, period, now, week_start)
+    pid = hp.period_id(period, start_date)
+    refresh = config.refresh[period]
+    if not is_due(old, pid, refresh, now, force):
+        elapsed = now - int(old.get('generated', 0))
+        log.debug("PeriodDataGenerator: current %s %s unchanged; refresh interval not elapsed "
+                  "(%d/%d seconds)", period, pid, elapsed, refresh)
+        new_current[period] = dict(old, refresh=_refresh_of(config, period, archive_interval))
+        return
+    log.debug("PeriodDataGenerator: current %s %s will be regenerated because %s",
+              period, pid, _generation_reason(old, pid, refresh, force))
+    try:
+        entry = _produce_mutable(root, 'current', period, hp.period_span(zone, period, start_date), pid,
+                                 now, config, zone, week_start, db_managers, default_binding, sun_events,
+                                 archive_interval, build, written)
+    except Exception:
+        log.exception("PeriodDataGenerator: failed to generate current %s %s", period, pid)
+        _retain_failed_current(period, pid, old, force, new_current)
+        return
+    entry['period_id'] = pid
+    new_current[period] = entry
+    previous_rev = old.get('rev') if old else None
+    changed = previous_rev != entry['rev']
+    log.info("PeriodDataGenerator: current %s %s data %s (revision %s -> %s)",
+             period, pid, 'changed' if changed else 'unchanged', previous_rev or 'none', entry['rev'])
+
+
+def _retain_failed_current(period, pid, old, force, new_current):
+    if old and old.get('period_id') == pid and not force:
+        new_current[period] = old
+        log.debug("PeriodDataGenerator: current %s %s data unchanged; previous file retained "
+                  "after generation failure", period, pid)
+    elif old:
+        log.debug("PeriodDataGenerator: previous current %s file remains unchanged on disk "
+                  "but is not retained in the index after generation failure", period)
+
+
+def _generate_rolling_period(period, root, config, zone, week_start, now, db_managers,
+                             default_binding, sun_events, archive_interval, build, force, old,
+                             new_rolling, written):
+    refresh = config.refresh[period]
+    if not is_due(old, None, refresh, now, force):
+        elapsed = now - int(old.get('generated', 0))
+        log.debug("PeriodDataGenerator: rolling %s data unchanged; refresh interval not elapsed "
+                  "(%d/%d seconds)", period, elapsed, refresh)
+        new_rolling[period] = dict(old, refresh=_refresh_of(config, period, archive_interval))
+        return
+    log.debug("PeriodDataGenerator: rolling %s data will be regenerated because %s",
+              period, _generation_reason(old, None, refresh, force))
+    try:
+        entry = _produce_mutable(root, 'rolling', period, hp.rolling_window(period, now), None, now,
+                                 config, zone, week_start, db_managers, default_binding, sun_events,
+                                 archive_interval, build, written)
+    except Exception:
+        log.exception("PeriodDataGenerator: failed to generate rolling %s", period)
+        _retain_failed_rolling(period, old, force, new_rolling)
+        return
+    new_rolling[period] = entry
+    previous_rev = old.get('rev') if old else None
+    changed = previous_rev != entry['rev']
+    log.info("PeriodDataGenerator: rolling %s data %s (revision %s -> %s)",
+             period, 'changed' if changed else 'unchanged', previous_rev or 'none', entry['rev'])
+
+
+def _retain_failed_rolling(period, old, force, new_rolling):
+    if old and not force:
+        new_rolling[period] = old
+        log.debug("PeriodDataGenerator: rolling %s data unchanged; previous file retained "
+                  "after generation failure", period)
+    elif old:
+        log.debug("PeriodDataGenerator: previous rolling %s file remains unchanged on disk "
+                  "but is not retained in the index after generation failure", period)
+
+
 def generate_mutable(root, state_directory, config, zone, week_start, now, db_managers, default_binding,
                      sun_events=None, archive_interval=300, build=None):
     """Write all due current/rolling files and current.json. Returns the list of written (kind, period).
@@ -68,47 +184,14 @@ def generate_mutable(root, state_directory, config, zone, week_start, now, db_ma
     old_rolling = previous.get('rolling', {})
     new_current, new_rolling, written = {}, {}, []
 
-    def refresh_of(period):
-        refresh = config.refresh[period]
-        return refresh if refresh > 0 else int(archive_interval)
-
-    def produce(kind, period, span, period_id):
-        series, observations = config.view_plan(period)
-        data = build(db_managers, default_binding, series, observations, zone,
-                     'calendar' if kind == 'current' else 'rolling', period, period_id, span, now,
-                     week_start=week_start, sun_events=sun_events, fallback_interval=archive_interval,
-                     gap_threshold=config.gap_threshold)
-        rel, rev = hw.write_current_file(root, kind, period, data)
-        written.append((kind, period))
-        return {'file': rel, 'rev': rev, 'generated': now, 'refresh': refresh_of(period)}
-
     for period in hp.PERIODS:
-        start_date = hp.current_period(zone, period, now, week_start)
-        pid = hp.period_id(period, start_date)
-        old = old_current.get(period)
-        if not is_due(old, pid, config.refresh[period], now, force):
-            new_current[period] = dict(old, refresh=refresh_of(period))
-            continue
-        try:
-            entry = produce('current', period, hp.period_span(zone, period, start_date), pid)
-            entry['period_id'] = pid
-            new_current[period] = entry
-        except Exception as e:
-            log.error("PeriodDataGenerator: failed to generate current %s %s: %s", period, pid, e, exc_info=True)
-            if old and old.get('period_id') == pid and not force:
-                new_current[period] = old
-
+        _generate_current_period(period, root, config, zone, week_start, now, db_managers, default_binding,
+                                 sun_events, archive_interval, build, force, old_current.get(period),
+                                 new_current, written)
     for period in hp.ROLLING_PERIODS:
-        old = old_rolling.get(period)
-        if not is_due(old, None, config.refresh[period], now, force):
-            new_rolling[period] = dict(old, refresh=refresh_of(period))
-            continue
-        try:
-            new_rolling[period] = produce('rolling', period, hp.rolling_window(period, now), None)
-        except Exception as e:
-            log.error("PeriodDataGenerator: failed to generate rolling %s: %s", period, e, exc_info=True)
-            if old and not force:
-                new_rolling[period] = old
+        _generate_rolling_period(period, root, config, zone, week_start, now, db_managers, default_binding,
+                                 sun_events, archive_interval, build, force, old_rolling.get(period),
+                                 new_rolling, written)
 
     hw.write_current_index(root, now, week_start, new_current, new_rolling)
     if state.get('config') != current_hash:
@@ -161,7 +244,11 @@ try:
                                        archive_interval)
             log.info("PeriodDataGenerator: wrote %d current/rolling files for %s in %.2f seconds",
                      len(written), self.skin_dict.get('REPORT_NAME'), time.time() - start_time)
-            self.start_worker(root, state_directory, config)
+            if config.generate_history:
+                self.start_worker(root, state_directory, config)
+            else:
+                log.info("PeriodDataGenerator: historical period generation disabled for report %s",
+                         self.skin_dict.get('REPORT_NAME'))
 
         def start_worker(self, root, state_directory, config):
             """Start the backfill worker process when work is due (it never blocks the report)."""
@@ -185,8 +272,8 @@ try:
                     'skin': {'Skyfield': self.skin_dict.get('Skyfield', {})},
                 })
                 historybackfill.spawn(state_directory)
-            except Exception as e:
-                log.error("PeriodDataGenerator: could not start backfill worker: %s", e, exc_info=True)
+            except Exception:
+                log.exception("PeriodDataGenerator: could not start backfill worker")
 
 except ImportError:  # pragma: no cover - only without WeeWX (pure unit tests)
     PeriodDataGenerator = None

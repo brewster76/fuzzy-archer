@@ -73,15 +73,22 @@ const PeriodData = (function () {
     }
 
     async function ensureIndexes(force) {
-        if (!force && store.current !== null && store.manifest !== null && Date.now() - indexFetched < INDEX_MAX_AGE_MS) {
+        let historyEnabled = !views.ctx.config || views.ctx.config.generate_history !== false;
+        if (!force && store.current !== null && (!historyEnabled || store.manifest !== null) &&
+                Date.now() - indexFetched < INDEX_MAX_AGE_MS) {
             return;
         }
-        let results = await Promise.allSettled([store.fetchCurrent(), store.fetchManifest()]);
+        let requests = [store.fetchCurrent()];
+        if (historyEnabled) {
+            requests.push(store.fetchManifest());
+        }
+        let results = await Promise.allSettled(requests);
         indexFetched = Date.now();
-        for (let result of results) {
-            if (result.status === "rejected" && (store.current === null || store.manifest === null)) {
-                throw result.reason;
-            }
+        if (results[0].status === "rejected" && store.current === null) {
+            throw results[0].reason;
+        }
+        if (historyEnabled && results[1].status === "rejected" && store.manifest === null) {
+            throw results[1].reason;
         }
     }
 

@@ -11,7 +11,7 @@
         <button type="button" data-bs-target="#imageCarousel" data-bs-slide-to="$imageCount" 
           class="$itemActive" aria-current="true" aria-label="$image_item.imageCaptionHeading">
         </button>
-        #set $imageCount += 1    
+        #set $imageCount += 1
         #end for
     </div>
     #end if
@@ -25,14 +25,14 @@
             #set $imageReload = $image_item.get('imageReload', '0')
             #set $linkTarget = $image_item.get('linkTarget', '_self')
             #if $image_item.get('useLightbox', 'true').lower == 'true'
-            <img src="$image_item.imageUrl" class="d-block w-100" data-bs-toggle="modal" 
-              data-bs-target="#imageCarousel-$imageCount-Modal" alt="$image_item.imageCaptionHeading" 
-              style="cursor: pointer; padding-top: $imagePadding; padding-bottom: $imagePadding;" 
+            <img src="$image_item.imageUrl" class="d-block w-100" data-bs-toggle="modal"
+              data-bs-target="#imageCarousel-$imageCount-Modal" alt="$image_item.imageCaptionHeading"
+              style="cursor: pointer; padding-top: $imagePadding; padding-bottom: $imagePadding;"
               onload='imageRefresh(this, $imageReload * 1000 * 60);'>
             #else
-            <a href="$image_item.imageLink" target="$linkTarget"><img src="$image_item.imageUrl" class="d-block w-100" 
-              alt="$image_item.imageCaptionHeading" 
-              style="padding-top: $imagePadding; padding-bottom: $imagePadding;" 
+            <a href="$image_item.imageLink" target="$linkTarget"><img src="$image_item.imageUrl" class="d-block w-100"
+              alt="$image_item.imageCaptionHeading"
+              style="padding-top: $imagePadding; padding-bottom: $imagePadding;"
               onload='imageRefresh(this, $imageReload * 1000 * 60);'></a>
             #end if
             #if $StationInfo.Images.get('carouselCaptions', 'true').lower == 'true'
@@ -62,7 +62,7 @@
 #set $image_item = $StationInfo.Images[$image_item_key]
 #if $image_item.useLightbox == 'true'
 <div class="modal fade" id="imageCarousel-$imageCount-Modal" tabindex="-1" aria-modal="true">
-    <div class="modal-dialog modal-fullscreen-$image_item.get('lightboxFullScreen', 'lg-down') 
+    <div class="modal-dialog modal-fullscreen-$image_item.get('lightboxFullScreen', 'lg-down')
       modal-$image_item.get('lightboxSize', 'lg')">
         <div class="modal-content">
             <div class="modal-header">
@@ -78,7 +78,7 @@
                         </video>
                     </div>
                 </div>
-                #else 
+                #else
                 <img src="$image_item.imageUrl" alt="$image_item.imageCaptionHeading" class="mw-100">
                 #end if
             </div>

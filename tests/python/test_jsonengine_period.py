@@ -24,9 +24,11 @@ def test_add_period_data():
     data = gen.frontend_data
     assert data['charts'] == {'live': 'unchanged'}
     series = data['period_charts']['charts']['outTemp']['series']['outTemp']
-    assert series['label'] == 'Außentemperatur' and series['target_unit'] == 'degree_C'
+    assert series['label'] == 'Außentemperatur'
+    assert series['target_unit'] == 'degree_C'
     assert data['period_config']['week_start'] == 0
-    assert data['period_titles']['month'] == '%B %Y' and len(data['period_titles']['month_names']) == 12
+    assert data['period_titles']['month'] == '%B %Y'
+    assert len(data['period_titles']['month_names']) == 12
 
 
 def test_add_period_data_without_section_or_on_error():

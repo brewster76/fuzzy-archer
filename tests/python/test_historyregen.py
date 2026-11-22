@@ -24,8 +24,10 @@ SECTION2 = {'period_chart_items': ['outTemp', 'rain'], 'outTemp': {'outTemp': {}
 
 
 def test_parse_date_and_series_match():
-    assert parse_date('2024') == dt.date(2024, 1, 1) and parse_date('2024', end=True) == dt.date(2024, 12, 31)
-    assert parse_date('2024-02', end=True) == dt.date(2024, 2, 29) and parse_date('2024-02-03') == dt.date(2024, 2, 3)
+    assert parse_date('2024') == dt.date(2024, 1, 1)
+    assert parse_date('2024', end=True) == dt.date(2024, 12, 31)
+    assert parse_date('2024-02', end=True) == dt.date(2024, 2, 29)
+    assert parse_date('2024-02-03') == dt.date(2024, 2, 3)
     for bad in ('2024-13', 'x', '2024-02-30', '2024-1-2-3'):
         with pytest.raises(ValueError):
             parse_date(bad)
@@ -48,7 +50,8 @@ def test_regenerate_range_resets_errors_and_state(tmp_path):
     result = regenerate(worker, ['day'], dt.date(2026, 11, 4), dt.date(2026, 11, 6))
     assert build.calls == [('day', '20261106'), ('day', '20261105'), ('day', '20261104')]
     assert hw.Manifest(worker.root, 6).get('day', '20261105')['s'] == 'ok'
-    assert len(result['regenerated']) == 3 and not result['failed']
+    assert len(result['regenerated']) == 3
+    assert not result['failed']
     assert not os.path.exists(os.path.join(worker.state_directory, 'worker.json'))
     # month overlapping the range is still running; the running week (Sunday start) is excluded
     build = FakeBuild()
@@ -62,7 +65,8 @@ def test_regenerate_dry_run_writes_nothing(tmp_path):
     build = FakeBuild()
     worker = make(tmp_path, db, now, build)
     result = regenerate(worker, list(hp.PERIODS), dry_run=True)
-    assert build.calls == [] and ('day', '20261120') in result['planned']
+    assert build.calls == []
+    assert ('day', '20261120') in result['planned']
     assert not os.path.exists(os.path.join(worker.root, 'manifest.json'))
 
 
@@ -76,10 +80,12 @@ def test_regenerate_weeks_after_week_start_change(tmp_path):
     build = FakeBuild()
     worker = make(tmp_path, db, now + 120, build, week_start=0)
     result = regenerate(worker, ['week'])
-    assert '20261108' in result['removed_weeks'] and not os.path.exists(old_file)
+    assert '20261108' in result['removed_weeks']
+    assert not os.path.exists(old_file)
     assert build.calls == [('week', '20261109'), ('week', '20261102'), ('week', '20261026')]
     weeks = hw.Manifest(worker.root, 0).entries('week')
-    assert set(weeks) == {'20261026', '20261102', '20261109'} and all(e['s'] == 'ok' for e in weeks.values())
+    assert set(weeks) == {'20261026', '20261102', '20261109'}
+    assert all(e['s'] == 'ok' for e in weeks.values())
     # backfill no longer blocked: nothing left to do for weeks
     build = FakeBuild()
     make(tmp_path, db, now + 180, build, week_start=0).run()
@@ -98,7 +104,8 @@ def test_regenerate_missing_series_only(tmp_path):
     assert len(result['regenerated']) == 6
     build = SeriesBuild()
     result = regenerate(make(tmp_path, db, now + 120, build, section=SECTION2), ['day'], series=['rain', 'outTemp'])
-    assert build.calls == [] and result['planned'] == []
+    assert build.calls == []
+    assert result['planned'] == []
 
 
 SKIN_CONF = """

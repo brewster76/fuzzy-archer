@@ -33,7 +33,7 @@ import weewx.xtypes
 
 try:
     from weeutil.weeutil import accumulateLeaves
-except:
+except ImportError:
     from weeutil.config import accumulateLeaves
 from weeutil.config import merge_config
 from weewx.units import convert
@@ -44,7 +44,7 @@ from user.sunevents import SunEvents
 
 try:
     from tzlocal import get_localzone_name
-except:
+except ImportError:
     get_localzone_name = None
 
 log = logging.getLogger(__name__)
@@ -109,12 +109,12 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 if self.record_dict_vtd is None:
                     self.record_dict_vtd = rec
 
-        except:
+        except Exception:
             log.info("JSONGenerator: Cannot find the current reading")
 
         # For checking development code deals with 'None' readings correctly
         if self.gauge_dict.get('test_none_readings', None) is not None:
-            for key, value in list(self.record_dict_vtd.items()):
+            for key in self.record_dict_vtd:
                 self.record_dict_vtd[key] = None
 
     def gen_data(self):
@@ -208,8 +208,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 config, resolve_week_start(self.config_dict, self.stn_info),
                 self.config_dict['StdArchive']['archive_interval'])
             self.frontend_data['period_titles'] = period_titles(self.units_dict.get('TimeFormats', {}))
-        except Exception as e:
-            log.error("JSONGenerator: could not add period view configuration: %s", e, exc_info=True)
+        except Exception:
+            log.exception("JSONGenerator: could not add period view configuration")
             for key in ('period_charts', 'period_config', 'period_titles'):
                 self.frontend_data.pop(key, None)
 
@@ -241,18 +241,15 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                     db_manager = self.db_binder.get_manager(binding_name)
                 else:
                     db_manager = self.db_binder.get_manager()
-            except:
+            except Exception:
                 if binding_name:
-                    logging.exception("Could not get db_manager for binding %s" % binding_name)
+                    log.exception("Could not get db_manager for binding %s", binding_name)
                 else:
-                    logging.exception("Could not get db_manager for default binding")
+                    log.exception("Could not get db_manager for default binding")
+                return 0, None, None
 
         # Find display unit of measure
-        try:
-            target_unit = self.get_target_unit(column_name)
-        except:
-            log.info("JSONGenerator: *** Could not find target unit of measure for column '%s' ***" % column_name)
-            return 0, None, None
+        target_unit = self.get_target_unit(column_name)
 
         aggregate_types = []
         if item_config.get('showMaxMarkPoint', 'false') == 'true':
@@ -327,19 +324,26 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             value = series[2][0][index]
             if value is not None:
                 value = self.convert_value(value, decimals, series[2].unit, series[2].group, target_unit)
-            for highlow_values in daily_highlow_values:
-                for highlow_value in highlow_values:
-                    highlow_time = highlow_value[0]
-                    if highlow_time is not None and highlow_time > interval_start_time and highlow_time <= interval_end_time:
-                        if highlow_time <= interval_end_time:
-                            processed_value = [highlow_time * 1000, self.convert_value(highlow_value[1], decimals, series[2].unit, series[2].group, target_unit)]
-                            combined_series.append(processed_value)
-                            processed_value.append(highlow_value[2])
-                            processed_highlow_values.append(processed_value)
-                        else:
-                            value = highlow_value[1]
+            self._append_interval_highlow_values(
+                daily_highlow_values, interval_start_time, interval_end_time, decimals,
+                series[2].unit, series[2].group, target_unit, combined_series, processed_highlow_values)
             combined_series.append([interval_end_time * 1000, value])
         return combined_series, processed_highlow_values
+
+    def _append_interval_highlow_values(self, daily_highlow_values, interval_start_time, interval_end_time,
+                                        decimals, source_unit, source_group, target_unit,
+                                        combined_series, processed_highlow_values):
+        for highlow_values in daily_highlow_values:
+            for highlow_value in highlow_values:
+                highlow_time = highlow_value[0]
+                if highlow_time is None or highlow_time <= interval_start_time or highlow_time > interval_end_time:
+                    continue
+                processed_value = [
+                    highlow_time * 1000,
+                    self.convert_value(highlow_value[1], decimals, source_unit, source_group, target_unit)]
+                combined_series.append(processed_value)
+                processed_value.append(highlow_value[2])
+                processed_highlow_values.append(processed_value)
 
     def convert_value(self, value, decimals, source_unit, source_group, target_unit):
         if target_unit != "":
@@ -376,10 +380,10 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         
         if station_timezone is None:
             # fallback to UTC offset
-            offsetTotalSeconds = datetime.now().astimezone().utcoffset().total_seconds()
-            offsetMinutes = int(offsetTotalSeconds % 3600)
-            offsetHours = int(offsetTotalSeconds // 3600)
+            offset_total_seconds = datetime.now().astimezone().utcoffset().total_seconds()
+            offset_minutes = int(offset_total_seconds % 3600)
+            offset_hours = int(offset_total_seconds // 3600)
             # Luxon on Front End accepts timezone in format '+HH:mm' or '-HH:mm' as alternative to IANA timezone
-            station_timezone = f'{offsetHours:+03d}:{offsetMinutes:02d}'
+            station_timezone = f'{offset_hours:+03d}:{offset_minutes:02d}'
         
         return station_timezone

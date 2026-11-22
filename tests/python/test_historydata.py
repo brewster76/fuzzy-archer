@@ -60,6 +60,20 @@ def test_first_run_writes_everything(tmp_path):
     assert hw.read_json(os.path.join(root, 'current', 'year.json.gz'))['period_id'] == '2026'
 
 
+def test_history_disabled_keeps_current_and_rolling_generation(tmp_path):
+    build = FakeBuild()
+    section = dict(SECTION, generate_history='false')
+    now = ts(2026, 11, 21, 18, 5)
+    root, written = run(tmp_path, now, build, section)
+    assert len(written) == 4
+    assert set(written) == {('current', 'day'), ('rolling', 'week'), ('rolling', 'month'), ('rolling', 'year')}
+    current_index = hw.read_current_index(root)
+    assert set(current_index['current']) == {'day'}
+    jsonschema = pytest.importorskip('jsonschema')
+    with open(os.path.join(SCHEMA_DIR, 'current-v1.schema.json')) as f:
+        jsonschema.validate(current_index, json.load(f))
+
+
 def test_due_logic_across_runs(tmp_path):
     build = FakeBuild()
     now = ts(2026, 11, 21, 18, 5)
@@ -77,7 +91,8 @@ def test_period_rollover_forces_regeneration(tmp_path):
     build = FakeBuild()
     run(tmp_path, ts(2026, 11, 30, 23, 55), build)
     root, written = run(tmp_path, ts(2026, 12, 1, 0, 0, 1), build)
-    assert ('current', 'month') in written and ('current', 'day') in written
+    assert ('current', 'month') in written
+    assert ('current', 'day') in written
     assert ('current', 'year') not in written
     assert hw.read_current_index(root)['current']['month']['period_id'] == '202612'
 
@@ -101,10 +116,12 @@ def test_failure_keeps_previous_entry_of_same_period_only(tmp_path):
     run(tmp_path, now, FakeBuild())
     root, written = run(tmp_path, now + 300, FakeBuild(fail={('calendar', 'day')}))
     index = hw.read_current_index(root)
-    assert written == [] and index['current']['day']['generated'] == now
+    assert written == []
+    assert index['current']['day']['generated'] == now
     root, _ = run(tmp_path, ts(2026, 11, 22, 0, 5), FakeBuild(fail={('calendar', 'day')}))
     index = hw.read_current_index(root)
-    assert 'day' not in index['current'] and index['current']['week']['period_id'] == '20261122'
+    assert 'day' not in index['current']
+    assert index['current']['week']['period_id'] == '20261122'
 
 
 def test_is_due():

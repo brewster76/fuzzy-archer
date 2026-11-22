@@ -244,6 +244,12 @@
         }
         let view = route.view;
         let currentId = periodIdAt(view, ctx.nowMs, ctx.zone, ctx.weekStart);
+        if (ctx.generateHistory === false) {
+            if (view === "day") {
+                return {view: view, id: currentId, rolling: false, replace: route.id !== currentId};
+            }
+            return {view: view, id: null, rolling: true, replace: route.id !== null};
+        }
         if (route.id === null) {
             if (view === "day") {
                 return {view: view, id: ctx.defaultDayId || currentId, rolling: false, replace: true};

@@ -143,3 +143,13 @@ test("resolveRoute", () => {
     assert.deepEqual(r("month", "202612"), {view: "month", id: null, rolling: true, replace: true});
     assert.deepEqual(r("year", "2025"), {view: "year", id: "2025", rolling: false, replace: false});
 });
+
+test("resolveRoute redirects historical ids when history generation is disabled", () => {
+    const ctx = {nowMs: ms("2026-11-18T12:00"), zone: BERLIN, weekStart: 6, generateHistory: false};
+    const r = (view, id) => core.resolveRoute({view: view, id: id}, ctx);
+    assert.deepEqual(r("day", "20261101"), {view: "day", id: "20261118", rolling: false, replace: true});
+    assert.deepEqual(r("day", "20261118"), {view: "day", id: "20261118", rolling: false, replace: false});
+    assert.deepEqual(r("week", "20261115"), {view: "week", id: null, rolling: true, replace: true});
+    assert.deepEqual(r("month", "202611"), {view: "month", id: null, rolling: true, replace: true});
+    assert.deepEqual(r("year", null), {view: "year", id: null, rolling: true, replace: false});
+});

@@ -144,6 +144,38 @@ test("source resolution", async () => {
     assert.deepEqual(store.source("year", "2025", false), {kind: "status", status: "nodata"});
 });
 
+test("rolling-only index serves today's day and all rolling views without a manifest", async () => {
+    const now = sec("2026-11-21T18:00");
+    const index = {
+        schema_version: 1,
+        generated: now,
+        week_start: 6,
+        current: {
+            day: {period_id: "20261121", file: "current/day.json.gz", rev: "day1", generated: now, refresh: 300},
+        },
+        rolling: {
+            week: {file: "rolling/week.json.gz", rev: "week1", generated: now, refresh: 3600},
+            month: {file: "rolling/month.json.gz", rev: "month1", generated: now, refresh: 10800},
+            year: {file: "rolling/year.json.gz", rev: "year1", generated: now, refresh: 21600},
+        },
+    };
+    const srv = server({
+        "current.json": index,
+        "current/day.json.gz": {period: "day", period_id: "20261121", kind: "calendar"},
+        "rolling/week.json.gz": {period: "week", kind: "rolling"},
+        "rolling/month.json.gz": {period: "month", kind: "rolling"},
+        "rolling/year.json.gz": {period: "year", kind: "rolling"},
+    });
+    const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
+    await store.fetchCurrent();
+    assert.equal(store.source("day", "20261121", false).kind, "mutable");
+    for (const view of ["week", "month", "year"]) {
+        assert.equal(store.source(view, null, true).kind, "mutable");
+    }
+    assert.equal(srv.calls.length, 1);
+    assert.equal(store.manifest, null);
+});
+
 test("selected running period is kept after a period change until its final file exists", async () => {
     const f = files();
     const srv = server(f);

@@ -354,6 +354,7 @@ New section; `[LiveCharts]` is untouched.
 [PeriodCharts]
     period_chart_items = outTemp, barometer, rain, outHumidity, wind, windDir
     generate = true             # false: this report only displays data of another report
+    generate_history = true     # false: current day + rolling windows only; no automatic history backfill
     data_url = historic_data    # URL of the data root relative to this report's pages (E22)
     show_daynight = true        # day/week only
     transition_angle = 8
@@ -401,6 +402,14 @@ New section; `[LiveCharts]` is untouched.
             [[[[year]]]]
                 show = false              # hide this series in the year chart only
 ```
+
+With `generate_history = false`, the report generates only today's calendar day (from local midnight)
+and rolling week/month/year windows. It omits calendar week/month/year files and does not start the
+automatic worker that builds completed historical periods. The period picker and
+previous/next/current/today controls are hidden.
+Links to past days resolve to today; links to calendar weeks, months, or years resolve to their
+rolling view. Existing historical files are left untouched, and `historyregen` can still be run
+explicitly. `generate_history` defaults to `true`.
 
 Display options (`seriesName`, `plotType`, `lineColor`, `lineWidth`, `decimals`, `yAxisIndex`,
 `yAxisMin`, `symbol`, `symbolSize`, `interval`, `minInterval`, `maxInterval`, `splitNumber`,
@@ -471,7 +480,7 @@ data is written unchanged):
   `[Labels][[Generic]]`, else data type), `obs_group`, `target_unit` and
   `views.<view>` = `{key, observation, data_binding, data_type, aggregate_type, resolution,
   statistics, obs_group, target_unit}` (`obs_group` of a `vecdir` view is `group_direction`).
-* `period_config` – `data_url`, `generate`, `week_start` (0 = Monday … 6 = Sunday),
+* `period_config` – `data_url`, `generate`, `generate_history`, `week_start` (0 = Monday … 6 = Sunday),
   `refresh`, `archive_interval`, `show_daynight`, `view_resolutions`, `errors` (configuration
   errors of `[PeriodCharts]`).
 * `period_titles` – `day`, `week`, `month`, `year` formats from `[Units][[TimeFormats]]`

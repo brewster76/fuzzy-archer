@@ -116,8 +116,14 @@ class PeriodChartsConfig(object):
         section = section or {}
         self.default_binding = default_binding
         self.errors = []
+        self._resolve_options(section)
+        self._resolve_defaults(section)
+        self.charts = self._resolve_charts(section)
+
+    def _resolve_options(self, section):
         self.chart_items = as_list(section.get('period_chart_items'))
         self.generate = as_bool(section.get('generate'), True)
+        self.generate_history = as_bool(section.get('generate_history'), True)
         self.data_url = str(section.get('data_url') or 'historic_data').strip().strip('/') or 'historic_data'
         self.show_daynight = as_bool(section.get('show_daynight'), True)
         self.transition_angle = _number(section.get('transition_angle'), 8, int)
@@ -125,27 +131,34 @@ class PeriodChartsConfig(object):
         self.max_retries = _number(section.get('max_retries'), 3, int)
         self.retry_backoff = _number(section.get('retry_backoff'), 600, int)
         self.backfill_pause = _number(section.get('backfill_pause'), 0.02, float)
+        self.gap_threshold = self._gap_threshold(section)
+
+    @staticmethod
+    def _gap_threshold(section):
         try:
-            self.gap_threshold = _number(section.get('gap_threshold'), 1.0, float)
+            gap_threshold = _number(section.get('gap_threshold'), 1.0, float)
         except ValueError as e:
             raise ConfigError("gap_threshold must be a percentage between 0 and 100") from e
-        if not math.isfinite(self.gap_threshold) or not 0 <= self.gap_threshold <= 100:
+        if not math.isfinite(gap_threshold) or not 0 <= gap_threshold <= 100:
             raise ConfigError("gap_threshold must be a percentage between 0 and 100")
+        return gap_threshold
 
+    def _resolve_defaults(self, section):
         refresh = section.get('refresh') or {}
-        self.refresh = dict((view, _number(refresh.get(view), DEFAULT_REFRESH[view], int)) for view in PERIODS)
+        self.refresh = {view: _number(refresh.get(view), DEFAULT_REFRESH[view], int) for view in PERIODS}
 
         defaults = section.get('defaults') or {}
         self.line_aggregate_type = str(defaults.get('line_aggregate_type') or 'avg').strip()
         self.view_resolutions = {}
         for view in PERIODS:
             view_defaults = defaults.get(view) or {}
-            self.view_resolutions[view] = {}
-            for kind in ('line', 'bar'):
-                value = view_defaults.get(kind, DEFAULT_VIEW_RESOLUTIONS[view][kind])
-                self.view_resolutions[view][kind] = normalize_resolution(value)
+            self.view_resolutions[view] = {
+                kind: normalize_resolution(view_defaults.get(kind, DEFAULT_VIEW_RESOLUTIONS[view][kind]))
+                for kind in ('line', 'bar')
+            }
 
-        self.charts = []
+    def _resolve_charts(self, section):
+        charts = []
         for chart_id in self.chart_items:
             chart_section = section.get(chart_id)
             if not isinstance(chart_section, dict):
@@ -153,26 +166,27 @@ class PeriodChartsConfig(object):
                 continue
             chart = self._resolve_chart(chart_id, chart_section)
             if chart.series:
-                self.charts.append(chart)
+                charts.append(chart)
+        return charts
 
     def _error(self, message):
         log.error(message)
         self.errors.append(message)
 
     def _resolve_chart(self, chart_id, chart_section):
-        options = dict((k, v) for k, v in chart_section.items() if not isinstance(v, dict))
+        options = {k: v for k, v in chart_section.items() if not isinstance(v, dict)}
         series = []
         for series_id, series_section in chart_section.items():
             if not isinstance(series_section, dict):
                 continue
             try:
                 series.append(self._resolve_series(chart_id, series_id, series_section))
-            except (ConfigError, ValueError) as e:
+            except ValueError as e:
                 self._error("[PeriodCharts] [[%s]] [[[%s]]]: %s. Series skipped." % (chart_id, series_id, e))
         return ChartConfig(chart_id, options, series)
 
     def _resolve_series(self, chart_id, series_id, section):
-        options = dict((k, v) for k, v in section.items() if not isinstance(v, dict))
+        options = {k: v for k, v in section.items() if not isinstance(v, dict)}
         binding = str(section.get('data_binding') or self.default_binding).strip()
         data_type = str(section.get('obs_type') or section.get('data_type') or series_id).strip()
         plot_type = str(section.get('plotType') or 'line').strip()
@@ -180,47 +194,62 @@ class PeriodChartsConfig(object):
             raise ConfigError("unknown plotType '%s'" % plot_type)
         if '/' in binding or '/' in data_type:
             raise ConfigError("data_binding and data_type must not contain '/'")
-        explicit_statistics = as_list(section.get('statistics')) if 'statistics' in section else None
-        if explicit_statistics is not None:
-            unknown = [s for s in explicit_statistics if s not in SUPPORTED_STATISTICS]
-            if unknown:
-                raise ConfigError("unsupported statistics %s" % unknown)
+        explicit_statistics = self._resolve_explicit_statistics(section)
+        views = self._resolve_series_views(data_type, binding, plot_type, section, explicit_statistics)
+        return SeriesConfig(chart_id, series_id, options, views)
 
+    @staticmethod
+    def _resolve_explicit_statistics(section):
+        if 'statistics' not in section:
+            return None
+        statistics = as_list(section.get('statistics'))
+        unknown = [stat for stat in statistics if stat not in SUPPORTED_STATISTICS]
+        if unknown:
+            raise ConfigError("unsupported statistics %s" % unknown)
+        return statistics
+
+    def _resolve_series_views(self, data_type, binding, plot_type, section, explicit_statistics):
         views = {}
         for view in PERIODS:
-            view_section = section.get(view) if isinstance(section.get(view), dict) else {}
+            view_section = section.get(view)
+            if not isinstance(view_section, dict):
+                view_section = {}
             views[view] = self._resolve_view(view, data_type, binding, plot_type, section,
                                              view_section, explicit_statistics)
-        return SeriesConfig(chart_id, series_id, options, views)
+        return views
 
     def _resolve_view(self, view, data_type, binding, plot_type, section, view_section, explicit_statistics):
         # 6.1 priority: per-view > series > view default (> native fallback for day, part of defaults)
         resolution = view_section.get('aggregateInterval', section.get('aggregateInterval'))
-        resolution = normalize_resolution(resolution) if resolution is not None else \
-            self.view_resolutions[view]['bar' if plot_type == 'bar' else 'line']
+        if resolution is None:
+            kind = 'bar' if plot_type == 'bar' else 'line'
+            resolution = self.view_resolutions[view][kind]
+        else:
+            resolution = normalize_resolution(resolution)
         aggregate_type = view_section.get('aggregateType', section.get('aggregateType'))
         aggregate_type = str(aggregate_type).strip() if aggregate_type is not None else None
-
-        effective_type = data_type
-        if resolution != NATIVE:
-            if aggregate_type is None:
-                if plot_type == 'bar':
-                    raise ConfigError("bar series with resolution %s in view '%s' needs aggregateType"
-                                      % (resolution, view))
-                aggregate_type = 'vecdir' if data_type == 'windDir' else self.line_aggregate_type
-            if aggregate_type not in SUPPORTED_AGGREGATES:
-                raise ConfigError("unsupported aggregateType '%s'" % aggregate_type)
-            if aggregate_type in VECTOR_AGGREGATES:
-                if data_type not in WIND_COMPONENTS + ('wind',):
-                    raise ConfigError("%s is only supported for wind" % aggregate_type)
-                effective_type = 'wind'
-        else:
-            aggregate_type = None
-
+        effective_type, aggregate_type = self._resolve_aggregate(view, data_type, plot_type,
+                                                                 resolution, aggregate_type)
         statistics = explicit_statistics if explicit_statistics is not None \
             else default_statistics(aggregate_type, effective_type)
         show = as_bool(view_section.get('show'), True)
         return ViewSeries(binding, effective_type, aggregate_type, resolution, statistics, show)
+
+    def _resolve_aggregate(self, view, data_type, plot_type, resolution, aggregate_type):
+        if resolution == NATIVE:
+            return data_type, None
+        if aggregate_type is None:
+            if plot_type == 'bar':
+                raise ConfigError("bar series with resolution %s in view '%s' needs aggregateType"
+                                  % (resolution, view))
+            aggregate_type = 'vecdir' if data_type == 'windDir' else self.line_aggregate_type
+        if aggregate_type not in SUPPORTED_AGGREGATES:
+            raise ConfigError("unsupported aggregateType '%s'" % aggregate_type)
+        if aggregate_type not in VECTOR_AGGREGATES:
+            return data_type, aggregate_type
+        if data_type not in WIND_COMPONENTS + ('wind',):
+            raise ConfigError("%s is only supported for wind" % aggregate_type)
+        return 'wind', aggregate_type
 
     # -----------------------------------------------------------------------------------------
 
@@ -254,7 +283,7 @@ class PeriodChartsConfig(object):
             chart_dict['series'] = {}
             for s in chart.series:
                 series_dict = dict(s.options)
-                series_dict['views'] = dict((view, vs.to_dict()) for view, vs in s.views.items())
+                series_dict['views'] = {view: vs.to_dict() for view, vs in s.views.items()}
                 chart_dict['series'][s.series_id] = series_dict
             result[chart.chart_id] = chart_dict
         return {'order': [c.chart_id for c in self.charts], 'charts': result}
@@ -265,7 +294,7 @@ class PeriodChartsConfig(object):
         for view in PERIODS:
             series, observations = self.view_plan(view)
             views[view] = {'series': sorted(series), 'observations':
-                           dict((k, sorted(v['statistics'])) for k, v in sorted(observations.items()))}
+                           {k: sorted(v['statistics']) for k, v in sorted(observations.items())}}
         return {'views': views, 'show_daynight': self.show_daynight,
                 'transition_angle': self.transition_angle, 'gap_threshold': self.gap_threshold}
 
@@ -327,7 +356,7 @@ def period_titles(time_formats, strftime=None):
             fmt = ', '.join(fmt)  # configobj splits unquoted values containing commas
         titles[view] = resolve_title_format(str(fmt), pattern)
     months = [datetime.date(2001, m, 1) for m in range(1, 13)]
-    days = [datetime.date(2001, 1, 1) + datetime.timedelta(days=d) for d in range(7)]  # 2001-01-01 = Monday
+    days = [datetime.date(2001, 1, 1) + datetime.timedelta(days=d) for d in range(7)]
     titles['month_names'] = [strftime('%B', d) for d in months]
     titles['month_abbr'] = [strftime('%b', d) for d in months]
     titles['day_names'] = [strftime('%A', d) for d in days]   # Monday first (WeeWX week_start encoding)
@@ -358,8 +387,10 @@ def frontend_charts(config, obs_group_of, target_unit_of, generic_labels=None):
 
 def frontend_config(config, week_start, archive_interval):
     """'period_config' for weewxData.json."""
-    return {'data_url': config.data_url, 'generate': config.generate, 'week_start': int(week_start),
-            'refresh': dict(config.refresh), 'archive_interval': int(archive_interval),
+    return {'data_url': config.data_url, 'generate': config.generate,
+            'generate_history': config.generate_history, 'week_start': int(week_start),
+            'refresh': dict(config.refresh.items()),
+            'archive_interval': int(archive_interval),
             'gap_threshold': config.gap_threshold,
             'show_daynight': config.show_daynight, 'view_resolutions': config.view_resolutions,
             'errors': list(config.errors)}

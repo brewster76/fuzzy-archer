@@ -47,7 +47,8 @@ def test_hourly_grid_on_dst_days():
 def test_fall_back_repeated_boundaries_are_distinct():
     naive = dt.datetime(2026, 10, 25, 2, 0)
     epochs = BERLIN.epochs(naive)
-    assert len(epochs) == 2 and epochs[1] - epochs[0] == 3600
+    assert len(epochs) == 2
+    assert epochs[1] - epochs[0] == 3600
     assert BERLIN.epochs(dt.datetime(2026, 3, 29, 2, 30)) == []
 
 
@@ -59,7 +60,8 @@ def test_santiago_midnight_gap():
         local = SANTIAGO.local(start)
         if local.time() != dt.time(0, 0):
             found.append(date)
-            assert local.date() == date and local.time() == dt.time(1, 0)
+            assert local.date() == date
+            assert local.time() == dt.time(1, 0)
             assert day_length(SANTIAGO, date) == 23 * 3600
             assert SANTIAGO.local(start - 1).date() == date - dt.timedelta(days=1)
             p1d = hp.buckets(SANTIAGO, 'P1D', start, start + 3600)
@@ -116,7 +118,8 @@ def test_rolling_window():
     now = epoch(BERLIN, 2026, 10, 28, 12, 34)
     for period, days in [('week', 8), ('month', 32), ('year', 367)]:
         s, e = hp.rolling_window(period, now)
-        assert e == now and e - s == days * 86400
+        assert e == now
+        assert e - s == days * 86400
     with pytest.raises(ValueError):
         hp.rolling_window('day', now)
 

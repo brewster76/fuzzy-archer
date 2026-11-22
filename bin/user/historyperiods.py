@@ -31,7 +31,7 @@ RESOLUTION_MINUTES = {
 }
 CALENDAR_DAY = 'P1D'
 RESOLUTIONS = (NATIVE,) + tuple(RESOLUTION_MINUTES) + (CALENDAR_DAY,)
-SECONDS_TO_RESOLUTION = dict((minutes * 60, code) for code, minutes in RESOLUTION_MINUTES.items())
+SECONDS_TO_RESOLUTION = {minutes * 60: code for code, minutes in RESOLUTION_MINUTES.items()}
 SECONDS_TO_RESOLUTION[86400] = CALENDAR_DAY
 
 _PERIOD_ID_PATTERNS = {
@@ -41,6 +41,7 @@ _PERIOD_ID_PATTERNS = {
     'year': re.compile(r'^\d{4}$'),
 }
 _PERIOD_ID_FORMATS = {'day': '%Y%m%d', 'week': '%Y%m%d', 'month': '%Y%m', 'year': '%Y'}
+UNKNOWN_PERIOD_ERROR = "Unknown period '%s'"
 
 
 def normalize_resolution(value):
@@ -171,7 +172,7 @@ def period_start_date(period, date, week_start):
         return date.replace(day=1)
     if period == 'year':
         return date.replace(month=1, day=1)
-    raise ValueError("Unknown period '%s'" % period)
+    raise ValueError(UNKNOWN_PERIOD_ERROR % period)
 
 
 def next_period_date(period, start_date):
@@ -185,7 +186,7 @@ def next_period_date(period, start_date):
         return start_date.replace(month=start_date.month + 1)
     if period == 'year':
         return start_date.replace(year=start_date.year + 1)
-    raise ValueError("Unknown period '%s'" % period)
+    raise ValueError(UNKNOWN_PERIOD_ERROR % period)
 
 
 def previous_period_date(period, start_date, week_start):
@@ -204,7 +205,7 @@ def period_id(period, start_date):
 def parse_period_id(period, pid, week_start=None):
     """Validate a period id and return its local start date. Raises ValueError."""
     if period not in _PERIOD_ID_PATTERNS:
-        raise ValueError("Unknown period '%s'" % period)
+        raise ValueError(UNKNOWN_PERIOD_ERROR % period)
     if not isinstance(pid, str) or not _PERIOD_ID_PATTERNS[period].match(pid):
         raise ValueError("Invalid %s id '%s'" % (period, pid))
     if period == 'year':
@@ -235,15 +236,25 @@ def _adjust(zone, period, start_date, week_start, contains):
 def current_period(zone, period, now, week_start):
     """Start date of the calendar period running at `now` (start <= now < end)."""
     candidate = period_start_date(period, zone.local(now).date(), week_start)
-    return _adjust(zone, period, candidate, week_start,
-                   lambda s, e: 0 if s <= now < e else (1 if now >= e else -1))
+    return _adjust(zone, period, candidate, week_start, lambda s, e: _position_current(s, e, now))
+
+
+def _position_current(start, end, now):
+    if start <= now < end:
+        return 0
+    return 1 if now >= end else -1
 
 
 def period_of_record(zone, period, ts, week_start):
     """Start date of the calendar period an archive record with timestamp ts belongs to (start < ts <= end)."""
     candidate = period_start_date(period, zone.local(ts - 1).date(), week_start)
-    return _adjust(zone, period, candidate, week_start,
-                   lambda s, e: 0 if s < ts <= e else (1 if ts > e else -1))
+    return _adjust(zone, period, candidate, week_start, lambda s, e: _position_record(s, e, ts))
+
+
+def _position_record(start, end, timestamp):
+    if start < timestamp <= end:
+        return 0
+    return 1 if timestamp > end else -1
 
 
 def iter_periods(period, first_date, last_date, week_start, newest_first=False):

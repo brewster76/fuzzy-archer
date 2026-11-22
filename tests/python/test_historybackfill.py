@@ -69,17 +69,22 @@ def test_tasks_newest_first_and_completion(tmp_path):
     tasks, next_check = worker.tasks(first, last, last + 60)
     ids = [(p, hp.period_id(p, d)) for p, d, _ in tasks]
     assert ids[0] == ('day', '20261120')
-    assert ('month', '202610') in ids and ('week', '20261025') in ids
-    assert ('day', '20261030') == ids[-1] or ids.index(('day', '20261030')) > ids.index(('day', '20261101'))
+    assert ('month', '202610') in ids
+    assert ('week', '20261025') in ids
+    assert ('day', '20261030') in ids
+    assert ('day', '20261101') in ids
+    assert ids.index(('day', '20261030')) > ids.index(('day', '20261101'))
     assert not any(p == 'year' for p, _ in ids)
-    assert ('month', '202611') not in ids and ('day', '20261121') not in ids
+    assert ('month', '202611') not in ids
+    assert ('day', '20261121') not in ids
     assert next_check == ts(2026, 11, 22)
     # just after midnight, before the midnight record is in the archive: day waits for grace or record
     tasks, next_check = worker.tasks(first, ts(2026, 11, 21, 23, 55), ts(2026, 11, 22, 0, 0, 30))
     assert ('day', '20261121') not in [(p, hp.period_id(p, d)) for p, d, _ in tasks]
     assert next_check == ts(2026, 11, 22) + 3600
     tasks, _ = worker.tasks(first, ts(2026, 11, 22), ts(2026, 11, 22, 0, 0, 30))
-    assert tasks[0][0] == 'day' and hp.period_id('day', tasks[0][1]) == '20261121'
+    assert tasks[0][0] == 'day'
+    assert hp.period_id('day', tasks[0][1]) == '20261121'
 
 
 def test_run_resume_and_manifest(tmp_path):
@@ -88,14 +93,16 @@ def test_run_resume_and_manifest(tmp_path):
     build = FakeBuild()
     worker = make(tmp_path, db, now, build)
     state = worker.run()
-    assert state['state'] == 'done' and state['next_check'] == ts(2026, 11, 22)
+    assert state['state'] == 'done'
+    assert state['next_check'] == ts(2026, 11, 22)
     m = hw.Manifest(worker.root, 6)
     assert m.get('day', '20261110') == {'s': 'nodata'}
     assert m.get('day', '20261120')['s'] == 'ok'
     assert m.get('week', '20261101')['s'] == 'ok'
     assert m.get('week', '20261025') is None  # ends exactly at the archive start
     assert m.get('month', '202610') is None  # month before the archive start
-    assert m.index['backfill']['state'] == 'done' and m.index['backfill']['done'] == m.index['backfill']['total']
+    assert m.index['backfill']['state'] == 'done'
+    assert m.index['backfill']['done'] == m.index['backfill']['total']
     assert ('day', '20261110') not in build.calls
     jsonschema = pytest.importorskip('jsonschema')
     with open(os.path.join(SCHEMA_DIR, 'manifest-v1.schema.json')) as f:
@@ -119,7 +126,8 @@ def test_retry_backoff_and_error(tmp_path):
     fail = lambda period, pid: pid == '20261119'
     worker = make(tmp_path, db, now, FakeBuild(fail))
     state = worker.run()
-    assert state['state'] == 'idle' and state['next_check'] == now + 600
+    assert state['state'] == 'idle'
+    assert state['next_check'] == now + 600
     assert hw.Manifest(worker.root, 6).get('day', '20261119') is None
     assert make(tmp_path, db, now + 300, FakeBuild(fail)).run()['next_check'] == now + 600
     make(tmp_path, db, now + 600, FakeBuild(fail)).run()
@@ -136,7 +144,8 @@ def test_week_start_change_marks_incompatible(tmp_path):
     worker = make(tmp_path, db, now + 300, build, week_start=0)
     worker.run()
     weeks = hw.Manifest(worker.root, 0).entries('week')
-    assert weeks and all(e == {'s': 'incompatible'} for e in weeks.values())
+    assert weeks
+    assert all(e == {'s': 'incompatible'} for e in weeks.values())
     assert not any(p == 'week' for p, _ in build.calls)
 
 
@@ -144,7 +153,9 @@ def test_needs_run(tmp_path):
     d = str(tmp_path)
     assert needs_run(d, 'h', 0)
     hw.write_json(os.path.join(d, 'worker.json'), {'config': 'h', 'state': 'done', 'next_check': 100})
-    assert not needs_run(d, 'h', 99) and needs_run(d, 'h', 100) and needs_run(d, 'other', 0)
+    assert not needs_run(d, 'h', 99)
+    assert needs_run(d, 'h', 100)
+    assert needs_run(d, 'other', 0)
 
 
 WEEWX_CONF = """
@@ -204,12 +215,14 @@ def test_worker_main_end_to_end(tmp_path, monkeypatch):
     held.release()
     assert historybackfill.main(['--job', job_path]) == 0
     index = hw.read_json(os.path.join(root, 'manifest.json'))
-    assert index['backfill']['state'] == 'done' and index['backfill']['total'] >= agg.DAYS
+    assert index['backfill']['state'] == 'done'
+    assert index['backfill']['total'] >= agg.DAYS
     day_id = hp.period_id('day', agg.FIRST_DAY + dt.timedelta(days=1))
     entry = hw.read_json(os.path.join(root, 'manifest', 'day', day_id[:4] + '.json'))['entries'][day_id]
     assert entry['s'] == 'ok'
     data = hw.read_json(os.path.join(root, *entry['file'].split('/')))
-    assert data['state'] == 'complete' and data['coverage']['records'] == 288
+    assert data['state'] == 'complete'
+    assert data['coverage']['records'] == 288
     assert not os.path.exists(os.path.join(state_dir, 'worker.lock'))
     assert hw.read_json(os.path.join(state_dir, 'worker.json'))['state'] == 'done'
 
