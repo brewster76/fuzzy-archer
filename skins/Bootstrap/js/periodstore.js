@@ -229,6 +229,34 @@
             return core.periodIdAt(view, (archive.first - 1) * 1000, store.zone, store.weekStart);
         };
 
+        /** Earliest loadable calendar period overlapping a requested year/month range. */
+        store.firstAvailableId = function (view, rangeStart, rangeEnd) {
+            let first = null;
+            function consider(id) {
+                if (!id) {
+                    return;
+                }
+                let start = core.periodStart(view, id, store.zone);
+                let end = core.periodEnd(view, id, store.zone);
+                if (start !== null && start.toMillis() < rangeEnd && end.toMillis() > rangeStart
+                        && (first === null || id < first)) {
+                    first = id;
+                }
+            }
+            let currentId = store.currentPeriodId(view);
+            if (currentId !== null) {
+                consider(currentId);
+            }
+            for (let segment of Object.values(segments[view] || {})) {
+                for (let id of Object.keys(segment.entries)) {
+                    if (LOADABLE[segment.entries[id].s] === true) {
+                        consider(id);
+                    }
+                }
+            }
+            return first;
+        };
+
         /** Newest loadable completed id of `view` from the loaded segments. */
         store.newestId = function (view) {
             let best = null;

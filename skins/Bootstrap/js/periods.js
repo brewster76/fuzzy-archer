@@ -12,6 +12,7 @@ const PeriodViews = (function () {
         view: "live",
         rolling: false,
         id: null,
+        invalid: false,
         key: null,
         token: 0,
         selection: {},   // view -> {id, rolling}; remembered while the page is open
@@ -104,12 +105,35 @@ const PeriodViews = (function () {
             setStatus("loading");
             return;
         }
+        let canonicalized = false;
+        if (parsed !== null && core.isPeriodView(parsed.view) && parsed.id !== null) {
+            if (core.isPeriodPrefix(parsed.view, parsed.id)) {
+                let range = core.prefixRange(parsed.view, parsed.id, ctx.zone);
+                let firstAvailable = range !== null && hooks.firstAvailableId
+                    ? hooks.firstAvailableId(parsed.view, range.start.toMillis(), range.end.toMillis())
+                    : null;
+                if (firstAvailable === null) {
+                    parsed.invalid = true;
+                } else {
+                    parsed.id = firstAvailable;
+                    canonicalized = true;
+                }
+            } else {
+                let normalizedId = core.normalizeId(parsed.view, parsed.id, ctx.zone, ctx.weekStart);
+                if (normalizedId === null) {
+                    parsed.invalid = true;
+                } else if (normalizedId !== parsed.id) {
+                    parsed.id = normalizedId;
+                    canonicalized = true;
+                }
+            }
+        }
         let resolved = core.resolveRoute(parsed, routeContext());
-        if (resolved.replace) {
+        if (canonicalized || resolved.replace) {
             let hash = core.formatHash(resolved.view, resolved.id);
             history.replaceState(null, "", location.pathname + location.search + hash);
         }
-        let key = resolved.view + "|" + resolved.id + "|" + resolved.rolling;
+        let key = resolved.view + "|" + resolved.id + "|" + resolved.rolling + "|" + !!resolved.invalid;
         if (force !== true && key === state.key) {
             return;   // same route (popstate and hashchange both fired)
         }
@@ -118,6 +142,7 @@ const PeriodViews = (function () {
         state.view = resolved.view;
         state.id = resolved.id;
         state.rolling = resolved.rolling;
+        state.invalid = resolved.invalid === true;
         if (core.isPeriodView(resolved.view)) {
             state.selection[resolved.view] = {id: resolved.id, rolling: resolved.rolling};
         }
@@ -255,7 +280,7 @@ const PeriodViews = (function () {
     function renderPeriod() {
         setTitle(defaultTitle());
         updateToolbar();
-        let routeState = {view: state.view, id: state.id, rolling: state.rolling};
+        let routeState = {view: state.view, id: state.id, rolling: state.rolling, invalid: state.invalid};
         if (ctx.config === null) {
             setStatus("error", "Generation failed");
             return;

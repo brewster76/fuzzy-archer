@@ -508,10 +508,14 @@ UI texts (tab labels, `Current`, `Today`, `rolling`, state messages) are `[Texts
 language files rendered into `index.html`; languages without them fall back to the English key.
 
 Frontend routing (`js/periodcore.js`, `js/periods.js`): URL hash `#day/yyyyMMdd`, `#week`
-(rolling), `#week/yyyyMMdd`, `#month[/yyyyMM]`, `#year[/yyyy]`; Live = no hash. Invalid, misaligned
-or future ids fall back to the rolling window (day: today) with `history.replaceState`. Each tab
-remembers its selection while the page is open; in rolling mode "previous" opens the running
-calendar period. Title token `%e` = day of month without padding.
+(rolling), `#week/yyyyMMdd`, `#month[/yyyyMM]`, `#year[/yyyy]`; Live = no hash. A date-style week
+URL is normalized to the configured week start, an 8-digit month URL to `yyyyMM`, and 6- or 8-digit
+year URLs to `yyyy`. Short `#month/yyyy` and `#week/yyyy` URLs select the earliest available period
+in that year; `#week/yyyymm` selects the earliest available week overlapping that month. These
+normalizations replace the hash without navigating away. Invalid or unavailable week/month/year IDs
+remain on that period view and show its data status; invalid or future day IDs still fall back to the
+default/current day. Each tab remembers its selection while the page is open; in rolling mode
+"previous" opens the running calendar period. Title token `%e` = day of month without padding.
 
 Frontend data loading (`js/periodstore.js`, `js/periodsdata.js`): `current.json` and `manifest.json`
 are fetched with `?t=<now>` (re-checked at most every 60 s, on tab activation, when the browser tab

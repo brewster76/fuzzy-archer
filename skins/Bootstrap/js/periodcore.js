@@ -17,7 +17,13 @@
     const PERIOD_VIEWS = ["day", "week", "month", "year"];
     const ROLLING_VIEWS = ["week", "month", "year"];
     const ROLLING_DAYS = {week: 8, month: 32, year: 367};
-    const ID_PATTERN = {day: /^\d{8}$/, week: /^\d{8}$/, month: /^\d{6}$/, year: /^\d{4}$/};
+    const ID_PATTERN = {
+        day: /^\d{8}$/,
+        week: /^\d{8}$/,
+        month: /^\d{6}(?:\d{2})?$/,
+        year: /^\d{4}(?:\d{2}){0,2}$/,
+    };
+    const ROUTE_ID_PATTERN = {week: /^\d{1,8}$/, month: /^\d{1,8}$/, year: /^\d{1,8}$/};
     const UNIT = {day: "days", week: "weeks", month: "months", year: "years"};
 
     /** Luxon zone for weewxData.config.station_timezone (IANA name or "+HH:mm"). */
@@ -73,6 +79,44 @@
             return start.weekday === Number(weekStart) + 1;
         }
         return true;
+    }
+
+    /** Normalizes date-style period URLs (for example a day within a requested week). */
+    function normalizeId(view, id, zone, weekStart) {
+        if (!isValidIdFormat(view, id)) {
+            return null;
+        }
+        if (view === "year") {
+            id = id.substring(0, 4);
+        } else if (view === "month") {
+            id = id.substring(0, 6);
+        } else if (view === "week") {
+            let date = periodStart("day", id, zone);
+            if (date === null) {
+                return null;
+            }
+            id = periodIdAt("week", date.toMillis(), zone, weekStart);
+        }
+        return isValidId(view, id, zone, weekStart) ? id : null;
+    }
+
+    function isPeriodPrefix(view, prefix) {
+        return (view === "month" && /^\d{4}$/.test(prefix))
+            || (view === "week" && (/^\d{4}$/.test(prefix) || /^\d{6}$/.test(prefix)));
+    }
+
+    function prefixRange(view, prefix, zone) {
+        if (!isPeriodPrefix(view, prefix)) {
+            return null;
+        }
+        let year = Number(prefix.substring(0, 4));
+        let month = prefix.length === 6 ? Number(prefix.substring(4, 6)) : 1;
+        let start = DateTime.fromObject({year: year, month: month, day: 1}, {zone: zone});
+        if (!start.isValid || start.year !== year || start.month !== month) {
+            return null;
+        }
+        let unit = prefix.length === 6 ? "months" : "years";
+        return {start: start.startOf("day"), end: start.plus({[unit]: 1}).startOf("day")};
     }
 
     function formatId(view, dt) {
@@ -152,7 +196,8 @@
             return null;
         }
         let id = parts.length === 2 && parts[1] !== "" ? parts[1] : null;
-        if (id !== null && !isValidIdFormat(view, id)) {
+        if (id !== null && !isValidIdFormat(view, id)
+                && !(ROUTE_ID_PATTERN[view] && ROUTE_ID_PATTERN[view].test(id))) {
             return null;
         }
         return {view: view, id: id};
@@ -244,11 +289,20 @@
         }
         let view = route.view;
         let currentId = periodIdAt(view, ctx.nowMs, ctx.zone, ctx.weekStart);
+        if (route.invalid === true || (route.id !== null && !isValidId(view, route.id, ctx.zone, ctx.weekStart))) {
+            if (view === "day") {
+                return {view: view, id: ctx.defaultDayId || currentId, rolling: false, replace: true};
+            }
+            return {view: view, id: route.id, rolling: false, replace: false, invalid: true};
+        }
         if (ctx.generateHistory === false) {
             if (view === "day") {
                 return {view: view, id: currentId, rolling: false, replace: route.id !== currentId};
             }
-            return {view: view, id: null, rolling: true, replace: route.id !== null};
+            if (route.id === null) {
+                return {view: view, id: null, rolling: true, replace: false};
+            }
+            return {view: view, id: route.id, rolling: false, replace: false};
         }
         if (route.id === null) {
             if (view === "day") {
@@ -256,11 +310,11 @@
             }
             return {view: view, id: null, rolling: true, replace: false};
         }
-        if (!isValidId(view, route.id, ctx.zone, ctx.weekStart) || compareIds(route.id, currentId) > 0) {
+        if (compareIds(route.id, currentId) > 0) {
             if (view === "day") {
                 return {view: view, id: ctx.defaultDayId || currentId, rolling: false, replace: true};
             }
-            return {view: view, id: null, rolling: true, replace: true};
+            return {view: view, id: route.id, rolling: false, replace: false};
         }
         return {view: view, id: route.id, rolling: false, replace: false};
     }
@@ -275,6 +329,9 @@
         hasRolling: hasRolling,
         isValidIdFormat: isValidIdFormat,
         isValidId: isValidId,
+        normalizeId: normalizeId,
+        isPeriodPrefix: isPeriodPrefix,
+        prefixRange: prefixRange,
         periodStart: periodStart,
         periodEnd: periodEnd,
         periodIdAt: periodIdAt,

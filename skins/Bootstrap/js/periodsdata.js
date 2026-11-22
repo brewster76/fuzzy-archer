@@ -170,6 +170,13 @@ const PeriodData = (function () {
     async function render(route, token) {
         clearTimeout(timer);
         let key = route.view + "|" + route.id + "|" + route.rolling;
+        if (route.invalid) {
+            shown = {key: key, data: null};
+            emit({type: "clear"});
+            setDataState(null);
+            views.setStatus("error", "No data available");
+            return;
+        }
         if (key !== shown.key) {
             shown = {key: key, data: null};
             emit({type: "clear"});
@@ -245,6 +252,9 @@ const PeriodData = (function () {
             views.hooks.isSelectable[view] = function (id) { return store.isSelectable(view, id); };
             views.hooks.firstId[view] = function () { return store.firstId(view); };
         }
+        views.hooks.firstAvailableId = function (view, start, end) {
+            return store.firstAvailableId(view, start, end);
+        };
         views.hooks.defaultDayId = defaultDayId;
         await ensureIndexes(true);
     }

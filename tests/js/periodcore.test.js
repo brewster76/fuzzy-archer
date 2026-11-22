@@ -39,7 +39,10 @@ test("parseHash / formatHash", () => {
     assert.deepEqual(core.parseHash("#week/"), {view: "week", id: null});
     assert.deepEqual(core.parseHash("#day/20261118"), {view: "day", id: "20261118"});
     assert.deepEqual(core.parseHash("#month/202611"), {view: "month", id: "202611"});
+    assert.deepEqual(core.parseHash("#month/20190611"), {view: "month", id: "20190611"});
     assert.deepEqual(core.parseHash("#year/2026"), {view: "year", id: "2026"});
+    assert.deepEqual(core.parseHash("#year/202511"), {view: "year", id: "202511"});
+    assert.deepEqual(core.parseHash("#year/25"), {view: "year", id: "25"});
     assert.equal(core.parseHash("#menu"), null);
     assert.equal(core.parseHash("#day/2026"), null);
     assert.equal(core.parseHash("#year/../x"), null);
@@ -71,6 +74,26 @@ test("id validation", () => {
     assert.ok(!core.isValidId("week", "20261116", BERLIN, 6));
     assert.ok(core.isValidId("week", "20261116", BERLIN, 0));
     assert.ok(!core.isValidId("year", "26", BERLIN, 6));
+});
+
+test("normalizeId canonicalizes year, month, and week date URLs", () => {
+    assert.equal(core.normalizeId("year", "202511", BERLIN, 6), "2025");
+    assert.equal(core.normalizeId("month", "20190611", BERLIN, 6), "201906");
+    assert.equal(core.normalizeId("week", "20261027", BERLIN, 0), "20261026");
+    assert.equal(core.normalizeId("week", "20261027", BERLIN, 6), "20261025");
+    assert.equal(core.normalizeId("month", "201913", BERLIN, 6), null);
+    assert.equal(core.normalizeId("week", "20260230", BERLIN, 6), null);
+    assert.equal(core.normalizeId("year", "25", BERLIN, 6), null);
+});
+
+test("period prefixes resolve to local calendar-year and month ranges", () => {
+    const year = core.prefixRange("week", "2019", BERLIN);
+    assert.equal(year.start.toISO(), "2019-01-01T00:00:00.000+01:00");
+    assert.equal(year.end.toISO(), "2020-01-01T00:00:00.000+01:00");
+    const month = core.prefixRange("week", "201910", BERLIN);
+    assert.equal(month.start.toISO(), "2019-10-01T00:00:00.000+02:00");
+    assert.equal(month.end.toISO(), "2019-11-01T00:00:00.000+01:00");
+    assert.equal(core.prefixRange("month", "201910", BERLIN), null);
 });
 
 test("calendar spans are local, 23/25 h days", () => {
@@ -138,18 +161,21 @@ test("resolveRoute", () => {
     assert.deepEqual(r("day", "20261101"), {view: "day", id: "20261101", rolling: false, replace: false});
     assert.deepEqual(r("day", "20261119"), {view: "day", id: "20261118", rolling: false, replace: true});
     assert.deepEqual(r("week", null), {view: "week", id: null, rolling: true, replace: false});
-    assert.deepEqual(r("week", "20261116"), {view: "week", id: null, rolling: true, replace: true});
+    assert.deepEqual(r("week", "20261116"), {view: "week", id: "20261116", rolling: false, replace: false, invalid: true});
     assert.deepEqual(r("week", "20261115"), {view: "week", id: "20261115", rolling: false, replace: false});
-    assert.deepEqual(r("month", "202612"), {view: "month", id: null, rolling: true, replace: true});
+    assert.deepEqual(r("month", "202612"), {view: "month", id: "202612", rolling: false, replace: false});
     assert.deepEqual(r("year", "2025"), {view: "year", id: "2025", rolling: false, replace: false});
+    assert.deepEqual(r("year", "2027"), {view: "year", id: "2027", rolling: false, replace: false});
+    assert.deepEqual(r("month", "202613"), {view: "month", id: "202613", rolling: false, replace: false, invalid: true});
 });
 
-test("resolveRoute redirects historical ids when history generation is disabled", () => {
+test("resolveRoute preserves explicit period ids when history generation is disabled", () => {
     const ctx = {nowMs: ms("2026-11-18T12:00"), zone: BERLIN, weekStart: 6, generateHistory: false};
     const r = (view, id) => core.resolveRoute({view: view, id: id}, ctx);
     assert.deepEqual(r("day", "20261101"), {view: "day", id: "20261118", rolling: false, replace: true});
     assert.deepEqual(r("day", "20261118"), {view: "day", id: "20261118", rolling: false, replace: false});
-    assert.deepEqual(r("week", "20261115"), {view: "week", id: null, rolling: true, replace: true});
-    assert.deepEqual(r("month", "202611"), {view: "month", id: null, rolling: true, replace: true});
+    assert.deepEqual(r("week", "20261115"), {view: "week", id: "20261115", rolling: false, replace: false});
+    assert.deepEqual(r("month", "202611"), {view: "month", id: "202611", rolling: false, replace: false});
     assert.deepEqual(r("year", null), {view: "year", id: null, rolling: true, replace: false});
+    assert.deepEqual(r("year", "2025"), {view: "year", id: "2025", rolling: false, replace: false});
 });

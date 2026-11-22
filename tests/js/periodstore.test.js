@@ -129,6 +129,35 @@ test("manifest entries, derived states and selectability", async () => {
     assert.ok(srv.calls.every((u) => u.startsWith("data/")));
 });
 
+test("firstAvailableId selects the earliest loadable period overlapping a prefix range", async () => {
+    const f = files({
+        "manifest.json": Object.assign({}, MANIFEST, {segments: {
+            week: {"2018": "w18", "2019": "w19"},
+            month: {"2019": "m19"},
+        }}),
+        "manifest/week/2018.json": {entries: {"20181230": {s: "ok", rev: "a", file: "week/20181230.json.gz"}}},
+        "manifest/week/2019.json": {entries: {
+            "20190929": {s: "gaps", rev: "b", file: "week/20190929.json.gz"},
+            "20191006": {s: "ok", rev: "c", file: "week/20191006.json.gz"},
+            "20191103": {s: "pending"},
+        }},
+        "manifest/month/2019.json": {entries: {
+            "201906": {s: "ok", rev: "d", file: "month/201906.json.gz"},
+            "201912": {s: "gaps", rev: "e", file: "month/201912.json.gz"},
+        }},
+    });
+    const srv = server(f);
+    const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
+    await Promise.all([store.fetchCurrent(), store.fetchManifest()]);
+    const year = core.prefixRange("week", "2019", BERLIN);
+    const october = core.prefixRange("week", "201910", BERLIN);
+    const monthYear = core.prefixRange("month", "2019", BERLIN);
+    assert.equal(store.firstAvailableId("week", year.start.toMillis(), year.end.toMillis()), "20181230");
+    assert.equal(store.firstAvailableId("week", october.start.toMillis(), october.end.toMillis()), "20190929");
+    assert.equal(store.firstAvailableId("month", monthYear.start.toMillis(), monthYear.end.toMillis()), "201906");
+    assert.equal(store.firstAvailableId("month", Date.UTC(2020, 0), Date.UTC(2021, 0)), null);
+});
+
 test("source resolution", async () => {
     const srv = server(files());
     const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
