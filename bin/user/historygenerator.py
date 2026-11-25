@@ -33,6 +33,7 @@ import logging
 import os.path
 
 import weewx.units
+import weewx.xtypes
 import weeutil.weeutil
 import math
 
@@ -46,6 +47,7 @@ from weewx.tags import TimespanBinder
 log = logging.getLogger(__name__)
 
 TABLE_GENERATION_ERROR = "Could not generate table [HistoryReport][[%s]]"
+DEFAULT_HISTORY_ITEMS = ['min_temp', 'avg_temp', 'max_temp', 'rain', 'rain_days', 'max_wind', 'NOAA']
 
 
 class MyXSearch(SearchList):
@@ -60,6 +62,7 @@ class MyXSearch(SearchList):
         # Calculate the tables once every refresh_interval mins
         self.refresh_interval = int(self.table_dict.get('refresh_interval', 5))
         self.cache_time = 0
+        self.unsupported_tables = set()
 
         self.search_list_extension = {}
         self.search_list_extension['fuzzy_archer_version'] = generator.skin_dict['version'] if 'version' in generator.skin_dict else ''
@@ -107,8 +110,11 @@ class MyXSearch(SearchList):
     def _refresh_history_tables(self, db_lookup):
         started = time.time()
         self.search_list_extension["history_tables"] = {}
+        # Only tables listed in history_items are shown (history.html.tmpl uses the same default)
+        history_items = weeutil.weeutil.option_as_list(self.table_dict.get('history_items', DEFAULT_HISTORY_ITEMS))
         for table_key in self.table_dict.sections:
-            self._build_history_table(table_key, db_lookup)
+            if table_key in history_items:
+                self._build_history_table(table_key, db_lookup)
         log.debug("%s: Generated %d tables in %.2f seconds" %
                   (os.path.basename(__file__), len(self.search_list_extension["history_tables"]),
                    time.time() - started))
@@ -117,6 +123,8 @@ class MyXSearch(SearchList):
         table_options = accumulateLeaves(self.table_dict[table_key])
         binding = table_options.get('data_binding', 'wx_binding')
         manager = db_lookup(data_binding=binding)
+        if table_key != 'NOAA' and not self._obs_type_supported(table_key, table_options.get('obs_type'), manager):
+            return
         self.alltime_timespan = weeutil.weeutil.TimeSpan(manager.first_timestamp, manager.last_timestamp)
         all_stats = TimespanBinder(self.alltime_timespan, db_lookup, data_binding=binding,
                                    formatter=self.generator.formatter, converter=self.generator.converter)
@@ -125,6 +133,19 @@ class MyXSearch(SearchList):
         new_table = {"year": [], "settings": {"table_options": table_options, "color_dict": self.color_dict}}
         self._statsDict(table_key, new_table, table_options, table_stats, binding)
         self.search_list_extension["history_tables"][table_key] = new_table
+
+    def _obs_type_supported(self, table_key, obs_type, manager):
+        """False (table skipped) if the database does not know obs_type, e.g. no lightning sensor column."""
+        try:
+            last = manager.last_timestamp or 0
+            weewx.xtypes.get_aggregate(obs_type, weeutil.weeutil.TimeSpan(last - 1, last), 'count', manager)
+            return True
+        except (weewx.UnknownType, weewx.UnknownAggregation) as e:
+            if table_key not in self.unsupported_tables:
+                self.unsupported_tables.add(table_key)
+                log.warning("%s: [HistoryReport][[%s]] skipped: obs_type '%s' is not in the database (%s)"
+                            % (os.path.basename(__file__), table_key, obs_type, e))
+            return False
 
     def _table_stats(self, table_options, binding, all_stats, db_lookup):
         startdate = table_options.get('startdate')
@@ -429,7 +450,7 @@ class MyXSearch(SearchList):
         try:
             return getattr(obs_period, aggregate_type)((threshold_value, threshold_units, weewx.units.obs_group_dict[obs_type])).value_t
         except Exception:
-            return [0, 'count']
+            return weewx.units.ValueTuple(0, 'count', 'group_count')
     
     def last_mtime_resources(self, type, weewx_root, html_root):
         if not os.path.isabs(html_root):
@@ -468,17 +489,18 @@ class FormatCell(SearchList):
             return {"formatted_value": formatted_value, "font_color": font_color, "background_color": background_color}
         
         config = table_settings["color_dict"][colors_key][value_vt.unit]
+        if summary and 'summary' in config:
+            config = config['summary']
 
         try:
             color_definition = config['minvalues']
-
-            if summary and 'summary' in config:
-                color_definition = config['summary']['minvalues']
+            colors = config['colors']
+            font_colors = config.get('fontColors') or [font_color] * len(color_definition)
 
             for index, lower_bound in enumerate(color_definition):
                 if value_vt.value >= float(lower_bound) and ((index + 1) >= len(color_definition) or value_vt.value < float(color_definition[index + 1])):
-                    return {"formatted_value": formatted_value, "font_color": config['fontColors'][index], "background_color": config['colors'][index]}
-        except KeyError:
+                    return {"formatted_value": formatted_value, "font_color": font_colors[index], "background_color": colors[index]}
+        except (KeyError, IndexError):
             log.info("%s: error reading color configuration for [HistoryReport][[%s]][[[%s]]]" % (os.path.basename(__file__), colors_key, value_vt.unit))
 
         return {"formatted_value": formatted_value, "font_color": font_color, "background_color": background_color}

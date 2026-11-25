@@ -194,7 +194,11 @@ published files (reserved for diagnostics).
 
 Technically failed generations are **never published** (state (c) of the specification exists
 only in the worker state and as manifest status `error`). A series whose query failed makes the
-whole period fail; it is never written as a gap.
+whole period fail; it is never written as a gap. Exception: a series or observation whose type or
+aggregation the database does not support (WeeWX `UnknownType`/`UnknownAggregation`, e.g. a
+configured observation without a database column) is a configuration problem. It is omitted from the
+file with a logged warning; after adding the column, use `python -m user.historyregen --series <type>`
+to fill it into completed periods.
 
 `gaps` ⇔ the percentage of missing archive records is greater than `[PeriodCharts] gap_threshold`
 (default `1`, valid range `0..100`), with

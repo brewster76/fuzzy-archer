@@ -361,7 +361,7 @@ def backfill_from_job(job, environment, lock):
     week_start = int(job['week_start'])
     zone = hp.StationZone.detect()
     sun_events = SunEventProvider(environment.config_dict, job.get('skin', {}), config.show_daynight,
-                                  config.transition_angle)
+                                  config.transition_angle, job.get('station_location'))
     archive_interval = int(environment.config_dict.get('StdArchive', {}).get('archive_interval', 300))
     worker = Backfill(job['root'], job['state_dir'], config, zone, week_start, environment.binder.get_manager,
                       job['default_binding'], sun_events, archive_interval)

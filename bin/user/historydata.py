@@ -229,7 +229,7 @@ try:
                 log.warning("PeriodDataGenerator: [PeriodCharts] contains no valid chart")
                 return
 
-            from user.historyaggregate import SunEventProvider
+            from user.historyaggregate import SunEventProvider, station_location
             start_time = time.time()
             html_root = os.path.join(self.config_dict['WEEWX_ROOT'], self.skin_dict['HTML_ROOT'])
             root = hw.data_root(html_root)
@@ -237,20 +237,21 @@ try:
             week_start = resolve_week_start(self.config_dict, self.stn_info)
             zone = hp.StationZone.detect()
             archive_interval = int(self.config_dict.get('StdArchive', {}).get('archive_interval', 300))
+            location = station_location(self.config_dict, self.stn_info)
             sun_events = SunEventProvider(self.config_dict, self.skin_dict, config.show_daynight,
-                                          config.transition_angle)
+                                          config.transition_angle, location)
             written = generate_mutable(root, state_directory, config, zone, week_start, time.time(),
                                        self.db_binder.get_manager, default_binding, sun_events,
                                        archive_interval)
             log.info("PeriodDataGenerator: wrote %d current/rolling files for %s in %.2f seconds",
                      len(written), self.skin_dict.get('REPORT_NAME'), time.time() - start_time)
             if config.generate_history:
-                self.start_worker(root, state_directory, config)
+                self.start_worker(root, state_directory, config, location)
             else:
                 log.info("PeriodDataGenerator: historical period generation disabled for report %s",
                          self.skin_dict.get('REPORT_NAME'))
 
-        def start_worker(self, root, state_directory, config):
+        def start_worker(self, root, state_directory, config, location=None):
             """Start the backfill worker process when work is due (it never blocks the report)."""
             from user import historybackfill
             try:
@@ -268,6 +269,7 @@ try:
                     'state_dir': state_directory,
                     'default_binding': self.skin_dict.get('data_binding', 'wx_binding'),
                     'week_start': week_start,
+                    'station_location': location,
                     'period_charts': self.skin_dict['PeriodCharts'],
                     'skin': {'Skyfield': self.skin_dict.get('Skyfield', {})},
                 })

@@ -3,7 +3,8 @@
 """Computation of period file content (series, statistics, coverage, sun events) from the WeeWX database.
 
 See docs/historic-data-contract.md, sections 1 and 3. Any database/xtypes error propagates to the
-caller: a failed series fails the whole period (never published as gap).
+caller: a failed series fails the whole period (never published as gap). Exception: series and
+observations whose type or aggregation the database does not support are omitted.
 """
 
 import bisect
@@ -184,15 +185,41 @@ def darkening_extent(angle, transition_angle):
     return abs(((angle - transition_angle) / 2.0) / transition_angle)
 
 
+def station_location(config_dict, stn_info=None):
+    """[longitude, latitude, altitude in meters].
+
+    Prefers the engine's stn_info, whose altitude may come from the station console; falls back to
+    [Station] in weewx.conf for processes without an engine (backfill worker, historyregen).
+    """
+    if stn_info is not None:
+        altitude_m = weewx.units.convert(stn_info.altitude_vt, 'meter')[0]
+        return [float(stn_info.longitude_f), float(stn_info.latitude_f), float(altitude_m)]
+    station = config_dict['Station']
+    altitude = station.get('altitude', [0, 'meter'])
+    if isinstance(altitude, str):
+        altitude = [altitude, 'meter']
+    altitude_m = float(altitude[0])
+    if len(altitude) > 1 and altitude[1] == 'foot':
+        altitude_m = weewx.units.convert((altitude_m, 'foot', 'group_altitude'), 'meter')[0]
+    return [float(station['longitude']), float(station['latitude']), float(altitude_m)]
+
+
 class SunEventProvider(object):
     """Sun events for the axis range (contract 3.6). Returns [] when disabled or skyfield is missing."""
 
-    def __init__(self, config_dict, skin_dict, show_daynight, transition_angle):
+    def __init__(self, config_dict, skin_dict, show_daynight, transition_angle, location=None):
+        """location: [longitude, latitude, altitude_m], see station_location(); None = from weewx.conf."""
         self.config_dict = config_dict
         self.skin_dict = skin_dict
         self.show_daynight = show_daynight
         self.transition_angle = transition_angle
+        self.location = location
         self._warned = False
+
+    def _location(self):
+        if self.location is None:
+            self.location = station_location(self.config_dict)
+        return self.location
 
     def available(self):
         if not self.show_daynight:
@@ -211,16 +238,12 @@ class SunEventProvider(object):
         if not self.available():
             return []
         from user.sunevents import SunEvents
-        station = self.config_dict['Station']
-        altitude = station.get('altitude', [0, 'meter'])
-        altitude_m = float(altitude[0])
-        if len(altitude) > 1 and altitude[1] == 'foot':
-            altitude_m = weewx.units.convert((altitude_m, 'foot', 'group_altitude'), 'meter')[0]
+        longitude, latitude, altitude_m = self._location()
         sqlite_root = self.config_dict.get('DatabaseTypes', {}).get('SQLite', {}).get('SQLITE_ROOT', '.')
         path = os.path.join(self.config_dict.get('WEEWX_ROOT', '.'), sqlite_root, 'skyfield')
         os.makedirs(path, exist_ok=True)
         ephemeris = self.skin_dict.get('Skyfield', {}).get('ephemeris', 'de440s.bsp')
-        events = SunEvents(start, end, station['longitude'], station['latitude'], int(altitude_m), path,
+        events = SunEvents(start, end, longitude, latitude, int(altitude_m), path,
                            ephemeris).get_transits(self.transition_angle)
         result = []
         for event in events or []:
@@ -235,22 +258,39 @@ def _record_index(db_managers, cache, binding, start, end):
     return cache[cache_key]
 
 
+_unsupported_warned = set()
+
+
+def _skip_unsupported(kind, key, error):
+    """Unknown observation types/aggregations are configuration problems, not transient query failures:
+    the entry is omitted instead of failing the whole period (contract 3.1)."""
+    if key not in _unsupported_warned:
+        _unsupported_warned.add(key)
+        log.warning("Period %s '%s' skipped: not supported by the database (%s: %s)",
+                    kind, key, type(error).__name__, error)
+
+
 def _build_series(series_plan, db_managers, start, end, generated, coverage, running, zone):
     series = {}
     record_indexes = {}
     for key, view_series in series_plan.items():
         manager = db_managers(view_series.binding)
-        if view_series.resolution == NATIVE:
-            points, unit, group = native_series(manager, view_series.data_type, start, min(end, generated))
-        else:
-            grid = buckets(zone, view_series.resolution, start, end)
-            if grid:
-                index = _record_index(db_managers, record_indexes, view_series.binding, grid[0][0], grid[-1][1])
-                points, unit, group = aggregated_series(
-                    manager, view_series.data_type, view_series.aggregate_type, view_series.resolution,
-                    zone, start, end, generated, coverage.last, running, index)
+        try:
+            if view_series.resolution == NATIVE:
+                points, unit, group = native_series(manager, view_series.data_type, start, min(end, generated))
             else:
-                points, unit, group = [], None, None
+                grid = buckets(zone, view_series.resolution, start, end)
+                if grid:
+                    index = _record_index(db_managers, record_indexes, view_series.binding,
+                                          grid[0][0], grid[-1][1])
+                    points, unit, group = aggregated_series(
+                        manager, view_series.data_type, view_series.aggregate_type, view_series.resolution,
+                        zone, start, end, generated, coverage.last, running, index)
+                else:
+                    points, unit, group = [], None, None
+        except (weewx.UnknownType, weewx.UnknownAggregation) as e:
+            _skip_unsupported('series', key, e)
+            continue
         series[key] = {'observation': view_series.obs_key,
                        'aggregate_type': view_series.aggregate_type or 'none',
                        'resolution': view_series.resolution, 'unit': unit, 'group': group, 'points': points}
@@ -261,8 +301,12 @@ def _build_observations(observation_plan, db_managers, start, end, generated):
     observations = {}
     for obs_key, observation in observation_plan.items():
         manager = db_managers(observation['data_binding'])
-        unit, group, count, stats, stat_units = observation_stats(
-            manager, observation['data_type'], observation['statistics'], start, min(end, generated))
+        try:
+            unit, group, count, stats, stat_units = observation_stats(
+                manager, observation['data_type'], observation['statistics'], start, min(end, generated))
+        except (weewx.UnknownType, weewx.UnknownAggregation) as e:
+            _skip_unsupported('observation', obs_key, e)
+            continue
         entry = {'data_binding': observation['data_binding'], 'data_type': observation['data_type'],
                  'unit': unit, 'group': group, 'count': count, 'stats': stats}
         if stat_units:

@@ -11,7 +11,8 @@ from user.historydata import generate_mutable, is_due, resolve_week_start
 from user.historyconfig import PeriodChartsConfig
 
 BERLIN = hp.StationZone(zoneinfo.ZoneInfo('Europe/Berlin'), 'Europe/Berlin')
-SECTION = {'period_chart_items': ['outTemp'], 'outTemp': {'outTemp': {}}}
+SECTION = {'generate_history': 'true', 'period_chart_items': ['outTemp'], 'outTemp': {'outTemp': {}}}
+CHANGED_SECTION = dict(SECTION, outTemp={'outTemp': {}, 'dewpoint': {}})
 SCHEMA_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', 'schemas')
 
 
@@ -101,12 +102,9 @@ def test_config_or_week_start_change_forces_all(tmp_path):
     build = FakeBuild()
     now = ts(2026, 11, 21, 18, 5)
     run(tmp_path, now, build)
-    _, written = run(tmp_path, now + 300, build, section={'period_chart_items': ['outTemp'],
-                                                           'outTemp': {'outTemp': {}, 'dewpoint': {}}})
+    _, written = run(tmp_path, now + 300, build, section=CHANGED_SECTION)
     assert len(written) == 7
-    root, written = run(tmp_path, now + 600, build, section={'period_chart_items': ['outTemp'],
-                                                              'outTemp': {'outTemp': {}, 'dewpoint': {}}},
-                        week_start=0)
+    root, written = run(tmp_path, now + 600, build, section=CHANGED_SECTION, week_start=0)
     assert len(written) == 7
     assert hw.read_current_index(root)['current']['week']['period_id'] == '20261116'
 
@@ -156,7 +154,7 @@ def test_integration_with_database(tmp_path):
         manager.addRecord(agg.make_records())
         now = agg.ZONE.day_start(agg.FIRST_DAY + dt.timedelta(days=8)) + 6 * 3600 + 120
         root = str(tmp_path / 'historic_data')
-        config = PeriodChartsConfig(agg.SECTION, 'wx_binding')
+        config = PeriodChartsConfig(dict(agg.SECTION, generate_history='true'), 'wx_binding')
         written = generate_mutable(root, str(tmp_path / 'state'), config, agg.ZONE, 6, now,
                                    lambda b: manager, 'wx_binding')
         assert len(written) == 7

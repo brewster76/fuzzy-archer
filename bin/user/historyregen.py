@@ -27,7 +27,7 @@ import time
 
 from user import historyperiods as hp
 from user import historywriter as hw
-from user.historybackfill import Backfill, Environment, WORKER_STATE_FILE, archive_range
+from user.historybackfill import Backfill, Environment, JOB_FILE, WORKER_STATE_FILE, archive_range
 from user.historyconfig import PeriodChartsConfig
 
 log = logging.getLogger(__name__)
@@ -243,7 +243,13 @@ def _build_worker(environment, skin_dict):
     state_directory = hw.state_dir(config_dict, root, config.state_root)
     week_start = resolve_week_start(config_dict)
     zone = hp.StationZone.detect()
-    sun_events = SunEventProvider(config_dict, skin_dict, config.show_daynight, config.transition_angle)
+    # The report engine records the station location (possibly from the console) in the backfill job.
+    try:
+        job = hw.read_json(os.path.join(state_directory, JOB_FILE)) or {}
+    except (OSError, ValueError):
+        job = {}
+    sun_events = SunEventProvider(config_dict, skin_dict, config.show_daynight, config.transition_angle,
+                                  job.get('station_location'))
     archive_interval = int(config_dict.get('StdArchive', {}).get('archive_interval', 300))
     worker = Backfill(root, state_directory, config, zone, week_start, environment.binder.get_manager,
                       default_binding, sun_events, archive_interval)

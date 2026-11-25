@@ -73,8 +73,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.info("JSONGenerator failed to read config or config missing")
         else:
             if enabled:
-                self.setup()
-                self.gen_data()
+                if self.setup():
+                    self.gen_data()
             else:
                 log.info("JSONGenerator is not enabled")
     def setup(self):
@@ -101,6 +101,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         # Lookup the last reading in the archive
         db_manager = self.db_binder.get_manager()
         self.lastGoodStamp = db_manager.lastGoodStamp()
+        if self.lastGoodStamp is None:
+            log.info("JSONGenerator: the database contains no archive records yet, nothing to generate")
+            return False
 
         self.record_dict_vtd = None
         batch_records = db_manager.genBatchRecords(self.lastGoodStamp - 1, self.lastGoodStamp)
@@ -129,6 +132,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
         if self.gauge_dict.get('test_none_readings', None) is not None:
             for key in self.record_dict_vtd:
                 self.record_dict_vtd[key] = None
+        return True
 
     def gen_data(self):
         start_time = datetime.now().timestamp()
@@ -184,11 +188,8 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
                 log.debug("Adding %s to frontend_data." % gauge)
                 self.frontend_data[gauge] = gauge_history
 
-        altitude = self.config_dict['Station']['altitude']
-        altitude_m = altitude[0]
-        if altitude[1] == 'foot':
-            altitude_m = convert(altitude[0], 'meter')[0]
-        events = self.get_day_night_events(first_value_timestamp, last_value_timestamp, self.config_dict['Station']['longitude'], self.config_dict['Station']['latitude'], altitude_m)
+        altitude_m = convert(self.stn_info.altitude_vt, 'meter')[0]
+        events = self.get_day_night_events(first_value_timestamp, last_value_timestamp, self.stn_info.longitude_f, self.stn_info.latitude_f, altitude_m)
         self.frontend_data['day_night_events'] = events
 
         # Write JSON self.frontend_data output if a filename is specified
@@ -274,10 +275,15 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             aggregate_types.append("min")
 
         timespan = TimeSpan(self.first_timestamp, self.lastGoodStamp)
-        series = weewx.xtypes.get_series(column_name, timespan, db_manager)
-        daily_highlow_values = []
-        for aggregate_type in aggregate_types:
-            daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
+        try:
+            series = weewx.xtypes.get_series(column_name, timespan, db_manager)
+            daily_highlow_values = []
+            for aggregate_type in aggregate_types:
+                daily_highlow_values.append(self.get_daily_highlow_values(column_name, aggregate_type, self.first_timestamp, self.lastGoodStamp, db_manager))
+        except (weewx.UnknownType, weewx.UnknownAggregation) as e:
+            log.warning("JSONGenerator: '%s' is not in the database, sending no data for it (%s: %s)"
+                        % (column_name, type(e).__name__, e))
+            return 1, [], []
         combined_series, processed_highlow_values = self.combine_series(series, daily_highlow_values, item_config, target_unit)
         log.debug("Returning data series for '%s'" % column_name)
         return 1, combined_series, processed_highlow_values
@@ -395,11 +401,14 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             log.warning("tzlocal not installed. Will fallback to UTC offset for station timezone")
         
         if station_timezone is None:
-            # fallback to UTC offset
-            offset_total_seconds = datetime.now().astimezone().utcoffset().total_seconds()
-            offset_minutes = int(offset_total_seconds % 3600)
-            offset_hours = int(offset_total_seconds // 3600)
-            # Luxon on Front End accepts timezone in format '+HH:mm' or '-HH:mm' as alternative to IANA timezone
-            station_timezone = f'{offset_hours:+03d}:{offset_minutes:02d}'
+            station_timezone = utc_offset_string(datetime.now().astimezone().utcoffset().total_seconds())
         
         return station_timezone
+
+
+def utc_offset_string(offset_seconds):
+    """'+HH:mm' / '-HH:mm', accepted by Luxon on the frontend as alternative to an IANA timezone."""
+    offset_seconds = int(offset_seconds)
+    sign = '-' if offset_seconds < 0 else '+'
+    hours, minutes = divmod(abs(offset_seconds) // 60, 60)
+    return f'{sign}{hours:02d}:{minutes:02d}'

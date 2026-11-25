@@ -42,6 +42,26 @@ def test_add_period_data_without_section_or_on_error():
     assert set(gen.frontend_data) == {'charts'}
 
 
+def test_live_history_of_unknown_obs_type_is_empty(tmp_path):
+    weewx = pytest.importorskip('weewx')
+    import weewx.manager
+    import weewx.schemas.wview
+    jsonengine = pytest.importorskip('user.jsonengine')
+    manager = weewx.manager.DaySummaryManager.open_with_create(
+        {'driver': 'weedb.sqlite', 'database_name': str(tmp_path / 'weewx.sdb')}, schema=weewx.schemas.wview.schema)
+    try:
+        manager.addRecord({'dateTime': 1767229200, 'usUnits': weewx.US, 'interval': 5, 'outTemp': 50.0})
+        gen = types.SimpleNamespace(
+            frontend_data={}, first_timestamp=1767225600, lastGoodStamp=1767229200,
+            db_binder=types.SimpleNamespace(get_manager=lambda binding=None: manager),
+            get_target_unit=lambda obs: '')
+        result = jsonengine.JSONGenerator.gen_history_data(
+            gen, 'lightning_strike_count', {'showMaxMarkPoint': 'true'}, None)
+        assert result == (1, [], [])
+    finally:
+        manager.close()
+
+
 def test_live_gauge_data_items_include_radar_observations_only_when_enabled():
     pytest.importorskip('weewx')
     jsonengine = pytest.importorskip('user.jsonengine')
@@ -51,3 +71,32 @@ def test_live_gauge_data_items_include_radar_observations_only_when_enabled():
     gauges['wind_radar']['enabled'] = 'true'
     assert jsonengine.live_gauge_data_items(gauges) == [
         'outTemp', 'windSpeed', 'windDir', 'windGust']
+
+
+def test_utc_offset_string():
+    jsonengine = pytest.importorskip('user.jsonengine')
+    assert jsonengine.utc_offset_string(3600) == '+01:00'
+    assert jsonengine.utc_offset_string(0) == '+00:00'
+    assert jsonengine.utc_offset_string(19800) == '+05:30'
+    assert jsonengine.utc_offset_string(-12600) == '-03:30'
+    assert jsonengine.utc_offset_string(-18000.0) == '-05:00'
+
+
+def test_empty_database_generates_nothing(tmp_path):
+    weewx = pytest.importorskip('weewx')
+    import weewx.manager
+    import weewx.schemas.wview
+    jsonengine = pytest.importorskip('user.jsonengine')
+    manager = weewx.manager.DaySummaryManager.open_with_create(
+        {'driver': 'weedb.sqlite', 'database_name': str(tmp_path / 'weewx.sdb')}, schema=weewx.schemas.wview.schema)
+    try:
+        gen = types.SimpleNamespace(
+            skin_dict={'JSONGenerator': {'enabled': 'true'}, 'LiveGauges': {}, 'LiveCharts': {},
+                       'Units': {'Groups': {}}, 'Labels': {}},
+            config_dict={}, db_binder=types.SimpleNamespace(get_manager=lambda binding=None: manager))
+        gen.setup = lambda: jsonengine.JSONGenerator.setup(gen)
+        gen.gen_data = lambda: pytest.fail('gen_data must not run without archive records')
+        jsonengine.JSONGenerator.run(gen)
+        assert gen.lastGoodStamp is None
+    finally:
+        manager.close()

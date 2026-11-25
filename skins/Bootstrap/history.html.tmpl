@@ -15,6 +15,9 @@
         <!-- Main panel -->
         <div id="${global_main_panel_id}" class="${global_main_panel_classes}">
             #for $history_item in $history_items
+            #if $history_item not in $history_tables
+            #continue
+            #end if
             #set $table = $history_tables[$history_item]
             <table class="table historyTable text-center">
                 <caption class="historyHeader">$gettext($table.header_text)</caption>

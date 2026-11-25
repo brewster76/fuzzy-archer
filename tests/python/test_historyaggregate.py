@@ -148,6 +148,37 @@ def test_week_daily_sums_match_daily_totals(db, schema_validator):
     assert data['week_start'] == 6
 
 
+def test_unsupported_observation_is_omitted(db, schema_validator):
+    section = dict(SECTION, period_chart_items=['outTemp', 'missing'], missing={'pm4_0': {}})
+    config = PeriodChartsConfig(section, 'wx_binding')
+    now = ZONE.day_start(FIRST_DAY + dt.timedelta(days=9)) + 10 * 3600
+    for view, kind, span in (('day', 'calendar', hp.period_span(ZONE, 'day', FIRST_DAY + dt.timedelta(days=1))),
+                             ('month', 'rolling', hp.rolling_window('month', now))):
+        series, observations = config.view_plan(view)
+        data = build_period_data(lambda binding: db, 'wx_binding', series, observations, ZONE, kind, view,
+                                 None if kind == 'rolling' else 'x', span, now, fallback_interval=300)
+        data = json.loads(json.dumps(data, allow_nan=False))
+        assert not any('/pm4_0' in key for key in data['series'])
+        assert 'wx_binding/pm4_0' not in data['observations']
+        assert any('/outTemp/' in key for key in data['series'])
+        assert 'wx_binding/outTemp' in data['observations']
+
+
+def test_station_location_prefers_stn_info():
+    from user.historyaggregate import station_location
+
+    class Info(object):
+        altitude_vt = weewx.units.ValueTuple(1000.0, 'foot', 'group_altitude')
+        latitude_f = 47.5
+        longitude_f = 9.5
+
+    config = {'Station': {'latitude': '1', 'longitude': '2', 'altitude': ['0', 'meter']}}
+    assert station_location(config, Info()) == pytest.approx([9.5, 47.5, 304.8], abs=0.01)
+    assert station_location(config) == [2.0, 1.0, 0.0]
+    config['Station']['altitude'] = ['100', 'foot']
+    assert station_location(config) == pytest.approx([2.0, 1.0, 30.48], abs=0.01)
+
+
 def test_rolling_week_edge_bucket(db, schema_validator):
     now = ZONE.day_start(FIRST_DAY + dt.timedelta(days=9)) + 10 * 3600 + 7 * 60
     span = hp.rolling_window('week', now)
