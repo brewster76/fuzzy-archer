@@ -40,7 +40,7 @@ from weewx.units import convert
 from weeutil.weeutil import to_bool
 from weeutil.weeutil import TimeSpan
 from datetime import datetime, time, timedelta
-from user.sunevents import SunEvents
+from user.sunevents import compute_sun_events
 
 try:
     from tzlocal import get_localzone_name
@@ -310,7 +310,7 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
 
 
     def get_day_night_events(self, start, end, lon, lat, altitude_m):
-        if 'skyfield' not in sys.modules or not self.show_daynight:
+        if not self.show_daynight:
             return []
 
         sqlite_root = self.config_dict.get('DatabaseTypes',configobj.ConfigObj()).get('SQLite',configobj.ConfigObj()).get('SQLITE_ROOT','.')
@@ -319,9 +319,9 @@ class JSONGenerator(weewx.reportengine.ReportGenerator):
             sqlite_root,
             'skyfield'
         )
-        if not os.path.isdir(path): os.mkdir(path)
 
-        events = SunEvents(start, end, lon, lat, int(altitude_m), path, self.skin_dict['Skyfield']['ephemeris']).get_transits(self.transition_angle)
+        events = compute_sun_events(start, end, lon, lat, int(altitude_m), path,
+                                    self.skin_dict['Skyfield']['ephemeris'], self.transition_angle)
         if events is None:
             return []
         

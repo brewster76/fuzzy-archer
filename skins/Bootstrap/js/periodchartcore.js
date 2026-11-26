@@ -291,7 +291,7 @@
     }
 
     /** Server-side statistics as mark points / mark line (§6, E6). */
-    function markers(series, env) {
+    function markers(series, env, axis) {
         let result = {};
         let format = function (value) { return env.format(value, series.decimals); };
         // Raw record extremes are not comparable with summed buckets or vector directions.
@@ -305,8 +305,10 @@
                 continue;
             }
             let tip = extremeTooltip(series, name, env);
+            // Extremes come from whole-day summaries and may lie just outside a rolling axis.
+            let x = axis ? Math.min(Math.max(stat.ms, axis.startMs), axis.endMs) : stat.ms;
             points.push({
-                coord: [stat.ms, stat.value],
+                coord: [x, stat.value],
                 name: name,
                 label: {show: true, position: position, formatter: format(stat.value)},
                 tooltip: {formatter: function () { return tip; }},
@@ -347,7 +349,7 @@
         return " (" + symbol + shown + env.unitString(shown, stat.unitLabel) + ")";
     }
 
-    function echartsSeries(series, all, env, z) {
+    function echartsSeries(series, all, env, z, axis) {
         let base = {
             id: series.id,
             name: series.label,
@@ -365,7 +367,7 @@
                 }),
                 itemStyle: {color: series.color},
                 clip: true,
-            }, markers(series, env));
+            }, markers(series, env, axis));
         }
         let symbol = series.options.symbol || (series.plotType === "scatter" ? "circle" : "none");
         let result = Object.assign(base, {
@@ -375,7 +377,7 @@
             symbolKeepAspect: true,
             itemStyle: {color: series.color},
             clip: true,
-        }, markers(series, env));
+        }, markers(series, env, axis));
         let symbolSize = series.options.symbolSize;
         if (symbolSize !== undefined && symbolSize !== "") {
             result.symbolSize = Number.isFinite(Number(symbolSize)) ? Number(symbolSize) : symbolFunction(symbolSize);
@@ -622,7 +624,7 @@
         let suffixes = {};
         let legend = [];
         for (let s of prepared) {
-            series.push(echartsSeries(s, prepared, env, z--));
+            series.push(echartsSeries(s, prepared, env, z--, axis));
             suffixes[s.label] = statSuffix(s, env);
             let item = {name: s.label};
             let symbol = s.options.symbol;

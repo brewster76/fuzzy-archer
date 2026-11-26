@@ -8,9 +8,9 @@
 #
 """
 
-from math import pi
-
 import logging
+import math
+import os
 from datetime import datetime
 from datetime import timezone
 
@@ -25,7 +25,6 @@ except ImportError:
 class SunEvents():
     def __init__(self, start_ts, end_ts, lon, lat, elev, path, ephemeris):
         if api is None:
-            log.info("skyfield not found, some features, like day/night background colors for charts are not available.")
             return
         # Load ephemeris data
         load = api.Loader(path)
@@ -94,4 +93,103 @@ class SunEvents():
     def sun_alt_degrees(self, time):
         alt, _, _ = self.observer.at(time).observe(self.sun).apparent().altaz()
         return int(alt.degrees)
+
+
+def sun_position(ts, lon, lat):
+    """(altitude in degrees, hour angle in degrees -180..180) of the sun's center, without refraction.
+
+    Low-precision formula of the Astronomical Almanac (about 0.01° for 1950-2050), no dependencies.
+    """
+    n = ts / 86400.0 - 10957.5  # days since J2000.0
+    mean_longitude = math.radians((280.460 + 0.9856474 * n) % 360)
+    mean_anomaly = math.radians((357.528 + 0.9856003 * n) % 360)
+    ecliptic_longitude = mean_longitude + math.radians(1.915) * math.sin(mean_anomaly) \
+        + math.radians(0.020) * math.sin(2 * mean_anomaly)
+    obliquity = math.radians(23.439 - 0.0000004 * n)
+    right_ascension = math.atan2(math.cos(obliquity) * math.sin(ecliptic_longitude), math.cos(ecliptic_longitude))
+    declination = math.asin(math.sin(obliquity) * math.sin(ecliptic_longitude))
+    sidereal = math.radians((280.46061837 + 360.98564736629 * n + lon) % 360)
+    hour_angle = math.atan2(math.sin(sidereal - right_ascension), math.cos(sidereal - right_ascension))
+    phi = math.radians(lat)
+    sin_alt = math.sin(phi) * math.sin(declination) + math.cos(phi) * math.cos(declination) * math.cos(hour_angle)
+    return math.degrees(math.asin(max(-1.0, min(1.0, sin_alt)))), math.degrees(hour_angle)
+
+
+class ApproxSunEvents(object):
+    """Same events as SunEvents.get_transits, computed without skyfield (approximation).
+
+    Crossings are searched on a STEP grid and refined by bisection to one second; altitude
+    crossings that start and end within one step (grazing sun near the poles) may be missed.
+    """
+    STEP = 300
+
+    def __init__(self, start_ts, end_ts, lon, lat):
+        self.start_ts = int(start_ts)
+        self.end_ts = int(end_ts)
+        self.lon = float(lon)
+        self.lat = float(lat)
+
+    def _altitude(self, ts):
+        return sun_position(ts, self.lon, self.lat)[0]
+
+    def _sin_hour_angle(self, ts):
+        return math.sin(math.radians(sun_position(ts, self.lon, self.lat)[1]))
+
+    def _grid(self):
+        times = list(range(self.start_ts, self.end_ts, self.STEP))
+        times.append(self.end_ts)
+        return times
+
+    @staticmethod
+    def _bisect(f, a, b):
+        fa = f(a)
+        while b - a > 1:
+            m = (a + b) // 2
+            fm = f(m)
+            if (fm < 0) == (fa < 0):
+                a, fa = m, fm
+            else:
+                b = m
+        return b
+
+    def _crossings(self, f, times):
+        """[(ts, rising)] for every sign change of f between neighbouring grid times."""
+        result = []
+        values = [f(t) for t in times]
+        for i in range(1, len(times)):
+            before, after = values[i - 1], values[i]
+            if (before < 0) != (after < 0):
+                result.append((self._bisect(f, times[i - 1], times[i]), after >= 0))
+        return result
+
+    def get_transits(self, angle):
+        times = self._grid()
+        events = [[self.start_ts, int(self._altitude(self.start_ts)), "start"]]
+        for target in sorted({-angle, angle}):
+            for ts, rising in self._crossings(lambda t: self._altitude(t) - target, times):
+                events.append([ts, target, "rising" if rising else "setting"])
+        for ts, increasing in self._crossings(self._sin_hour_angle, times):
+            # sin(hour angle) rises through 0 at the upper culmination, falls through 0 at the lower one
+            events.append([ts, int(self._altitude(ts)), "transit" if increasing else "antitransit"])
+        events.append([self.end_ts, int(self._altitude(self.end_ts)), "end"])
+        events.sort(key=lambda x: x[0])
+        return events
+
+
+_approximation_logged = False
+
+
+def compute_sun_events(start_ts, end_ts, lon, lat, elev, path, ephemeris, angle):
+    """Sun events with skyfield when available, otherwise (or when skyfield fails) approximated."""
+    global _approximation_logged
+    #if api is not None:
+    #    try:
+    #        os.makedirs(path, exist_ok=True)
+    #        return SunEvents(start_ts, end_ts, lon, lat, elev, path, ephemeris).get_transits(angle)
+    #    except Exception as e:
+    #        log.warning("skyfield sun events failed, using approximation: %s: %s", type(e).__name__, e)
+    #elif not _approximation_logged:
+    #    log.info("skyfield not found: day/night backgrounds use an approximated sun position")
+    #    _approximation_logged = True
+    return ApproxSunEvents(start_ts, end_ts, lon, lat).get_transits(angle)
 

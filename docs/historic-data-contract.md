@@ -95,7 +95,12 @@ Resolution codes (string, used in config and files):
 
 Period statistics are computed server-side with `get_aggregate` over **exactly** the period
 (calendar) or the window (rolling), `(start, end]` – never over the extended edge buckets and
-never from chart points.
+never from chart points. Exception: `min`/`max` (with their times) of observations that have a
+daily summary table (`<table>_day_<obs>`) come from the daily summaries, so they include the LOOP
+highs/lows. The span is widened to the local midnights around `(start, end]`: a running calendar
+period uses its full nominal span (today's summary contains the data so far), and a rolling window
+includes its first, partial day completely, so the extreme time may lie up to one day before
+`axis.start`. Observations without a daily summary keep the exact span.
 
 ## 2. Files and directory layout
 
@@ -244,7 +249,8 @@ not converted.
 
 `observations.*.stats` contains the configured statistics (§6.2):
 `min`/`max` as `[value, epoch]` (WeeWX `min`/`mintime`, `max`/`maxtime`), `avg`, `sum` as numbers
-and `vecavg`/`vecdir` for wind. Missing → `null`. Span = `period_span`.
+and `vecavg`/`vecdir` for wind. Missing → `null`. Span = `period_span` (`min`/`max`: daily summary
+span, §1.6).
 `stat_units` (optional) maps a statistic to `[unit, group]` when its unit differs from the
 observation unit (e.g. `vecavg` = wind speed for the observation `wind` or `windDir`).
 `vecavg`/`vecdir` of `windDir`/`windSpeed` are computed on the WeeWX observation `wind`.
@@ -252,11 +258,13 @@ observation unit (e.g. `vecavg` = wind speed for the observation `wind` or `wind
 
 ### 3.6 Sun events
 
-Only for `day` and `week` (calendar and rolling) when `show_daynight = true` and skyfield is
-available; otherwise `[]` (a log note is written; missing backgrounds are not a technical error).
+Only for `day` and `week` (calendar and rolling) when `show_daynight = true`; otherwise `[]`.
 
-* Computed with `user.sunevents.SunEvents(axis.start, axis.end, lon, lat, elev, path, ephemeris)
-  .get_transits(transition_angle)` for the station position and the actual axis range.
+* Computed with `user.sunevents.compute_sun_events(axis.start, axis.end, lon, lat, elev, path,
+  ephemeris, transition_angle)` for the station position and the actual axis range. It uses
+  skyfield (`SunEvents`) when installed; without skyfield, or when skyfield fails (e.g. ephemeris
+  download), `ApproxSunEvents` approximates the sun position (Astronomical Almanac low-precision
+  formula, no dependencies; event times within about 20 s of skyfield).
 * `[epoch, darkening_extent, type]`, `darkening_extent` in `0…1` with the same formula as
   `jsonengine.get_day_night_events`, `type` ∈ `start, rising, setting, transit, antitransit, end`.
   The `start` event carries the sun altitude at `axis.start`, so the state at the left edge is
@@ -443,7 +451,8 @@ For aggregated views, the localized aggregation type is appended to the series l
 `Outside temperature (Max)`); translations come from `[Texts]` in the selected language file.
 `payload_key`, `convertFunction`
 and MQTT options are Live-only and ignored. Min/max mark points and the avg mark line use the
-server-side statistics (§3.5), not values derived from chart points. They are drawn only for series
+server-side statistics (§3.5), not values derived from chart points; a mark point whose time lies
+outside the axis is drawn at the axis edge. They are drawn only for series
 whose values are comparable with the raw record extremes: not for `sum` or `vecdir` aggregations
 and not for direction series. Instead the legend shows the period total (`Σ`, statistic `sum`) of
 `sum` series and the vector mean direction (`Ø`, statistic `vecdir`) of direction series.

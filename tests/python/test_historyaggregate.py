@@ -193,3 +193,19 @@ def test_rolling_week_edge_bucket(db, schema_validator):
     assert data['period_id'] is None
     assert data['state'] == 'running'
     assert data['sun_events'] == []
+
+
+def test_extremes_come_from_whole_daily_summaries(db):
+    now = ZONE.day_start(FIRST_DAY + dt.timedelta(days=9)) + 10 * 3600 + 7 * 60
+    span = hp.rolling_window('week', now)
+    first_day = ZONE.day_start(ZONE.local(span[0]).date())
+    stats = build(db, 'week', 'rolling', span, now)['observations']['wx_binding/outTemp']['stats']
+    # the partial first day counts completely; ties resolve to the earliest time
+    assert stats['min'] == [50.0, first_day + 300]
+    assert stats['max'][0] == 78.7
+
+    day = FIRST_DAY + dt.timedelta(days=4)
+    day_span = hp.period_span(ZONE, 'day', day)
+    running = build(db, 'day', 'calendar', day_span, day_span[0] + 12 * 3600 + 420, hp.period_id('day', day))
+    # today's daily summary, not the archive up to `generated`
+    assert running['observations']['wx_binding/outTemp']['stats']['max'] == [78.7, day_span[1]]

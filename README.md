@@ -65,6 +65,8 @@ New in the next version (unreleased):
   on `PYTHONPATH`; see `python -m user.historyregen --help`).
 - Removed: `day.html`, `week.html`, `month.html`, `year.html`, the `ImageGenerator` / `LargeImageGenerator`
   configuration and the bundled fonts. Old generated pages and PNG files in the report directory can be deleted.
+- Day/night chart backgrounds no longer require skyfield: without it (or if skyfield fails) the sun position is
+  approximated in pure Python (event times within about 20 s). skyfield is still used when installed.
 - Requires WeeWX 5.5 or newer.
 - File formats and behaviour are specified in [docs/historic-data-contract.md](docs/historic-data-contract.md).
 

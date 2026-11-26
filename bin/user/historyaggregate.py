@@ -8,10 +8,10 @@ observations whose type or aggregation the database does not support are omitted
 """
 
 import bisect
+import datetime
 import logging
 import math
 import os
-import sys
 
 import weewx
 import weewx.units
@@ -150,7 +150,21 @@ def aggregated_series(db_manager, data_type, aggregate_type, resolution, zone, a
     return points, unit, group
 
 
-def _statistic_value(db_manager, obs_type, statistic, span):
+def daily_summary_span(zone, start, end):
+    """(start, end] widened to local midnights: every day it touches, completely."""
+    first = zone.day_start(zone.local(start).date())
+    last_date = zone.local(end).date()
+    last = zone.day_start(last_date)
+    if last < end:
+        last = zone.day_start(last_date + datetime.timedelta(days=1))
+    return TimeSpan(first, last)
+
+
+def _statistic_value(db_manager, obs_type, statistic, span, extreme_span=None):
+    if statistic in ('min', 'max') and extreme_span is not None \
+            and obs_type in getattr(db_manager, 'daykeys', ()):
+        # Daily summaries also contain LOOP highs/lows; they cover whole days only (contract 1.6).
+        span = extreme_span
     value_tuple = weewx.xtypes.get_aggregate(obs_type, span, statistic, db_manager)
     value = clean(value_tuple[0])
     if statistic not in ('min', 'max') or value is None:
@@ -159,15 +173,15 @@ def _statistic_value(db_manager, obs_type, statistic, span):
     return value_tuple, [value, int(time_tuple[0])] if time_tuple[0] is not None else None
 
 
-def observation_stats(db_manager, data_type, statistics, start, end):
-    """Statistics over exactly (start, end] (contract 1.6, 3.5)."""
+def observation_stats(db_manager, data_type, statistics, start, end, extreme_span=None):
+    """Statistics over exactly (start, end]; min/max over extreme_span when given (contract 1.6, 3.5)."""
     span = TimeSpan(start, end)
     unit, group = standard_unit(db_manager, data_type)
     stats = {}
     stat_units = {}
     for statistic in statistics:
         obs_type = stat_obs_type(data_type, statistic)
-        value_tuple, value = _statistic_value(db_manager, obs_type, statistic, span)
+        value_tuple, value = _statistic_value(db_manager, obs_type, statistic, span, extreme_span)
         stats[statistic] = value
         if value_tuple[1] is not None and (value_tuple[1], value_tuple[2]) != (unit, group):
             stat_units[statistic] = [value_tuple[1], value_tuple[2]]
@@ -205,7 +219,8 @@ def station_location(config_dict, stn_info=None):
 
 
 class SunEventProvider(object):
-    """Sun events for the axis range (contract 3.6). Returns [] when disabled or skyfield is missing."""
+    """Sun events for the axis range (contract 3.6). Returns [] when disabled; without skyfield the sun
+    position is approximated (user.sunevents.compute_sun_events)."""
 
     def __init__(self, config_dict, skin_dict, show_daynight, transition_angle, location=None):
         """location: [longitude, latitude, altitude_m], see station_location(); None = from weewx.conf."""
@@ -214,7 +229,6 @@ class SunEventProvider(object):
         self.show_daynight = show_daynight
         self.transition_angle = transition_angle
         self.location = location
-        self._warned = False
 
     def _location(self):
         if self.location is None:
@@ -222,29 +236,18 @@ class SunEventProvider(object):
         return self.location
 
     def available(self):
-        if not self.show_daynight:
-            return False
-        if 'skyfield' not in sys.modules:
-            try:
-                import skyfield.api  # noqa: F401
-            except ImportError:
-                if not self._warned:
-                    log.info("skyfield not available: period charts are drawn without day/night background")
-                    self._warned = True
-                return False
-        return True
+        return bool(self.show_daynight)
 
     def __call__(self, start, end):
         if not self.available():
             return []
-        from user.sunevents import SunEvents
+        from user.sunevents import compute_sun_events
         longitude, latitude, altitude_m = self._location()
         sqlite_root = self.config_dict.get('DatabaseTypes', {}).get('SQLite', {}).get('SQLITE_ROOT', '.')
         path = os.path.join(self.config_dict.get('WEEWX_ROOT', '.'), sqlite_root, 'skyfield')
-        os.makedirs(path, exist_ok=True)
         ephemeris = self.skin_dict.get('Skyfield', {}).get('ephemeris', 'de440s.bsp')
-        events = SunEvents(start, end, longitude, latitude, int(altitude_m), path,
-                           ephemeris).get_transits(self.transition_angle)
+        events = compute_sun_events(start, end, longitude, latitude, int(altitude_m), path, ephemeris,
+                                    self.transition_angle)
         result = []
         for event in events or []:
             result.append([int(event[0]), clean(darkening_extent(event[1], self.transition_angle)), event[2]])
@@ -297,13 +300,15 @@ def _build_series(series_plan, db_managers, start, end, generated, coverage, run
     return series
 
 
-def _build_observations(observation_plan, db_managers, start, end, generated):
+def _build_observations(observation_plan, db_managers, start, end, generated, zone):
     observations = {}
+    extreme_span = daily_summary_span(zone, start, end)
     for obs_key, observation in observation_plan.items():
         manager = db_managers(observation['data_binding'])
         try:
             unit, group, count, stats, stat_units = observation_stats(
-                manager, observation['data_type'], observation['statistics'], start, min(end, generated))
+                manager, observation['data_type'], observation['statistics'], start, min(end, generated),
+                extreme_span)
         except (weewx.UnknownType, weewx.UnknownAggregation) as e:
             _skip_unsupported('observation', obs_key, e)
             continue
@@ -337,7 +342,7 @@ def build_period_data(db_managers, default_binding, series_plan, observation_pla
     main_manager = db_managers(default_binding)
     coverage = get_coverage(main_manager, start, end, generated, fallback_interval)
     series = _build_series(series_plan, db_managers, start, end, generated, coverage, running, zone)
-    observations = _build_observations(observation_plan, db_managers, start, end, generated)
+    observations = _build_observations(observation_plan, db_managers, start, end, generated, zone)
     state = _period_state(running, coverage, gap_threshold)
 
     data = {

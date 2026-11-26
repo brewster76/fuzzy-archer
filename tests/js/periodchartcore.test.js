@@ -123,6 +123,8 @@ test("markers use server statistics; sums get a legend total instead of mark poi
     const [temp] = cc.prepareSeries(chartConfig.temp, file(), "day", env);
     const m = cc.markers(temp, env);
     assert.deepStrictEqual(m.markPoint.data.map((p) => p.coord), [[2200000, 10], [1600000, 0]]);
+    const clamped = cc.markers(temp, env, {startMs: 1700000, endMs: 2000000});
+    assert.deepStrictEqual(clamped.markPoint.data.map((p) => p.coord), [[2000000, 10], [1700000, 0]]);
     assert.ok(Math.abs(m.markLine.data[0].yAxis - 5) < 1e-9);
     const [rain] = cc.prepareSeries(chartConfig.rain, file(), "day", env);
     assert.deepStrictEqual(cc.markers(rain, env), {});
