@@ -65,6 +65,7 @@ class Backfill(object):
             from user.historyaggregate import build_period_data as build
         self.root = root
         self.state_directory = state_directory
+        self.tmp_dir = hw.staging_dir(state_directory)
         self.config = config
         self.zone = zone
         self.week_start = int(week_start)
@@ -145,7 +146,7 @@ class Backfill(object):
                           period, pid, span, max(now, span[1]), week_start=self.week_start,
                           sun_events=self.sun_events, fallback_interval=self.archive_interval,
                           gap_threshold=self.config.gap_threshold)
-        entry = hw.publish_period(self.root, data, list(observations))
+        entry = hw.publish_period(self.root, data, list(observations), self.tmp_dir)
         if entry['s'] == 'nodata':
             hw.remove_period_file(self.root, period, pid)
         return entry
@@ -262,7 +263,7 @@ class Backfill(object):
 
     def run(self, lock=None):
         """Process all outstanding periods. Returns the worker state dict (also saved to worker.json)."""
-        self.manifest = hw.Manifest(self.root, self.week_start)
+        self.manifest = hw.Manifest(self.root, self.week_start, self.tmp_dir)
         self._handle_week_start_change()
         first, last = archive_range(self.db_managers(self.default_binding))
         self.manifest.set_archive(first, last)

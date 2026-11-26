@@ -15,6 +15,7 @@ const PeriodViews = (function () {
         invalid: false,
         key: null,
         token: 0,
+        preload: 0,      // token of the latest route() call (stale segment preloads are ignored)
         selection: {},   // view -> {id, rolling}; remembered while the page is open
     };
     const ctx = {
@@ -33,6 +34,7 @@ const PeriodViews = (function () {
         isSelectable: {},                      // view -> function(id) -> bool
         firstId: {},                           // view -> function() -> id | null
         defaultDayId: null,                    // function() -> id | null
+        preload: null,                         // function(parsedRoute) -> Promise | null (lazy segments)
     };
     let texts = {};
     let elements = {};
@@ -104,6 +106,21 @@ const PeriodViews = (function () {
             applyView(parsed.view);
             setStatus("loading");
             return;
+        }
+        let preloadToken = ++state.preload;
+        if (parsed !== null && core.isPeriodView(parsed.view) && typeof hooks.preload === "function") {
+            // manifest segments needed to resolve this route are loaded lazily first
+            let pending = hooks.preload(parsed);
+            if (pending) {
+                applyView(parsed.view);
+                setStatus("loading");
+                pending.then(function () {
+                    if (preloadToken === state.preload) {
+                        route(force);
+                    }
+                });
+                return;
+            }
         }
         let canonicalized = false;
         if (parsed !== null && core.isPeriodView(parsed.view) && parsed.id !== null) {

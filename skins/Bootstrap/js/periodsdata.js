@@ -195,6 +195,13 @@ const PeriodData = (function () {
                 return;
             }
             views.updateToolbar();
+            if (!route.rolling) {
+                await store.ensureSegments(route.view, store.segmentKeysFor(route.view, [route.id]));
+                if (!views.isCurrent(token)) {
+                    return;
+                }
+                views.updateToolbar();
+            }
             let source = store.source(route.view, route.id, route.rolling);
             if (source.kind === "mutable") {
                 let data = await store.loadMutable(source.file, source.rev);
@@ -218,6 +225,7 @@ const PeriodData = (function () {
                 }
             }
             attempt = 0;
+            prefetchNeighbours(route, token);
         } catch (err) {
             if (!views.isCurrent(token)) {
                 return;
@@ -231,6 +239,57 @@ const PeriodData = (function () {
         } finally {
             clearTimeout(loadingTimer);
         }
+    }
+
+    /** Loads the segments of the adjacent periods in the background so prev/next can cross a year. */
+    function prefetchNeighbours(route, token) {
+        if (route.rolling || !route.id || route.view === "year" || store.manifest === null) {
+            return;
+        }
+        let ids = [-1, 1].map(function (step) { return core.shiftId(route.view, route.id, step, views.ctx.zone); });
+        let keys = store.missingSegments(route.view, store.segmentKeysFor(route.view, ids));
+        if (keys.length === 0) {
+            return;
+        }
+        store.ensureSegments(route.view, keys).then(function () {
+            if (views.isCurrent(token)) {
+                views.updateToolbar();
+            }
+        });
+    }
+
+    /** Segment keys needed to resolve a parsed (not yet canonical) route. */
+    function routeSegmentKeys(parsed) {
+        let view = parsed.view;
+        let id = parsed.id;
+        if (id === null) {
+            if (view !== "day") {
+                return [];
+            }
+            let keys = store.segmentKeys("day");
+            return keys.length > 0 ? [keys[keys.length - 1]] : [];   // newest day for the default id
+        }
+        if (core.isPeriodPrefix(view, id)) {
+            let year = id.substring(0, 4);
+            return view === "week" ? [String(Number(year) - 1), year] : [year];
+        }
+        let normalized = core.normalizeId(view, id, views.ctx.zone, views.ctx.weekStart);
+        return normalized === null ? [] : store.segmentKeysFor(view, [normalized]);
+    }
+
+    /** PeriodViews hook: promise while segments needed for routing are loading, null otherwise. */
+    function preload(parsed) {
+        let historyEnabled = !views.ctx.config || views.ctx.config.generate_history !== false;
+        if (store === null || store.manifest === null || !historyEnabled) {
+            return null;
+        }
+        let keys = store.missingSegments(parsed.view, routeSegmentKeys(parsed));
+        if (keys.length === 0) {
+            return null;
+        }
+        return store.ensureSegments(parsed.view, keys).catch(function (err) {
+            console.warn("period views: manifest segment load failed", err);
+        });
     }
 
     function defaultDayId() {
@@ -256,6 +315,7 @@ const PeriodData = (function () {
             return store.firstAvailableId(view, start, end);
         };
         views.hooks.defaultDayId = defaultDayId;
+        views.hooks.preload = preload;
         await ensureIndexes(true);
     }
 

@@ -7,7 +7,7 @@
  *   format(value, decimals) -> string, unitString(shown, unitLabel) -> string,
  *   unitLabel(targetUnit) -> string | [singular, plural], targetUnit(group) -> unit,
  *   convert(value, fromUnit, toUnit) -> number, decode(text) -> text, text(key) -> string,
- *   formatInterval(startMs, endMs, resolution) -> string, axisLabel(valueMs) -> string,
+ *   formatInterval(startMs, endMs, resolution) -> string, formatDateTime(ms) -> string, axisLabel(valueMs) -> string,
  *   clipRect(rect, coordSys) -> rect | undefined
  * }
  */
@@ -168,7 +168,8 @@
                 }
             }
             let plotType = options.plotType || "line";
-            let label = env.decode(options.label || seriesId);
+            let baseLabel = env.decode(options.label || seriesId);
+            let label = baseLabel;
             let aggregateType = viewConfig.aggregate_type;
             if (aggregateType && aggregateType !== "none") {
                 label += " (" + env.text(AGGREGATE_LABELS[aggregateType] || aggregateType) + ")";
@@ -176,6 +177,7 @@
             prepared.push({
                 id: seriesId,
                 label: label,
+                baseLabel: baseLabel,
                 plotType: plotType,
                 color: options.lineColor,
                 decimals: numberOption(options.decimals, group === "group_direction" ? 0 : 1),
@@ -264,6 +266,30 @@
         };
     }
 
+    function tooltipHeaderRow(text) {
+        return "<tr><td colspan=\"2\" style=\"font-size: x-small;\">" + escapeHtml(text) + "</td></tr>";
+    }
+
+    function tooltipValueRow(color, label, shown) {
+        let marker = "<span style=\"display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:"
+            + escapeHtml(color || "#999") + ";\"></span>";
+        return "<tr style=\"font-size: small;\"><td>" + marker + escapeHtml(label)
+            + "</td><td style=\"text-align: right; padding-left: 10px; font-weight: bold;\">" + escapeHtml(shown) + "</td></tr>";
+    }
+
+    /** Tooltip of a min/max mark point: time of the extreme, series and value. */
+    function extremeTooltip(series, name, env) {
+        let stat = series && series.stats ? series.stats[name] : undefined;
+        if (!stat || stat.ms === null || stat.ms === undefined) {
+            return "";
+        }
+        let formatted = env.format(stat.value, series.decimals);
+        let shown = formatted + env.unitString(formatted, series.unitLabel);
+        let header = typeof env.formatDateTime === "function" ? env.formatDateTime(stat.ms) : String(stat.ms);
+        let label = (series.baseLabel || series.label) + " (" + env.text(AGGREGATE_LABELS[name] || name) + ")";
+        return "<table>" + tooltipHeaderRow(header) + tooltipValueRow(series.color, label, shown) + "</table>";
+    }
+
     /** Server-side statistics as mark points / mark line (§6, E6). */
     function markers(series, env) {
         let result = {};
@@ -278,14 +304,17 @@
             if (!show || !comparable || !stat || stat.ms === null) {
                 continue;
             }
+            let tip = extremeTooltip(series, name, env);
             points.push({
                 coord: [stat.ms, stat.value],
                 name: name,
                 label: {show: true, position: position, formatter: format(stat.value)},
+                tooltip: {formatter: function () { return tip; }},
             });
         }
         if (points.length > 0) {
-            result.markPoint = {symbolSize: 0, silent: true, data: points};
+            // Hoverable labels; the item tooltip is used for showTip, the axis tooltip via markerHover.
+            result.markPoint = {symbolSize: 0, emphasis: {disabled: true}, tooltip: {trigger: "item"}, data: points};
         }
         let avg = series.stats.avg;
         if (boolOption(series.options.showAvgMarkLine, false) && comparable && avg) {
@@ -511,8 +540,31 @@
         };
     }
 
-    function tooltipFormatter(prepared, env) {
+    /**
+     * Hover state of the min/max mark points. With tooltip.trigger "axis" ECharts always prefers the
+     * axis tooltip, so the axis formatter shows the extreme while a mark point label is hovered.
+     */
+    function markerHover(prepared, env) {
+        return {
+            tip: null,
+            enter: function (seriesIndex, name) {
+                let series = prepared[seriesIndex];
+                this.tip = series && (name === "min" || name === "max") ? extremeTooltip(series, name, env) || null : null;
+                return this.tip !== null;
+            },
+            leave: function () {
+                let hovered = this.tip !== null;
+                this.tip = null;
+                return hovered;
+            },
+        };
+    }
+
+    function tooltipFormatter(prepared, env, hover) {
         return function (params) {
+            if (hover && hover.tip) {
+                return hover.tip;
+            }
             let list = Array.isArray(params) ? params : [params];
             if (list.length === 0) {
                 return "";
@@ -534,7 +586,7 @@
                 if (point !== null) {
                     let header = env.formatInterval(point.start, point.end, series.resolution);
                     if (header !== lastHeader) {
-                        html += "<tr><td colspan=\"2\" style=\"font-size: x-small;\">" + escapeHtml(header) + "</td></tr>";
+                        html += tooltipHeaderRow(header);
                         lastHeader = header;
                     }
                 }
@@ -546,10 +598,7 @@
                         shown += " (" + env.text("provisional") + ")";
                     }
                 }
-                let marker = "<span style=\"display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:"
-                    + escapeHtml(series.color || "#999") + ";\"></span>";
-                html += "<tr style=\"font-size: small;\"><td>" + marker + escapeHtml(series.label)
-                    + "</td><td style=\"text-align: right; padding-left: 10px; font-weight: bold;\">" + escapeHtml(shown) + "</td></tr>";
+                html += tooltipValueRow(series.color, series.label, shown);
                 rows++;
             }
             return rows > 0 ? html + "</table>" : "";
@@ -565,6 +614,7 @@
         let data = ctx.data;
         let chartOptions = ctx.chartConfig || {};
         let prepared = prepareSeries(chartOptions, data, ctx.view, env);
+        let hover = markerHover(prepared, env);
         let axisSpan = data.axis || data.period_span;
         let axis = {startMs: axisSpan.start * 1000, endMs: axisSpan.end * 1000};
         let series = [];
@@ -610,7 +660,7 @@
                 axisPointer: {type: "line", snap: true},
                 show: true,
                 confine: true,
-                formatter: tooltipFormatter(prepared, env),
+                formatter: tooltipFormatter(prepared, env, hover),
             },
             xAxis: {
                 type: "time",
@@ -632,7 +682,7 @@
         if (ctx.legendSelected) {
             option.legend.selected = ctx.legendSelected;
         }
-        return {option: option, series: prepared};
+        return {option: option, series: prepared, hover: hover};
     }
 
     return {
@@ -649,6 +699,8 @@
         scatterData: scatterData,
         barRenderer: barRenderer,
         markers: markers,
+        extremeTooltip: extremeTooltip,
+        markerHover: markerHover,
         statSuffix: statSuffix,
         yAxes: yAxes,
         dayNightSeries: dayNightSeries,

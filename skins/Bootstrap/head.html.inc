@@ -7,6 +7,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>$gettext("Page Title") $station.location</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='6' cy='6' r='3' fill='%23f0ad4e'/%3E%3Cpath d='M4 14a3 3 0 0 1 0-6 4 4 0 0 1 7.6-1A3 3 0 1 1 12 14z' fill='%236c8ebf'/%3E%3C/svg%3E">
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css?v=$css_mtime" rel="stylesheet">
     <link href="css/bootstrap-icons.min.css?v=$css_mtime" rel="stylesheet">

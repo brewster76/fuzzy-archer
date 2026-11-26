@@ -59,7 +59,7 @@ def _generation_reason(old, period_id, refresh, force):
 
 
 def _produce_mutable(root, kind, period, span, period_id, now, config, zone, week_start, db_managers,
-                     default_binding, sun_events, archive_interval, build, written):
+                     default_binding, sun_events, archive_interval, build, written, tmp_dir=None):
     started = time.time()
     identifier = period_id or '%s..%s' % (span[0], span[1])
     log.info("PeriodDataGenerator: starting %s %s generation (%s)", kind, period, identifier)
@@ -68,7 +68,7 @@ def _produce_mutable(root, kind, period, span, period_id, now, config, zone, wee
                  'calendar' if kind == 'current' else 'rolling', period, period_id, span, now,
                  week_start=week_start, sun_events=sun_events, fallback_interval=archive_interval,
                  gap_threshold=config.gap_threshold)
-    rel, rev = hw.write_current_file(root, kind, period, data)
+    rel, rev = hw.write_current_file(root, kind, period, data, tmp_dir)
     written.append((kind, period))
     log.info("PeriodDataGenerator: finished %s %s generation (%s) in %.2f seconds; file=%s",
              kind, period, identifier, time.time() - started, rel)
@@ -78,7 +78,7 @@ def _produce_mutable(root, kind, period, span, period_id, now, config, zone, wee
 
 def _generate_current_period(period, root, config, zone, week_start, now, db_managers,
                              default_binding, sun_events, archive_interval, build, force, old,
-                             new_current, written):
+                             new_current, written, tmp_dir=None):
     if not config.generate_history and period != 'day':
         log.debug("PeriodDataGenerator: current %s data unchanged/not generated because "
                   "generate_history is false", period)
@@ -97,7 +97,7 @@ def _generate_current_period(period, root, config, zone, week_start, now, db_man
     try:
         entry = _produce_mutable(root, 'current', period, hp.period_span(zone, period, start_date), pid,
                                  now, config, zone, week_start, db_managers, default_binding, sun_events,
-                                 archive_interval, build, written)
+                                 archive_interval, build, written, tmp_dir)
     except Exception:
         log.exception("PeriodDataGenerator: failed to generate current %s %s", period, pid)
         _retain_failed_current(period, pid, old, force, new_current)
@@ -122,7 +122,7 @@ def _retain_failed_current(period, pid, old, force, new_current):
 
 def _generate_rolling_period(period, root, config, zone, week_start, now, db_managers,
                              default_binding, sun_events, archive_interval, build, force, old,
-                             new_rolling, written):
+                             new_rolling, written, tmp_dir=None):
     refresh = config.refresh[period]
     if not is_due(old, None, refresh, now, force):
         elapsed = now - int(old.get('generated', 0))
@@ -135,7 +135,7 @@ def _generate_rolling_period(period, root, config, zone, week_start, now, db_man
     try:
         entry = _produce_mutable(root, 'rolling', period, hp.rolling_window(period, now), None, now,
                                  config, zone, week_start, db_managers, default_binding, sun_events,
-                                 archive_interval, build, written)
+                                 archive_interval, build, written, tmp_dir)
     except Exception:
         log.exception("PeriodDataGenerator: failed to generate rolling %s", period)
         _retain_failed_rolling(period, old, force, new_rolling)
@@ -183,17 +183,18 @@ def generate_mutable(root, state_directory, config, zone, week_start, now, db_ma
     old_current = previous.get('current', {})
     old_rolling = previous.get('rolling', {})
     new_current, new_rolling, written = {}, {}, []
+    tmp_dir = hw.staging_dir(state_directory)
 
     for period in hp.PERIODS:
         _generate_current_period(period, root, config, zone, week_start, now, db_managers, default_binding,
                                  sun_events, archive_interval, build, force, old_current.get(period),
-                                 new_current, written)
+                                 new_current, written, tmp_dir)
     for period in hp.ROLLING_PERIODS:
         _generate_rolling_period(period, root, config, zone, week_start, now, db_managers, default_binding,
                                  sun_events, archive_interval, build, force, old_rolling.get(period),
-                                 new_rolling, written)
+                                 new_rolling, written, tmp_dir)
 
-    hw.write_current_index(root, now, week_start, new_current, new_rolling)
+    hw.write_current_index(root, now, week_start, new_current, new_rolling, tmp_dir)
     if state.get('config') != current_hash:
         hw.write_json(state_path, {'config': current_hash})
     return written

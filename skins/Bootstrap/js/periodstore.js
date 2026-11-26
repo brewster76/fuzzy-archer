@@ -14,6 +14,7 @@
     "use strict";
 
     const LOADABLE = {ok: true, gaps: true};
+    const SEGMENT_RETRY_MS = 30000;
 
     class HttpError extends Error {
         constructor(status, url) {
@@ -101,7 +102,8 @@
         const mutable = new Map();          // file -> {rev, data}
         const retained = new LRU(8);        // "view|id" -> last running calendar data
         const inflight = new Map();         // url -> Promise
-        const segments = {};                // view -> {key -> {rev, entries}}
+        const segments = {};                // view -> {key -> {rev, entries}}, loaded lazily
+        const failures = new Map();         // "view|key" -> {rev, at} of the last failed segment load
         const store = {
             base: options.base || "",
             zone: options.zone || "local",
@@ -145,36 +147,109 @@
             return data;
         };
 
-        /** manifest.json plus every changed segment of `view` (all views if omitted). */
-        store.fetchManifest = async function (view) {
+        function indexSegments(view) {
+            let index = store.manifest;
+            return (index && index.segments && index.segments[view]) || {};
+        }
+
+        /**
+         * manifest.json only. Segments are loaded lazily per view / key (ensureSegments); segments
+         * removed from the index are dropped, segments with a new rev stay usable until reloaded.
+         */
+        store.fetchManifest = async function () {
             let index = await fetchBody(url("manifest.json", "t=" + nowMs()), true);
             store.manifest = index;
-            let views = view ? [view] : core.PERIOD_VIEWS;
-            let jobs = [];
-            for (let v of views) {
-                let wanted = (index.segments && index.segments[v]) || {};
-                let known = segments[v] || (segments[v] = {});
-                for (let key of Object.keys(known)) {
+            for (let view of Object.keys(segments)) {
+                let wanted = indexSegments(view);
+                for (let key of Object.keys(segments[view])) {
                     if (wanted[key] === undefined) {
-                        delete known[key];
+                        delete segments[view][key];
                     }
-                }
-                for (let key of Object.keys(wanted)) {
-                    let rev = wanted[key];
-                    if (known[key] !== undefined && known[key].rev === rev) {
-                        continue;
-                    }
-                    jobs.push(fetchBody(url("manifest/" + v + "/" + key + ".json", "r=" + rev), true).then(function (segment) {
-                        known[key] = {rev: rev, entries: segment.entries || {}};
-                    }));
                 }
             }
-            await Promise.all(jobs);
             return index;
         };
 
         store.hasManifest = function () {
             return store.manifest !== null;
+        };
+
+        /** Sorted segment keys of `view` listed in manifest.json. */
+        store.segmentKeys = function (view) {
+            return Object.keys(indexSegments(view)).sort();
+        };
+
+        /** true if segment `key` of `view` is loaded with the indexed rev (or not indexed at all). */
+        store.segmentCurrent = function (view, key) {
+            let rev = indexSegments(view)[key];
+            let known = segments[view] ? segments[view][key] : undefined;
+            return rev === undefined || (known !== undefined && known.rev === rev);
+        };
+
+        /** Indexed keys that still have to be loaded; keys that just failed are skipped for a while. */
+        store.missingSegments = function (view, keys) {
+            let result = [];
+            for (let key of keys) {
+                if (key === null || key === undefined || result.indexOf(key) >= 0 || store.segmentCurrent(view, key)) {
+                    continue;
+                }
+                let failure = failures.get(view + "|" + key);
+                if (failure !== undefined && failure.rev === indexSegments(view)[key]
+                        && nowMs() - failure.at < SEGMENT_RETRY_MS) {
+                    continue;
+                }
+                result.push(key);
+            }
+            return result;
+        };
+
+        function loadSegment(view, key) {
+            let rev = indexSegments(view)[key];
+            // rev-versioned URL: may be served from the HTTP cache
+            return fetchBody(url("manifest/" + view + "/" + key + ".json", "r=" + rev), false).then(function (segment) {
+                let known = segments[view] || (segments[view] = {});
+                if (indexSegments(view)[key] !== rev && known[key] !== undefined) {
+                    return;   // stale: the index moved on while loading, keep the newer state
+                }
+                known[key] = {rev: rev, entries: (segment && segment.entries) || {}};
+                failures.delete(view + "|" + key);
+            }, function (err) {
+                failures.set(view + "|" + key, {rev: rev, at: nowMs()});
+                throw err;
+            });
+        }
+
+        /**
+         * Loads the given segment keys of `view` (parallel, de-duplicated). Never rejects: a failing
+         * segment only affects its own periods. Resolves to the list of failed keys.
+         */
+        store.ensureSegments = async function (view, keys) {
+            let missing = store.missingSegments(view, keys);
+            if (missing.length === 0) {
+                return [];
+            }
+            let results = await Promise.allSettled(missing.map(function (key) { return loadSegment(view, key); }));
+            let failed = [];
+            results.forEach(function (result, i) {
+                if (result.status === "rejected") {
+                    failed.push(missing[i]);
+                }
+            });
+            return failed;
+        };
+
+        /** Segment keys containing the period ids `ids` of `view`. */
+        store.segmentKeysFor = function (view, ids) {
+            let keys = [];
+            for (let id of ids) {
+                if (typeof id === "string" && id.length >= 4) {
+                    let key = segmentKey(view, id);
+                    if (keys.indexOf(key) < 0) {
+                        keys.push(key);
+                    }
+                }
+            }
+            return keys;
         };
 
         /** Running calendar period id of `view` according to current.json (null if unknown). */
@@ -193,7 +268,8 @@
 
         /** Manifest entry or a derived one: {s, rev?, file?, missing?}. */
         store.entry = function (view, id) {
-            let segment = segments[view] ? segments[view][segmentKey(view, id)] : undefined;
+            let key = segmentKey(view, id);
+            let segment = segments[view] ? segments[view][key] : undefined;
             if (segment !== undefined && segment.entries[id] !== undefined) {
                 return segment.entries[id];
             }
@@ -208,6 +284,9 @@
             let first = core.periodIdAt(view, (archive.first - 1) * 1000, store.zone, store.weekStart);
             if (core.compareIds(id, first) < 0) {
                 return {s: "nodata"};
+            }
+            if (segment === undefined && indexSegments(view)[key] !== undefined) {
+                return {s: "unknown"};   // segment exists but is not loaded (yet)
             }
             return {s: "pending"};   // completed period without entry yet (§5.2)
         };
@@ -331,7 +410,7 @@
                 return {kind: "historic", file: entry.file, rev: entry.rev, state: entry.s, missing: entry.missing || []};
             }
             let kept = store.lastMutable(view, id);
-            if (kept !== null && (entry === null || entry.s === "pending")) {
+            if (kept !== null && (entry === null || entry.s === "pending" || entry.s === "unknown")) {
                 return {kind: "retained", data: kept};
             }
             if (entry === null) {

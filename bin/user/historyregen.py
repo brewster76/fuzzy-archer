@@ -140,7 +140,7 @@ def regenerate(worker, periods, from_date=None, to_date=None, series=None, now=N
     removed, error states and retry counters of regenerated periods are reset.
     """
     now = int(now if now is not None else worker.clock())
-    worker.manifest = hw.Manifest(worker.root, worker.week_start)
+    worker.manifest = hw.Manifest(worker.root, worker.week_start, worker.tmp_dir)
     worker._handle_week_start_change()
     first, last = archive_range(worker.db_managers(worker.default_binding))
     worker.manifest.set_archive(first, last)

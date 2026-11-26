@@ -55,6 +55,46 @@ def test_atomic_write_keeps_old_file_on_error(tmp_path):
     assert hw.read_json(path) == {'ok': True}
 
 
+def test_atomic_write_uses_unpublished_tmp_dir(tmp_path, monkeypatch):
+    published = tmp_path / 'html'
+    staging = str(tmp_path / 'state' / 'tmp')
+    seen = []
+    real_replace = os.replace
+
+    def replace(src, dst):
+        seen.append(os.listdir(published))
+        assert os.path.dirname(src) == staging
+        real_replace(src, dst)
+
+    monkeypatch.setattr(hw.os, 'replace', replace)
+    path = str(published / 'current.json')
+    rev = hw.write_json(path, {'x': 1}, tmp_dir=staging)
+    assert seen == [[]]  # no temp file in the published directory while writing
+    assert os.listdir(published) == ['current.json']
+    assert os.listdir(staging) == []
+    assert rev == hw.rev_of(hw.to_json_bytes({'x': 1}))
+
+
+def test_atomic_write_falls_back_on_cross_device(tmp_path, monkeypatch, caplog):
+    import errno
+    staging = str(tmp_path / 'state' / 'tmp')
+    real_replace = os.replace
+
+    def replace(src, dst):
+        if os.path.dirname(src) == staging:
+            raise OSError(errno.EXDEV, 'cross-device link')
+        real_replace(src, dst)
+
+    monkeypatch.setattr(hw.os, 'replace', replace)
+    monkeypatch.setattr(hw, '_cross_device_warned', False)
+    path = str(tmp_path / 'html' / 'f.json')
+    hw.write_json(path, {'x': 1}, tmp_dir=staging)
+    assert hw.read_json(path) == {'x': 1}
+    assert os.listdir(tmp_path / 'html') == ['f.json']
+    assert os.listdir(staging) == []
+    assert 'different file systems' in caplog.text
+
+
 def test_publish_period_states(tmp_path):
     root = str(tmp_path)
     required = ['wx_binding/outTemp', 'wx_binding/UV']

@@ -110,6 +110,8 @@ test("manifest entries, derived states and selectability", async () => {
     const srv = server(files());
     const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
     await Promise.all([store.fetchCurrent(), store.fetchManifest()]);
+    assert.equal(store.entry("day", "20261118").s, "unknown");     // segment indexed, not loaded
+    assert.deepEqual(await store.ensureSegments("day", ["2025", "2026"]), []);
     assert.equal(store.entry("day", "20261118").s, "ok");
     assert.equal(store.entry("day", "20261117").s, "pending");     // no entry, inside archive
     assert.equal(store.entry("day", "20251229").s, "nodata");      // before archive.first
@@ -125,8 +127,42 @@ test("manifest entries, derived states and selectability", async () => {
     // unchanged segment revs are not fetched again
     const before = srv.calls.length;
     await store.fetchManifest();
+    await store.ensureSegments("day", ["2025", "2026"]);
     assert.equal(srv.calls.length - before, 1);
     assert.ok(srv.calls.every((u) => u.startsWith("data/")));
+});
+
+test("manifest segments load lazily, de-duplicated, isolated on failure, stale results ignored", async () => {
+    const f = files({
+        "manifest.json": Object.assign({}, MANIFEST, {segments: {day: {"2025": "s25", "2026": "s26"}, year: {all: "ya"}}}),
+        "manifest/day/2025.json": {status: 522},
+    });
+    const srv = server(f, {delay: 5});
+    const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
+    await store.fetchManifest();
+    assert.deepEqual(srv.calls.map((u) => u.split("?")[0]), ["data/manifest.json"]);   // no segment up front
+    assert.deepEqual(store.segmentKeys("day"), ["2025", "2026"]);
+    // year/2016: only the year segment
+    const [a, b] = await Promise.all([store.ensureSegments("year", ["all"]), store.ensureSegments("year", ["all"])]);
+    assert.deepEqual([a, b], [[], []]);
+    assert.deepEqual(srv.calls.slice(1), ["data/manifest/year/all.json?r=ya"]);
+    assert.equal(store.entry("year", "2025").s, "nodata");
+    assert.deepEqual(store.missingSegments("year", ["all"]), []);
+    // one failing segment does not affect the others and is not retried immediately
+    assert.deepEqual(await store.ensureSegments("day", ["2025", "2026"]), ["2025"]);
+    assert.equal(store.entry("day", "20261118").s, "ok");
+    assert.equal(store.entry("day", "20251231").s, "unknown");
+    assert.deepEqual(store.missingSegments("day", ["2025", "2026"]), []);
+    // a segment arriving after the index moved on does not overwrite a newer one
+    f["manifest/day/2026.json"] = {entries: {"20261118": {s: "error"}}};
+    f["manifest.json"] = Object.assign({}, f["manifest.json"], {segments: {day: {"2026": "s26b"}, year: {all: "ya"}}});
+    await store.fetchManifest();
+    assert.deepEqual(store.missingSegments("day", ["2026"]), ["2026"]);
+    const loading = store.ensureSegments("day", ["2026"]);
+    store.manifest = Object.assign({}, store.manifest, {segments: {day: {"2026": "s26c"}, year: {all: "ya"}}});
+    await loading;
+    assert.equal(store.entry("day", "20261118").s, "ok");   // s26b result dropped, old entries kept
+    assert.deepEqual(store.segmentKeysFor("week", ["20251228", "20260104", "20260111"]), ["2025", "2026"]);
 });
 
 test("firstAvailableId selects the earliest loadable period overlapping a prefix range", async () => {
@@ -149,6 +185,8 @@ test("firstAvailableId selects the earliest loadable period overlapping a prefix
     const srv = server(f);
     const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
     await Promise.all([store.fetchCurrent(), store.fetchManifest()]);
+    await store.ensureSegments("week", ["2018", "2019"]);
+    await store.ensureSegments("month", ["2019"]);
     const year = core.prefixRange("week", "2019", BERLIN);
     const october = core.prefixRange("week", "201910", BERLIN);
     const monthYear = core.prefixRange("month", "2019", BERLIN);
@@ -163,6 +201,8 @@ test("source resolution", async () => {
     const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
     assert.deepEqual(store.source("day", "20261118", false), {kind: "status", status: "unknown"});
     await Promise.all([store.fetchCurrent(), store.fetchManifest()]);
+    await store.ensureSegments("day", ["2026"]);
+    await store.ensureSegments("year", ["all"]);
     assert.equal(store.source("week", null, true).kind, "mutable");
     assert.deepEqual(store.source("month", null, true), {kind: "status", status: "unknown"});
     assert.equal(store.source("day", "20261121", false).file, "current/day.json.gz");
@@ -210,6 +250,7 @@ test("selected running period is kept after a period change until its final file
     const srv = server(f);
     const store = S.createStore({base: "data", fetchFn: srv.fetchFn, zone: BERLIN, weekStart: 6});
     await Promise.all([store.fetchCurrent(), store.fetchManifest()]);
+    await store.ensureSegments("day", ["2026"]);
     const src = store.source("day", "20261121", false);
     await store.loadMutable(src.file, src.rev);
     // midnight: current.json now points to the 22nd, the 21st is not yet in the manifest
@@ -225,6 +266,8 @@ test("selected running period is kept after a period change until its final file
     f["manifest.json"] = Object.assign({}, MANIFEST, {segments: Object.assign({}, MANIFEST.segments, {day: {"2025": "s25", "2026": "s26b"}})});
     f["manifest/day/2026.json"] = {entries: Object.assign({}, DAY26.entries, {"20261121": {s: "ok", rev: "z", file: "day/20261121.json.gz"}})};
     await store.fetchManifest();
+    assert.equal(store.source("day", "20261121", false).kind, "retained");   // old segment rev still in use
+    await store.ensureSegments("day", ["2026"]);
     assert.equal(store.source("day", "20261121", false).kind, "historic");
 });
 

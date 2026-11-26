@@ -21,10 +21,38 @@ let maxAgeHoursMS;
 let intervalData = {};
 let stationTimezone = "local";
 let liveData = [];
+let mqttClients = [];
+let tsCheckInFlight = false;
+let tsCheckFailedAt = 0;
+const TS_TIMEOUT_MS = 3000;
+const TS_RETRY_MS = 15000;
 
-fetch(weewxDataUrl + Date.now()).then(function (u) {
-    return u.json();
-}).then(function (serverData) {
+/**
+ * GET + JSON with timeout. Rejects with a descriptive Error on HTTP errors, network errors,
+ * invalid JSON or timeout (err.name === "AbortError" / "TimeoutError"); callers must catch.
+ */
+async function fetchJson(url, timeoutMs, cacheMode) {
+    let controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    let timer = controller !== null && timeoutMs ? setTimeout(function () { controller.abort(); }, timeoutMs) : null;
+    try {
+        let response = await fetch(url, {cache: cacheMode || "no-store", signal: controller !== null ? controller.signal : undefined});
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status + " " + url);
+        }
+        let text = await response.text();
+        try {
+            return JSON.parse(text);
+        } catch (err) {
+            throw new Error("Invalid JSON " + url + ": " + err.message);
+        }
+    } finally {
+        if (timer !== null) {
+            clearTimeout(timer);
+        }
+    }
+}
+
+fetchJson(weewxDataUrl + Date.now()).then(function (serverData) {
     weewxData = serverData;
     archiveIntervalSeconds = Number(weewxData.config.archive_interval);
     stationTimezone = weewxData.config.station_timezone === undefined ? "local" : weewxData.config.station_timezone;
@@ -32,10 +60,13 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
     eChartsLocale = lang.toUpperCase();
     maxAgeHoursMS = weewxData.config.timespan * 3600000;
 
-    let clients = [];
     if (weewxData.config.MQTT !== undefined && weewxData.config.MQTT.connections !== undefined) {
         for (let connectionId of Object.keys(weewxData.config.MQTT.connections)) {
             let connection = weewxData.config.MQTT.connections[connectionId];
+            if (connection.topics === undefined) {
+                console.log(`Configuration error: No topics defined for client with id "${connectionId}", check skin's MQTT configuration!`);
+                continue;
+            }
             let mqttConnection = connection.broker_connection;
             let mqttUsername = connection.mqtt_username;
             let mqttPassword = connection.mqtt_password;
@@ -49,28 +80,30 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
                     mqttCredentials["password"] = mqttPassword;
                 }
             }
-            if (mqttCredentials === undefined) {
-                client = mqtt.connect(mqttConnection);
-            } else {
-                client = mqtt.connect(mqttConnection, mqttCredentials);
-            }
+            // one client per configured connection; mqtt.js reconnects and resubscribes by itself
+            let client = mqttCredentials === undefined ? mqtt.connect(mqttConnection) : mqtt.connect(mqttConnection, mqttCredentials);
             client.topics = connection.topics;
-            if(client.topics === undefined) {
-                console.log(`Configuration error: No topics defined for client with id "${connectionId}", check skin's MQTT configuration!`);
-                continue;
-            }
-            clients.push(client);
+            mqttClients.push(client);
 
-            for (let topic of Object.keys(connection.topics)) {
-                client.subscribe(topic);
-            }
+            client.subscribe(Object.keys(connection.topics));
+
+            client.on("error", function (err) {
+                console.warn(`MQTT client "${connectionId}":`, err && err.message ? err.message : err);
+            });
 
             client.on("message", function (topic, payload) {
-                console.log(topic);
                 let jPayload = {};
                 let topicConfig = this.topics[topic];
+                if (topicConfig === undefined || topicConfig.type === undefined) {
+                    return;
+                }
                 if (topicConfig.type.toUpperCase() === "JSON") {
-                    jPayload = JSON.parse(payload);
+                    try {
+                        jPayload = JSON.parse(payload);
+                    } catch (err) {
+                        log_debug(`MQTT: invalid JSON on topic ${topic}`);
+                        return;
+                    }
                 } else if (topicConfig.type.toLowerCase() === "plain" && topicConfig.payload_key !== undefined) {
                     jPayload[topicConfig.payload_key] = parseFloat(payload);
                 } else {
@@ -102,7 +135,21 @@ fetch(weewxDataUrl + Date.now()).then(function (u) {
         loadCharts();
     }
 }).catch(err => {
-    throw err;
+    console.error("Loading weewxData.json failed:", err);
+});
+
+// close MQTT connections when the page is left; reconnect if restored from the back/forward cache
+window.addEventListener("pagehide", function () {
+    for (let client of mqttClients) {
+        client.end(true);
+    }
+});
+window.addEventListener("pageshow", function (event) {
+    if (event.persisted) {
+        for (let client of mqttClients) {
+            client.reconnect();
+        }
+    }
 });
 
 setInterval(checkAsyncReload, 60000);
@@ -397,35 +444,40 @@ function formatLuxon(timestamp, timezone, format) {
     return luxonDate.toLocaleString(format);
 }
 
-function checkAsyncReload(retryCount) {
-    log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
-    if ((Date.now() - lastAsyncReloadTimestamp) > archiveIntervalSeconds * 1000) {
-        fetch(tsJsonUrl + Date.now()).then(function (u) {
-            return u.json();
-        }).then(function (serverData) {
-            let newLastGoodStamp = Number.parseInt(serverData.lastGoodStamp) * 1000;
-            if (newLastGoodStamp > lastGoodStamp) {
-                lastGoodStamp = newLastGoodStamp;
-                asyncReloadWeewxData();
-                asyncReloadReportData();
-                lastAsyncReloadTimestamp = Date.now();
-            }
-        }).catch(err => {
-            retryCount = retryCount === undefined ? 0 : ++retryCount;
-            if (retryCount < 10) {
-                console.log('Retrying fetch #%d, %d', retryCount, Date.now());
-                setTimeout(checkAsyncReload, 1000, retryCount);
-            } else {
-                throw err;
-            }
-        });
+/**
+ * Checks ts.json (tiny, never cached) for a newer archive record and reloads the report data.
+ * Never blocks rendering: one request at a time, 3 s timeout, failures only delay the next check
+ * (60 s interval / next MQTT message, at the earliest TS_RETRY_MS later).
+ */
+function checkAsyncReload() {
+    if (weewxData === undefined || !archiveIntervalSeconds) {
+        return;
     }
+    log_debug(`async reload due in ${Math.round(archiveIntervalSeconds - (Date.now() - lastAsyncReloadTimestamp) / 1000)} seconds.`);
+    if ((Date.now() - lastAsyncReloadTimestamp) <= archiveIntervalSeconds * 1000
+            || tsCheckInFlight || Date.now() - tsCheckFailedAt < TS_RETRY_MS) {
+        return;
+    }
+    tsCheckInFlight = true;
+    fetchJson(tsJsonUrl + Date.now(), TS_TIMEOUT_MS).then(function (serverData) {
+        let newLastGoodStamp = Number.parseInt(serverData && serverData.lastGoodStamp) * 1000;
+        if (newLastGoodStamp > lastGoodStamp) {
+            lastGoodStamp = newLastGoodStamp;
+            asyncReloadWeewxData();
+            asyncReloadReportData();
+            lastAsyncReloadTimestamp = Date.now();
+        }
+    }).catch(function (err) {
+        tsCheckFailedAt = Date.now();
+        let reason = err && err.name === "AbortError" ? `timeout after ${TS_TIMEOUT_MS} ms` : (err && err.message ? err.message : err);
+        console.warn("ts.json check failed, retrying later:", reason);
+    }).finally(function () {
+        tsCheckInFlight = false;
+    });
 }
 
 function asyncReloadWeewxData() {
-    fetch(weewxDataUrl + Date.now()).then(function (u) {
-        return u.json();
-    }).then(function (serverData) {
+    fetchJson(weewxDataUrl + Date.now()).then(function (serverData) {
         weewxData = serverData;
         loadGauges();
         if (typeof loadCharts === 'function') {
@@ -435,16 +487,18 @@ function asyncReloadWeewxData() {
         let date = new Date(lastGoodStamp);
         let lastUpdate = document.getElementById("lastUpdate");
         lastUpdate.innerHTML = formatDateTime(date, stationTimezone);
+    }).catch(function (err) {
+        console.warn("Reloading weewxData.json failed:", err);
     });
 }
 
 function asyncReloadReportData() {
-    fetch(stationInfoDataUrl + Date.now()).then(function (u) {
-        return u.json();
-    }).then(function (reportData) {
+    fetchJson(stationInfoDataUrl + Date.now()).then(function (reportData) {
         for (let aFunction of updateFunctions) {
             aFunction(reportData);
         }
+    }).catch(function (err) {
+        console.warn("Reloading reportData.json failed:", err);
     });
 }
 
@@ -481,7 +535,8 @@ function getSeriesData(chartItem, seriesName) {
 }
 
 function log_debug(message) {
-    if (weewxData.config.debug_front_end !== undefined && "true" === weewxData.config.debug_front_end.toLowerCase()) {
+    if (weewxData !== undefined && weewxData.config !== undefined && weewxData.config.debug_front_end !== undefined
+            && "true" === String(weewxData.config.debug_front_end).toLowerCase()) {
         console.log(message);
     }
 }

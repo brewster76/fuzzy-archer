@@ -43,6 +43,12 @@ const PeriodCharts = (function () {
         return start.toLocaleString(luxon.DateTime.DATETIME_SHORT) + " \u2013 " + endText;
     }
 
+    /** Tooltip header of a single point in time (min/max mark points). */
+    function formatDateTime(ms) {
+        return dateTime(ms).toLocaleString({weekday: "short", day: "numeric", month: "numeric", year: "numeric",
+            hour: "numeric", minute: "2-digit"});
+    }
+
     function axisLabel(view) {
         return function (value) {
             let d = dateTime(value);
@@ -88,6 +94,7 @@ const PeriodCharts = (function () {
             decode: function (text) { return typeof decodeHtml === "function" ? decodeHtml(text) : text; },
             text: function (key) { return views.text(key); },
             formatInterval: formatInterval,
+            formatDateTime: formatDateTime,
             axisLabel: axisLabel(view),
             clipRect: function (rect, coordSys) { return echarts.graphic.clipRectByRect(rect, coordSys); },
         };
@@ -112,9 +119,26 @@ const PeriodCharts = (function () {
             return null;
         }
         let chart = echarts.init(element, null, {locale: typeof eChartsLocale !== "undefined" ? eChartsLocale : undefined});
-        entry = {chart: chart, data: null, view: null, visible: false};
+        entry = {chart: chart, data: null, view: null, visible: false, hover: null};
         instances[chartId] = entry;
+        bindMarkerHover(entry);
         return entry;
+    }
+
+    /** Min/max mark point labels: show their details instead of the axis values while hovered. */
+    function bindMarkerHover(entry) {
+        let chart = entry.chart;
+        chart.on("mouseover", {componentType: "markPoint"}, function (params) {
+            if (entry.hover && entry.hover.enter(params.seriesIndex, params.name) && params.event) {
+                chart.dispatchAction({type: "showTip", x: params.event.offsetX, y: params.event.offsetY});
+            }
+        });
+        chart.on("mouseout", {componentType: "markPoint"}, function () {
+            if (entry.hover && entry.hover.leave()) {
+                // forces the axis tooltip to be rebuilt on the next mouse move
+                chart.dispatchAction({type: "hideTip"});
+            }
+        });
     }
 
     function legendSelected(chart) {
@@ -195,6 +219,7 @@ const PeriodCharts = (function () {
                     }
                 }
                 entry.chart.setOption(built.option, {notMerge: true});
+                entry.hover = built.hover;
                 entry.data = event.data;
                 entry.view = view;
                 entry.visible = true;

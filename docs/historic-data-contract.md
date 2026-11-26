@@ -128,7 +128,11 @@ historic_data/
   traversal and name collisions cannot occur.
 * Period files are gzip-compressed JSON (UTF-8). The frontend checks the gzip magic bytes
   `1f 8b`; if the web server already removed the encoding, the body is parsed as plain JSON.
-* All writes are atomic: temporary file in the same directory → flush/fsync → `os.replace`.
+* All writes are atomic: temporary file → flush/fsync → `os.replace`. Temporary files of published
+  files are created in the unpublished `<state dir>/tmp` (see below), so report uploads (FTP, rsync)
+  never see partial files. `os.replace` requires the state dir to be on the same file system as
+  `HTML_ROOT`; otherwise the target directory is used as fallback and a warning is logged (set
+  `[PeriodCharts] state_root` accordingly, e.g. with separate Docker volumes).
   Order: data file → manifest segment → `manifest.json` (resp. `current.json`).
 * `rev` everywhere = first 12 hex chars of the SHA-1 of the written (compressed) bytes. The
   frontend fetches `…?r=<rev>`; a regenerated file gets a new `rev`, which invalidates browser
@@ -523,13 +527,41 @@ default/current day. Each tab remembers its selection while the page is open; in
 
 Frontend data loading (`js/periodstore.js`, `js/periodsdata.js`): `current.json` and `manifest.json`
 are fetched with `?t=<now>` (re-checked at most every 60 s, on tab activation, when the browser tab
-becomes visible and on every poll); manifest segments and period files with `?r=<rev>`. Completed
+becomes visible and on every poll); manifest segments and period files with `?r=<rev>`. Manifest
+segments are loaded lazily: only the segment of the selected period (e.g. `#year/2016` →
+`manifest/year/all.json` + `year/2016.json.gz`), the newest day segment for the default day, the
+segments of a `#week|month/yyyy[mm]` prefix, the segments of the adjacent periods (background, for
+prev/next across a year boundary) and the segments shown in the open picker page. Loaded segments are
+kept for the page session and only reloaded when `manifest.json` lists a new rev; a failing segment
+only affects its own periods (state `unknown`, retried after 30 s). Completed
 files are kept in an in-memory LRU of 100 files (key = path + rev); current/rolling files are cached
 separately and reloaded only on a new `rev`. Concurrent requests for the same URL are merged,
 failures are never cached and retried with backoff 5 s · 2ⁿ (max. 10 min). Mutable views poll
 shortly after `generated + refresh` (at least every 60 s); pending entries and a running backfill
 poll with the view's `refresh` (day: `archive_interval`). A selected running period that has ended
 keeps showing its last running version ("provisional") until the worker publishes the completed file.
+
+Recommended HTTP caching (web server / CDN, not set by the skin): `css/*`, `js/*` (`?v=<mtime>`),
+`historic_data/{day,week,month,year}/*` and `historic_data/manifest/*` (`?r=<rev>`, content
+addressed) may be served with `Cache-Control: public, max-age=31536000, immutable`;
+`ts.json`, `weewxData.json`, `reportData.json`, `historic_data/current.json`,
+`historic_data/manifest.json` and `historic_data/{current,rolling}/*` with `Cache-Control: no-cache`.
+Example for Apache (`.htaccess` in `HTML_ROOT`, needs `mod_headers`):
+
+```apache
+<IfModule mod_headers.c>
+    # versioned (?v=<mtime>) or content-addressed (?r=<rev>) files
+    <FilesMatch "(\.(js|css|woff2?|json\.gz)|^(\d{4}|all)\.json)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "^(ts|weewxData|reportData|current|manifest)\.json$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+```
+
+`current/*.json.gz` and `rolling/*.json.gz` are fetched with `?r=<rev>` as well, so `immutable` is
+safe for them; only the index files above must be revalidated.
 
 Frontend charts (`js/periodchartcore.js`, `js/periodcharts.js`): one ECharts instance per chart of
 `period_charts.order`. The x axis is exactly `axis` (edge buckets are clipped). Lines and scatter

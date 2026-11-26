@@ -129,6 +129,42 @@ test("markers use server statistics; sums get a legend total instead of mark poi
     assert.strictEqual(cc.statSuffix(rain, env), " (Σ 25.4 mm)");
 });
 
+test("min/max mark points are hoverable and show time, series and value", () => {
+    const tipEnv = Object.assign({}, env, {formatDateTime: (ms) => "T" + ms});
+    const config = {series: {outTemp: Object.assign({}, chartConfig.temp.series.outTemp, {
+        views: {day: view("wx/outTemp/avg/PT1H", "wx/outTemp", "avg", "PT1H", "group_temperature", "degree_C")}})}};
+    const data = file({series: {"wx/outTemp/avg/PT1H": {unit: "degree_F", group: "group_temperature",
+        points: [[0, 3600, 41]]}}});
+    const built = cc.buildOption({view: "day", data: data, chartConfig: config, env: tipEnv});
+    const markPoint = built.option.series[0].markPoint;
+    assert.notStrictEqual(markPoint.silent, true);
+    assert.strictEqual(markPoint.tooltip.trigger, "item");
+    const maxTip = markPoint.data[0].tooltip.formatter();
+    assert.match(maxTip, /T2200000/);
+    assert.match(maxTip, /Temperature \(Maximum\)/);   // base label, not "Temperature (Average)"
+    assert.match(maxTip, /10\.0°C/);
+    assert.match(maxTip, /#b44242/);
+    assert.match(markPoint.data[1].tooltip.formatter(), /T1600000.*Temperature \(min\).*0\.0°C/s);
+
+    const formatter = built.option.tooltip.formatter;
+    const axisParams = [{axisValue: 3600000}];
+    assert.match(formatter(axisParams), /Temperature \(Average\)/);
+    assert.strictEqual(built.hover.enter(0, "max"), true);
+    assert.strictEqual(formatter(axisParams), maxTip);
+    assert.strictEqual(built.hover.leave(), true);
+    assert.match(formatter(axisParams), /Temperature \(Average\)/);
+    assert.strictEqual(built.hover.leave(), false);
+    assert.strictEqual(built.hover.enter(5, "max"), false);
+    assert.strictEqual(built.hover.enter(0, "avg"), false);
+});
+
+test("extreme tooltip escapes labels and needs a timestamp", () => {
+    const series = {label: "<b>", color: "#000", decimals: 1, unitLabel: "°C",
+        stats: {max: {value: 1, ms: 5000}, min: {value: 0, ms: null}}};
+    assert.match(cc.extremeTooltip(series, "max", env), /&lt;b&gt; \(Maximum\)/);
+    assert.strictEqual(cc.extremeTooltip(series, "min", env), "");
+});
+
 test("bars span start..end, are clipped and provisional bars are lighter", () => {
     const [rain] = cc.prepareSeries(chartConfig.rain, file(), "day", env);
     const render = cc.barRenderer(rain, env);

@@ -372,7 +372,8 @@
 
     function show(view, cursor, focusSelector) {
         open = {view: view, cursor: cursor};
-        render(model(view, cursor, context()));
+        let m = model(view, cursor, context());
+        render(m);
         let focus = focusSelector ? panel.querySelector(focusSelector + ":not([disabled])") : null;
         if (focus === null) {
             focus = panel.querySelector("button[aria-current]") || panel.querySelector(".periodPickGrid button:not([disabled])")
@@ -381,6 +382,34 @@
         if (focus !== null) {
             focus.focus();
         }
+        loadSegments(m, focusSelector);
+    }
+
+    /** Lazily loads the manifest segments of the shown cells, then re-renders the same page. */
+    function loadSegments(m, focusSelector) {
+        let s = store();
+        if (s === null || s.manifest === null || typeof s.ensureSegments !== "function") {
+            return;
+        }
+        let ids = [];
+        for (let row of m.rows || []) {
+            ids.push(row.id || row.weekId);
+            for (let c of row.cells) {
+                ids.push(c.id);
+            }
+        }
+        for (let c of m.cells || []) {
+            ids.push(c.id);
+        }
+        let keys = s.missingSegments(m.view, s.segmentKeysFor(m.view, ids));
+        if (keys.length === 0) {
+            return;
+        }
+        s.ensureSegments(m.view, keys).then(function () {
+            if (open !== null && open.view === m.view && open.cursor === m.cursor) {
+                show(m.view, m.cursor, focusSelector);
+            }
+        });
     }
 
     function openPicker() {

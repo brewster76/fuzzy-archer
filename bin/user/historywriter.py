@@ -5,6 +5,7 @@
 No WeeWX dependencies. See docs/historic-data-contract.md, sections 2, 4, 5 and 7.
 """
 
+import errno
 import gzip
 import hashlib
 import io
@@ -60,9 +61,14 @@ def _fsync_dir(path):
         os.close(fd)
 
 
-def atomic_write(path, data):
-    """Write bytes to path: temp file in the same directory -> fsync -> os.replace."""
-    directory = os.path.dirname(os.path.abspath(path))
+def _unlink_quietly(path):
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _write_temp(directory, data):
     os.makedirs(directory, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix='.tmp-', suffix='.part', dir=directory)
     try:
@@ -72,22 +78,52 @@ def atomic_write(path, data):
             os.fsync(f.fileno())
         # Published under HTML_ROOT: clients need read access, but only the owner may write.
         os.chmod(tmp, 0o644)  # NOSONAR(S2612)
-        os.replace(tmp, path)
     except BaseException:
+        _unlink_quietly(tmp)
+        raise
+    return tmp
+
+
+_cross_device_warned = False
+
+
+def atomic_write(path, data, tmp_dir=None):
+    """Write bytes to path: temp file -> fsync -> os.replace.
+
+    The temp file is created in tmp_dir (unpublished, so report uploads never see partial files) or,
+    without tmp_dir, in the target directory. If tmp_dir is on another file system, the target
+    directory is used as fallback.
+    """
+    global _cross_device_warned
+    directory = os.path.dirname(os.path.abspath(path))
+    os.makedirs(directory, exist_ok=True)
+    tmp = _write_temp(tmp_dir or directory, data)
+    try:
         try:
-            os.unlink(tmp)
-        except OSError:
-            pass
+            os.replace(tmp, path)
+        except OSError as e:
+            if not tmp_dir or e.errno != errno.EXDEV:
+                raise
+            if not _cross_device_warned:
+                log.warning("%s and %s are on different file systems; temporary files are written next to "
+                            "the published files. Set [PeriodCharts] state_root to a directory on the same "
+                            "file system as HTML_ROOT (but outside of it).", tmp_dir, directory)
+                _cross_device_warned = True
+            _unlink_quietly(tmp)
+            tmp = _write_temp(directory, data)
+            os.replace(tmp, path)
+    except BaseException:
+        _unlink_quietly(tmp)
         raise
     _fsync_dir(directory)
 
 
-def write_json(path, obj, compress=False):
+def write_json(path, obj, compress=False, tmp_dir=None):
     """Atomically write obj as JSON (optionally gzip); returns the rev of the written bytes."""
     data = to_json_bytes(obj)
     if compress:
         data = gzip_bytes(data)
-    atomic_write(path, data)
+    atomic_write(path, data, tmp_dir)
     return rev_of(data)
 
 
@@ -121,6 +157,11 @@ def state_dir(config_dict, root, state_root=None):
     return os.path.join(state_root, digest)
 
 
+def staging_dir(state_directory):
+    """Unpublished directory for temp files of atomic writes into the data root."""
+    return os.path.join(state_directory, 'tmp')
+
+
 def period_file(period, pid):
     parse_period_id(period, pid)
     return '%s/%s.json.gz' % (period, pid)
@@ -152,7 +193,7 @@ def has_any_data(data, required_obs_keys):
     return any(observations.get(k, {}).get('count') for k in required_obs_keys)
 
 
-def publish_period(root, data, required_obs_keys):
+def publish_period(root, data, required_obs_keys, tmp_dir=None):
     """Write a completed period file and return its manifest entry.
 
     Periods without any data of the required observations are not written (entry 'nodata').
@@ -162,7 +203,7 @@ def publish_period(root, data, required_obs_keys):
     if not has_any_data(data, required_obs_keys):
         return {'s': 'nodata'}
     rel = period_file(data['period'], data['period_id'])
-    rev = write_json(_abs(root, rel), data, compress=True)
+    rev = write_json(_abs(root, rel), data, compress=True, tmp_dir=tmp_dir)
     entry = {'s': 'ok' if data['state'] == 'complete' else 'gaps', 'rev': rev, 'file': rel}
     missing = missing_observations(data, required_obs_keys)
     if missing:
@@ -186,19 +227,19 @@ def is_compatible(header, week_start):
     return True
 
 
-def write_current_file(root, kind, period, data):
+def write_current_file(root, kind, period, data, tmp_dir=None):
     """Write current/<period>.json.gz or rolling/<period>.json.gz; returns (relative file, rev)."""
     if kind not in ('current', 'rolling') or period not in PERIODS:
         raise ValueError("Invalid mutable file %s/%s" % (kind, period))
     rel = '%s/%s.json.gz' % (kind, period)
-    return rel, write_json(_abs(root, rel), data, compress=True)
+    return rel, write_json(_abs(root, rel), data, compress=True, tmp_dir=tmp_dir)
 
 
-def write_current_index(root, generated, week_start, current, rolling):
+def write_current_index(root, generated, week_start, current, rolling, tmp_dir=None):
     """Write current.json last (after the referenced files)."""
     index = {'schema_version': SCHEMA_VERSION, 'generated': int(generated), 'week_start': int(week_start),
              'current': current, 'rolling': rolling}
-    return write_json(os.path.join(root, 'current.json'), index)
+    return write_json(os.path.join(root, 'current.json'), index, tmp_dir=tmp_dir)
 
 
 def read_current_index(root):
@@ -219,9 +260,10 @@ def read_current_index(root):
 class Manifest(object):
     """Segmented manifest. Changes are buffered and written by flush(): segments first, index last."""
 
-    def __init__(self, root, week_start):
+    def __init__(self, root, week_start, tmp_dir=None):
         self.root = root
         self.week_start = int(week_start)
+        self.tmp_dir = tmp_dir
         self._segments = {}
         self._dirty = set()
         index = None
@@ -295,7 +337,7 @@ class Manifest(object):
         for period, key in sorted(self._dirty):
             segment = self._segments[(period, key)]
             segment['entries'] = dict(sorted(segment['entries'].items()))
-            rev = write_json(_abs(self.root, segment_file(period, key)), segment)
+            rev = write_json(_abs(self.root, segment_file(period, key)), segment, tmp_dir=self.tmp_dir)
             self.index['segments'].setdefault(period, {})[key] = rev
         self._dirty.clear()
         self.index['generated'] = int(now if now is not None else time.time())
@@ -303,7 +345,7 @@ class Manifest(object):
             p: dict(sorted(self.index['segments'][p].items()))
             for p in PERIODS if p in self.index['segments']
         }
-        return write_json(os.path.join(self.root, 'manifest.json'), self.index)
+        return write_json(os.path.join(self.root, 'manifest.json'), self.index, tmp_dir=self.tmp_dir)
 
 
 # ---------------------------------------------------------------------------------------------
